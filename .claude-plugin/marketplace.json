@@ -1,0 +1,22 @@
+{
+  "name": "touyou-skills",
+  "owner": {
+    "name": "Fujii Yosuke",
+    "email": "465697+touyou@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "touyou's personal collection of Claude Code skills",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "writing-pack",
+      "description": "Skills for writing and proofreading Japanese text in touyou's voice without leaving an AI smell",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/proofread-touyou"
+      ]
+    }
+  ]
+}
