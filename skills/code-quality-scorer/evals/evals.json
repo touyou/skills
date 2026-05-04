@@ -1,0 +1,26 @@
+{
+  "skill_name": "code-quality-scorer",
+  "evals": [
+    {
+      "id": 1,
+      "name": "head-scoring-real-project",
+      "prompt": "~/Developer/Saikicorp/whitebox-root/frontend のコード品質をスコアリングして。Tier 1, Tier 2, Tier 3 すべて出して、score.json と summary.md を作って。",
+      "expected_output": "score.json with tier1_metrics (most populated), tier2_observations (4 dimensions with rubric-based 1-5 scores + rationale), tier3_ui_logic populated, primary_score numeric, warnings reasonable. summary.md is human-readable.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "delta-mode-ai-effect",
+      "prompt": "~/Developer/Saikicorp/whitebox-root/frontend で HEAD~50 と HEAD の間で『ユーザーに届くロジックの量』がどう変わったか、増えた量と減った量を別々に分析して。AI で書いた効果が見える形で報告して。",
+      "expected_output": "tier3_delta JSON with routes_added/routes_removed, handlers_added/handlers_removed, hooks_added/hooks_removed, complexity_added/complexity_removed all populated. Markdown report interpreting the numbers as added vs. removed value, not just net delta.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "determinism-tier1",
+      "prompt": "~/Developer/Saikicorp/whitebox-root/frontend のコード品質を Tier 1 のみでスコアリングして（Tier 2 をスキップ）、結果を score-1.json に保存。それから同じ操作をもう一度やって score-2.json に保存。最後に2つの Tier 1 メトリクスが完全一致するか比較して報告して。",
+      "expected_output": "score-1.json and score-2.json with identical tier1_metrics fields. Report explicitly states whether each metric matched. tier1_metrics MUST match exactly (the determinism claim of the skill).",
+      "files": []
+    }
+  ]
+}
