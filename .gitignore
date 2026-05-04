@@ -3,3 +3,7 @@
 *.swo
 .vscode/
 .idea/
+
+# Python build artifacts (skills/code-quality-scorer/scripts/)
+__pycache__/
+*.pyc
