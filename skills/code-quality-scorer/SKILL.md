@@ -1,6 +1,6 @@
 ---
 name: code-quality-scorer
-description: コードベースのコード品質をコミット単位でスコアリングし、コミット履歴を辿ってトレンドを可視化する。テストカバレッジ・lint違反・dead code・複雑度・cognitive complexity・deprecated API使用・セキュリティといった決定論的な指標と、凝集度・DRY・bug-prone構造といったLLM判定指標を分離して扱い、AI活用の効果測定や品質回帰の検知に使える。security delta は「コード由来 vs 依存由来」を分類して報告する。ユーザーが「コード品質を採点して」「品質トレンドを見たい」「AIで書いたコードの質を測りたい」「コミット履歴の品質変化を分析して」「このプロジェクトを評価して」「scorecardを作って」と依頼した時に発動する。v0.3 で TypeScript Web / Dart Flutter / Swift iOS の3言語が本実装、Kotlin Android はプレースホルダ。
+description: コードベースのコード品質をコミット単位でスコアリングし、コミット履歴を辿ってトレンドを可視化する。テストカバレッジ・lint違反・dead code・複雑度・cognitive complexity・deprecated API使用・セキュリティといった決定論的な指標と、凝集度・DRY・bug-prone構造といったLLM判定指標を分離して扱い、AI活用の効果測定や品質回帰の検知に使える。security delta は「コード由来 vs 依存由来」を分類して報告する。ユーザーが「コード品質を採点して」「品質トレンドを見たい」「AIで書いたコードの質を測りたい」「コミット履歴の品質変化を分析して」「このプロジェクトを評価して」「scorecardを作って」と依頼した時に発動する。現在 (v0.4.1) TypeScript Web / Dart Flutter / Swift iOS の3言語が本実装で dogfood 済み、Kotlin Android は skeleton。
 license: MIT
 metadata:
   author: touyou

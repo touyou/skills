@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
@@ -16,6 +16,15 @@
       "strict": false,
       "skills": [
         "./skills/proofread-touyou"
+      ]
+    },
+    {
+      "name": "quality-pack",
+      "description": "Code quality measurement: deterministic tooling metrics + LLM-judged dimensions + commit-by-commit trend analysis. Supports TypeScript Web / Dart Flutter / Swift iOS, with Kotlin Android skeleton.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/code-quality-scorer"
       ]
     }
   ]
