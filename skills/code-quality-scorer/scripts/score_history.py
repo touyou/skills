@@ -46,7 +46,9 @@ PROFILE_CONFIG = {
     "dart-flutter": {
         "tier1_script": "run_tier1_dart_flutter.py",
         "tier3_script": "run_tier3_flutter_ui.py",
-        "install_timeout": 300,
+        # 古い pubspec.yaml は依存解決に 5-10 分かかることがある (lock の不整合, リポジトリ
+        # 解決の探索, FVM が別 SDK を取りに行く等)。安全側に 900s。
+        "install_timeout": 900,
         "tier1_timeout": 1200,  # flutter test --coverage can be slow
     },
     "swift-ios": {
@@ -127,6 +129,12 @@ def detect_install_cmd(worktree, profile):
         target = worktree if (worktree / "pubspec.yaml").exists() else (worktree / "app" if (worktree / "app" / "pubspec.yaml").exists() else None)
         if target is None:
             return None, None
+        # FVM プロジェクトなら `fvm flutter pub get` を使う。`.fvmrc` だけ tracked で
+        # `.fvm/` は gitignore なのが普通だが、`.fvmrc` の存在で十分判定できる。
+        # fvm flutter はグローバルキャッシュ ~/fvm/versions/ から SDK を引く。
+        import shutil as _shutil
+        if (target / ".fvmrc").exists() and _shutil.which("fvm"):
+            return ["fvm", "flutter", "pub", "get"], target
         return ["flutter", "pub", "get"], target
     if profile == "swift-ios":
         # swift package resolve at every Package.swift root; for monorepos we run
@@ -145,10 +153,13 @@ def detect_install_cmd(worktree, profile):
     return None, None
 
 
-def run_helper(script_path, worktree, out_path, timeout):
+def run_helper(script_path, worktree, out_path, timeout, extra_args=None):
     """Run a helper Python script, return parsed JSON output or (None, error)."""
+    cmd = ["python3", str(script_path), "--repo", str(worktree), "--out", str(out_path)]
+    if extra_args:
+        cmd.extend(extra_args)
     proc = subprocess.run(
-        ["python3", str(script_path), "--repo", str(worktree), "--out", str(out_path)],
+        cmd,
         capture_output=True, text=True, timeout=timeout,
     )
     if proc.returncode != 0:
@@ -161,7 +172,8 @@ def run_helper(script_path, worktree, out_path, timeout):
         return None, f"{script_path.name} output unparseable: {e}"
 
 
-def score_one_commit(repo, sha, date_iso, profile, out_dir, skip_install):
+def score_one_commit(repo, sha, date_iso, profile, out_dir, skip_install,
+                     tier1_extra_args=None, tier3_extra_args=None):
     cached = out_dir / f"{sha}.json"
     if cached.exists():
         try:
@@ -206,6 +218,7 @@ def score_one_commit(repo, sha, date_iso, profile, out_dir, skip_install):
         tier1_data, err = run_helper(
             SCRIPT_DIR / pcfg["tier1_script"],
             wt_dir, t1_path, timeout=pcfg["tier1_timeout"],
+            extra_args=tier1_extra_args,
         )
         if err:
             warnings.append(err)
@@ -214,6 +227,7 @@ def score_one_commit(repo, sha, date_iso, profile, out_dir, skip_install):
         tier3_data, err = run_helper(
             SCRIPT_DIR / pcfg["tier3_script"],
             wt_dir, t3_path, timeout=180,
+            extra_args=tier3_extra_args,
         )
         if err:
             warnings.append(err)
@@ -259,7 +273,23 @@ def main():
     ap.add_argument("--profile", default="typescript-web")
     ap.add_argument("--skip-install", action="store_true",
                     help="Skip pnpm/yarn/npm install in each worktree (faster if deps unchanged)")
+    ap.add_argument("--exclude-source-paths", default="",
+                    help="repo 相対パスのカンマ区切り。各 helper (tier1/tier3) にそのまま渡す")
+    ap.add_argument("--skip-coverage", action="store_true",
+                    help="tier1 で coverage を skip (dart-flutter 等で時短)")
     args = ap.parse_args()
+
+    # tier1 / tier3 で受け付ける引数が異なるので別々に組み立てる。
+    # 共通: --exclude-source-paths は両方サポート (dart-flutter 系のみ; TS Web 系には
+    # 未実装。helper 側で argparse が --exclude-source-paths を知らないと落ちるので、
+    # profile が typescript-web/swift-ios/kotlin-android なら付けない)。
+    common_extra = []
+    if args.exclude_source_paths and args.profile == "dart-flutter":
+        common_extra.extend(["--exclude-source-paths", args.exclude_source_paths])
+    tier1_extra_args = list(common_extra)
+    tier3_extra_args = list(common_extra)
+    if args.skip_coverage and args.profile == "dart-flutter":
+        tier1_extra_args.append("--skip-coverage")
 
     repo = Path(args.repo).resolve()
     if not (repo / ".git").exists():
@@ -304,6 +334,8 @@ def main():
         try:
             score, status = score_one_commit(
                 repo, sha, date, args.profile, out_dir, args.skip_install,
+                tier1_extra_args=tier1_extra_args,
+                tier3_extra_args=tier3_extra_args,
             )
             if score is None:
                 print(f"{prefix}  ERROR: {status}", flush=True)

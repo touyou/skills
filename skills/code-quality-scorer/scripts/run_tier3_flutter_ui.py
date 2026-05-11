@@ -12,12 +12,46 @@ from pathlib import Path
 
 EXCLUDE_DIRS = {".dart_tool", "build", ".pub-cache", ".symlinks", ".git",
                 "ios", "android", "macos", "linux", "windows", "web", "test", "tests"}
-GENERATED_SUFFIXES = (".g.dart", ".freezed.dart", ".intent.dart", ".chopper.dart", ".gr.dart")
+GENERATED_SUFFIXES = (".g.dart", ".freezed.dart", ".intent.dart", ".chopper.dart", ".gr.dart",
+                     ".gen.dart", ".config.dart", ".mocks.dart")
+
+
+def parse_exclude_paths(repo, raw):
+    if not raw:
+        return []
+    out = []
+    for chunk in raw.split(","):
+        s = chunk.strip()
+        if s:
+            out.append((repo / s).resolve())
+    return out
+
+
+def is_excluded(path, exclude_paths):
+    if not exclude_paths:
+        return False
+    try:
+        rp = path.resolve()
+    except OSError:
+        rp = path
+    for ex in exclude_paths:
+        try:
+            rp.relative_to(ex)
+            return True
+        except ValueError:
+            continue
+    return False
 
 # routing declarations
 GOROUTE_RE = re.compile(r"\bGoRoute\s*\(")
 ROUTEBASE_RE = re.compile(r"\bRouteBase\s*\(")
 AUTOROUTE_RE = re.compile(r"\bAutoRoute\s*\(")
+# type-safe go_router: `@TypedGoRoute<RouteData>(path: ..., routes: [...])` — generated
+# into actual `GoRoute(...)` inside .g.dart, which we exclude. Without this regex, projects
+# using go_router_builder would report routes_count=0 despite having dozens of routes.
+# 外側は `@TypedGoRoute<` だが nested は `TypedGoRoute<` (annotation の引数の中で
+# constructor として呼ばれる) なので両方拾う。
+TYPED_GOROUTE_RE = re.compile(r"\bTypedGoRoute\s*<")
 # `routes:` map literal: count string keys inside the next {...}
 ROUTES_MAP_BLOCK_RE = re.compile(r"routes\s*:\s*\{([^{}]*)\}", re.DOTALL)
 ROUTE_KEY_RE = re.compile(r"['\"]([^'\"]+)['\"]\s*:")
@@ -45,21 +79,28 @@ def is_dart_source(name):
     return name.endswith(".dart") and not name.endswith(GENERATED_SUFFIXES)
 
 
-def walk_dart(repo):
+def walk_dart(repo, exclude_paths=None):
     for base in (repo / "lib", repo / "packages"):
         if not base.exists():
             continue
         for root, dirs, files in os.walk(base):
             dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith(".")]
+            root_path = Path(root)
+            if is_excluded(root_path, exclude_paths or []):
+                dirs[:] = []
+                continue
             for f in files:
                 if is_dart_source(f):
-                    yield Path(root) / f
+                    full = root_path / f
+                    if is_excluded(full, exclude_paths or []):
+                        continue
+                    yield full
 
 
-def count_routes(repo, warnings):
+def count_routes(repo, warnings, exclude_paths=None):
     """Sum of GoRoute(/RouteBase(/AutoRoute(/MaterialApp routes-map keys."""
     total = 0
-    for path in walk_dart(repo):
+    for path in walk_dart(repo, exclude_paths=exclude_paths):
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
@@ -67,6 +108,7 @@ def count_routes(repo, warnings):
         total += len(GOROUTE_RE.findall(content))
         total += len(ROUTEBASE_RE.findall(content))
         total += len(AUTOROUTE_RE.findall(content))
+        total += len(TYPED_GOROUTE_RE.findall(content))
         # Each MaterialApp(...)/CupertinoApp(...) — that is the "/" route via
         # `home:`. MaterialApp.router(...) uses GoRoute and is captured above.
         total += len(MATERIAL_APP_HOME_RE.findall(content))
@@ -77,12 +119,12 @@ def count_routes(repo, warnings):
     return total
 
 
-def count_handlers_state_complexity(repo):
+def count_handlers_state_complexity(repo, exclude_paths=None):
     handlers = 0
     state = 0
     complexity = 0
     files_seen = 0
-    for path in walk_dart(repo):
+    for path in walk_dart(repo, exclude_paths=exclude_paths):
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
@@ -103,15 +145,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", default=".")
     ap.add_argument("--out", default="tier3.json")
+    ap.add_argument(
+        "--exclude-source-paths", default="",
+        help="repo 相対パスのカンマ区切り。指定した配下を Tier 3 集計から除外 (例: 'lib/gen,lib/api_definitions')",
+    )
     args = ap.parse_args()
 
     repo = Path(args.repo).resolve()
     if not (repo / "pubspec.yaml").exists() and (repo / "app" / "pubspec.yaml").exists():
         repo = repo / "app"
 
+    exclude_paths = parse_exclude_paths(repo, args.exclude_source_paths)
     warnings = []
-    routes = count_routes(repo, warnings)
-    handlers, state, complexity, files_seen = count_handlers_state_complexity(repo)
+    routes = count_routes(repo, warnings, exclude_paths=exclude_paths)
+    handlers, state, complexity, files_seen = count_handlers_state_complexity(repo, exclude_paths=exclude_paths)
 
     if files_seen == 0:
         warnings.append("no .dart source files found under lib/ or packages/*/lib/; Tier 3 metrics may not be meaningful")
@@ -127,6 +174,10 @@ def main():
             "framework": "flutter",
             "dart_files_scanned": files_seen,
             "scan_root": str(repo),
+            "excluded_source_paths": [
+                str(p.relative_to(repo)) if p.is_relative_to(repo) else str(p)
+                for p in exclude_paths
+            ],
         },
         "warnings": warnings,
     }

@@ -4,7 +4,7 @@ description: コードベースのコード品質をコミット単位でスコ�
 license: MIT
 metadata:
   author: touyou
-  version: "0.4"
+  version: "0.4.1"
 ---
 
 # コード品質スコアラー

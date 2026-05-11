@@ -12,6 +12,58 @@ Flutter / Dart プロジェクト向けのツール選定と実行手順。`scri
 
 monorepo (例: `flutter_intents/app/` + `flutter_intents/packages/*`) では検出ターゲットを引数で明示的に指定する想定。デフォルトはトップレベル `pubspec.yaml`、なければ `app/` を見る。
 
+## FVM の自動検出 (v0.4 追加)
+
+repo root に `.fvmrc` または `.fvm/` (旧形式の `.fvm/fvm_config.json` を含む) があり、かつ `fvm` バイナリが PATH に存在する場合、`run_tier1_dart_flutter.py` は `flutter` / `dart` コマンドを **`fvm flutter` / `fvm dart` 経由で実行する**。
+
+これは「プロジェクトが FVM で SDK バージョンをピンしているのに、scorer が素の `flutter` (= グローバル shim) を呼んで別バージョンの結果を出してしまう」事故を防ぐ。analyze ルールやコンパイラの diagnostic は SDK バージョンに依存するため、ピンを尊重しないと数値が嘘になる。
+
+検出結果は `tooling_used.fvm_detected` / `tooling_used.fvm_active` に出る (`detected=true, active=false` は `.fvmrc` はあるが `fvm` コマンドが見つからない状態を示す)。
+
+## 生成ファイルの除外 suffix
+
+以下を `GENERATED_DART_SUFFIXES` として LOC/lint/dead/Tier 2 サンプルから除外する:
+
+| suffix | 由来 |
+|--------|-----|
+| `.g.dart` | `build_runner` 全般 (json_serializable, retrofit, など) |
+| `.freezed.dart` | `freezed` |
+| `.gr.dart` | `auto_route` |
+| `.intent.dart` | `flutter_intents` (内部用) |
+| `.chopper.dart` | `chopper` |
+| `.gen.dart` | `flutter_gen` (assets.gen.dart など), build_runner gen build |
+| `.config.dart` | `injectable` |
+| `.mocks.dart` | `mockito` |
+
+これらが LOC に乗ると人手で書いていない大量のコードがカバレッジ分母を膨らませてしまうので、Tier 1/Tier 2/Tier 3 全てで除外する。
+
+## プロジェクト固有の generated location を除外する
+
+リポジトリによっては `lib/gen/` や `lib/api_definitions/` のように「ディレクトリごと自動生成 or ラッパー」になっている場所がある (例: habee-app の AGENTS.md は `lib/gen`, `lib/api_definitions` を「編集禁止」と明記)。これらは suffix で判別できないので、`--exclude-source-paths` で明示的に渡す:
+
+```
+python scripts/run_tier1_dart_flutter.py --repo PATH \
+  --exclude-source-paths lib/gen,lib/api_definitions \
+  --out tier1.json
+
+python scripts/run_tier3_flutter_ui.py --repo PATH \
+  --exclude-source-paths lib/gen,lib/api_definitions \
+  --out tier3.json
+
+python scripts/judge.py --repo PATH --profile dart-flutter \
+  --commit-sha <sha> \
+  --exclude-source-paths lib/gen,lib/api_definitions \
+  --out tier2.json
+```
+
+repo 相対のカンマ区切り。LOC・lint 違反集計・dead code・duplication・Tier 3 メトリクス・Tier 2 サンプリングすべてに反映される。
+
+## coverage 実行時の ulimit
+
+`flutter test --coverage` は内部で test isolate を per-test で立てるため fd を大量に開く。macOS のデフォルト fd 上限 (256) では `Too many open files` で coverage の一部レコードが欠落する。scorer は coverage コマンドを自動で `ulimit -n 10240 &&` でラップする。
+
+自前で `make coverage` 等を使うプロジェクトでも同様にラップされていることが多い (habee-app の Makefile も同様)。
+
 ## monorepo 内 path 依存の扱い (false positive 対策)
 
 教訓 #2: path alias フィルタを最初に作る。Flutter の path 依存は `pubspec.yaml` の以下の形式:
@@ -69,7 +121,7 @@ INFO|LINT|invalid_use_of_internal_member|/path/file.dart|12|3|45|message
 
 severity (1 列目) が `INFO` / `WARNING` / `ERROR` のいずれかの行をカウント。`ERROR` だけは別途 `type_errors` にカウントする (重複させて lint と type_errors の両方に乗せる、ESLint と tsc の関係と同じ)。
 
-KLOC は `find . -name '*.dart' -not -path '*/.dart_tool/*' -not -path '*/build/*' -not -name '*.g.dart' -not -name '*.freezed.dart' -not -name '*.intent.dart'` の総行数で正規化。生成ファイル ( `.g.dart`, `.freezed.dart`, `.intent.dart`) は除外する。
+KLOC は `find . -name '*.dart' -not -path '*/.dart_tool/*' -not -path '*/build/*' -not -name '*.g.dart' -not -name '*.freezed.dart' -not -name '*.intent.dart' -not -name '*.gen.dart' -not -name '*.config.dart' -not -name '*.mocks.dart'` の総行数で正規化。`--exclude-source-paths` で渡したディレクトリ配下も除外される。
 
 `analysis_options.yaml` がない場合でも `dart analyze` は default ルールで動くが、プロジェクト方針との乖離が大きいので「`analysis_options.yaml` 不在」は warning に出す（数値は出す）。
 
@@ -172,6 +224,7 @@ monorepo の場合、ターゲット先で `flutter pub get` を打つ。melos �
 | パターン | カウント方法 |
 |---------|------------|
 | `GoRoute(path: ...)` | `\bGoRoute\s*\(` の出現数 |
+| `@TypedGoRoute<RouteData>(...)` (型安全 go_router) | `\bTypedGoRoute\s*<` の出現数 (annotation 形式と nested constructor 形式 `routes: [TypedGoRoute<X>(...)]` の両方を拾う)。`go_router_builder` が `.g.dart` に展開する型安全 routing で、生成物は scan 対象外なので宣言側で拾う |
 | `MaterialApp(routes: { '...': ... })` | `routes:\s*\{` ブロック内の `'<path>':` キー数 (簡易: `routes:` 直後の `\{` から対応する `\}` までの範囲で string key 抽出) |
 | `AutoRoute(page: ...)` | `\bAutoRoute\s*\(` の出現数 |
 | `RouteBase(...` (go_router 2.x) | `\bRouteBase\s*\(` の出現数 |

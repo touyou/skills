@@ -59,7 +59,8 @@ PROFILE_SAMPLE_RULES = {
     "dart-flutter": {
         "include_dirs": ["lib", "packages"],
         "extensions": (".dart",),
-        "exclude_suffixes": (".g.dart", ".freezed.dart", ".intent.dart", ".gr.dart", ".chopper.dart"),
+        "exclude_suffixes": (".g.dart", ".freezed.dart", ".intent.dart", ".gr.dart", ".chopper.dart",
+                            ".gen.dart", ".config.dart", ".mocks.dart"),
         "exclude_dirs": {".dart_tool", "build", "test", "tests", "ios", "android", "macos", "linux", "windows", "web"},
     },
     "swift-ios": {
@@ -90,8 +91,14 @@ TEST_FILE_RULES = {
 }
 
 
-def collect_files(repo, rule):
-    """Walk repo gathering files that match `rule`. Returns list[(path, lines)]."""
+def collect_files(repo, rule, exclude_paths=None):
+    """Walk repo gathering files that match `rule`. Returns list[(path, lines)].
+
+    `exclude_paths` (resolved absolute Path のリスト) を渡すと、その配下のファイルを除外する。
+    プロジェクト固有の generated location (例: lib/gen, lib/api_definitions) を Tier 2 から
+    取り除くために使う。
+    """
+    exclude_paths = exclude_paths or []
     out = []
     seen = set()
     bases = [repo / d for d in rule["include_dirs"]] if rule["include_dirs"] != [""] else [repo]
@@ -100,6 +107,10 @@ def collect_files(repo, rule):
             continue
         for root, dirs, files in os.walk(base):
             dirs[:] = [d for d in dirs if d not in rule["exclude_dirs"] and not d.startswith(".")]
+            root_path = Path(root)
+            if _is_under_any(root_path, exclude_paths):
+                dirs[:] = []
+                continue
             for f in files:
                 p = Path(root) / f
                 if p in seen:
@@ -107,6 +118,8 @@ def collect_files(repo, rule):
                 if not f.endswith(rule["extensions"]):
                     continue
                 if any(f.endswith(suf) for suf in rule.get("exclude_suffixes", ())):
+                    continue
+                if _is_under_any(p, exclude_paths):
                     continue
                 try:
                     with open(p, encoding="utf-8", errors="ignore") as fh:
@@ -118,6 +131,22 @@ def collect_files(repo, rule):
                 seen.add(p)
                 out.append((p, lines))
     return out
+
+
+def _is_under_any(path, exclude_paths):
+    if not exclude_paths:
+        return False
+    try:
+        rp = path.resolve()
+    except OSError:
+        rp = path
+    for ex in exclude_paths:
+        try:
+            rp.relative_to(ex)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def deterministic_sample(files, seed_str, max_files, max_lines):
@@ -324,17 +353,26 @@ def main():
     ap.add_argument("--dimensions", default=",".join(DIMENSION_RUBRIC_FILES.keys()))
     ap.add_argument("--judge-model", default=None, help="Override model; e.g. sonnet/haiku")
     ap.add_argument("--out", default="tier2.json")
+    ap.add_argument(
+        "--exclude-source-paths", default="",
+        help="repo 相対パスのカンマ区切り。指定した配下のファイルを Tier 2 サンプリング対象から除外 (例: 'lib/gen,lib/api_definitions')",
+    )
     args = ap.parse_args()
 
     repo = Path(args.repo).resolve()
     rubrics_dir = Path(args.rubrics_dir).resolve()
     dimensions = [d.strip() for d in args.dimensions.split(",") if d.strip()]
     warnings = []
+    exclude_paths = []
+    for chunk in (args.exclude_source_paths or "").split(","):
+        s = chunk.strip()
+        if s:
+            exclude_paths.append((repo / s).resolve())
 
     rule_src = PROFILE_SAMPLE_RULES[args.profile]
     rule_test = TEST_FILE_RULES.get(args.profile)
-    src_files = collect_files(repo, rule_src)
-    test_files = collect_files(repo, rule_test) if rule_test else []
+    src_files = collect_files(repo, rule_src, exclude_paths=exclude_paths)
+    test_files = collect_files(repo, rule_test, exclude_paths=exclude_paths) if rule_test else []
     if not src_files:
         warnings.append(f"no source files matched profile rules for {args.profile}; Tier 2 likely meaningless")
 

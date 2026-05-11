@@ -39,31 +39,62 @@ def git(args, cwd, check=False, timeout=300):
     return result
 
 
-def list_tracked_source_files(repo, ref):
-    """List all .ts/.tsx/.js/.jsx tracked files at ref, excluding tests/generated/build."""
+SOURCE_EXTENSIONS = (".ts", ".tsx", ".js", ".jsx", ".dart", ".swift", ".kt", ".kts")
+# 生成物 suffix (言語横断)。`.d.ts`, `.g.dart` 系などを除外。
+GENERATED_SUFFIXES = (
+    ".d.ts",
+    ".g.dart", ".freezed.dart", ".gr.dart", ".intent.dart", ".chopper.dart",
+    ".gen.dart", ".config.dart", ".mocks.dart",
+)
+
+
+def list_tracked_source_files(repo, ref, extra_exclude_prefixes=None):
+    """List tracked source files at ref, excluding tests/generated/build.
+
+    multi-language 対応: .ts/.tsx/.js/.jsx/.dart/.swift/.kt/.kts。`extra_exclude_prefixes`
+    で repo 相対の prefix を追加除外できる (例: ['lib/gen/', 'lib/api_definitions/'])。
+    """
+    extra_exclude_prefixes = tuple(extra_exclude_prefixes or [])
     out = git(["ls-tree", "-r", "--name-only", ref], cwd=repo, check=True).stdout
     files = []
     for line in out.splitlines():
         if not line.strip():
             continue
-        if not line.endswith((".ts", ".tsx", ".js", ".jsx")):
+        if not line.endswith(SOURCE_EXTENSIONS):
             continue
-        if line.endswith(".d.ts"):
+        if line.endswith(GENERATED_SUFFIXES):
             continue
-        if any(seg in line for seg in (".test.", ".spec.", "/__tests__/", "/__generated__/", "/node_modules/")):
+        if any(seg in line for seg in (
+            ".test.", ".spec.", "_test.dart",
+            "/__tests__/", "/__generated__/", "/node_modules/",
+            "/test/", "/tests/",
+        )):
             continue
-        if any(line.startswith(seg) for seg in ("dist/", "build/", ".next/", "node_modules/")):
+        if any(line.startswith(seg) for seg in (
+            "dist/", "build/", ".next/", "node_modules/",
+            "openapi/",  # auto-generated SDK
+            ".dart_tool/", ".symlinks/",
+        )):
+            continue
+        if extra_exclude_prefixes and line.startswith(extra_exclude_prefixes):
             continue
         files.append(line)
     return files
 
 
-def file_author_counts(repo, path, ref):
-    """Returns dict of author -> commit count for `path` up to `ref`. Empty if file missing."""
-    out = git(
-        ["log", "--follow", "--format=%ae", ref, "--", path],
-        cwd=repo, timeout=60,
-    ).stdout
+def file_author_counts(repo, path, ref, use_mailmap=True):
+    """Returns dict of author -> commit count for `path` up to `ref`. Empty if file missing.
+
+    use_mailmap: `.mailmap` を尊重する (`%aE` 大文字 = mapped email)。同一人物が複数 email で
+    コミットしているケース (例: GitHub noreply + 個人 email + 会社 email) を 1 人として扱える。
+    `.mailmap` が無い場合は通常の %ae と同じ動作なので安全に true がデフォルト。
+    """
+    fmt = "%aE" if use_mailmap else "%ae"
+    cmd = ["log", "--follow"]
+    if use_mailmap:
+        cmd.append("--use-mailmap")
+    cmd.extend([f"--format={fmt}", ref, "--", path])
+    out = git(cmd, cwd=repo, timeout=60).stdout
     counts = defaultdict(int)
     for line in out.splitlines():
         a = line.strip()
@@ -72,10 +103,10 @@ def file_author_counts(repo, path, ref):
     return counts
 
 
-def compute_state(repo, ref):
+def compute_state(repo, ref, exclude_prefixes=None, use_mailmap=True):
     """Compute knowledge_concentration_index, single_author_files_ratio,
     author_count for the codebase as of `ref`."""
-    files = list_tracked_source_files(repo, ref)
+    files = list_tracked_source_files(repo, ref, extra_exclude_prefixes=exclude_prefixes)
     if not files:
         return {
             "files_analyzed": 0,
@@ -89,7 +120,7 @@ def compute_state(repo, ref):
     single_author_count = 0
     all_author_commits = defaultdict(int)
     for path in files:
-        counts = file_author_counts(repo, path, ref)
+        counts = file_author_counts(repo, path, ref, use_mailmap=use_mailmap)
         if not counts:
             continue
         total = sum(counts.values())
@@ -127,6 +158,14 @@ def main():
     ap.add_argument("--from", dest="from_ref")
     ap.add_argument("--to", dest="to_ref", default="HEAD")
     ap.add_argument("--out", default="bus_factor.json")
+    ap.add_argument(
+        "--exclude-source-paths", default="",
+        help="repo 相対パスの prefix をカンマ区切り。指定した配下を bus factor 計算から除外する (例: 'lib/gen,lib/api_definitions')",
+    )
+    ap.add_argument(
+        "--no-mailmap", action="store_true",
+        help="`.mailmap` による author email 正規化を無効化。デフォルト ON。`.mailmap` が無いリポジトリでは on/off いずれも同じ結果。",
+    )
     args = ap.parse_args()
 
     repo = Path(args.repo).resolve()
@@ -134,14 +173,23 @@ def main():
         print(f"error: {repo} is not a git repository", file=sys.stderr)
         sys.exit(1)
 
-    state_to = compute_state(repo, args.to_ref)
+    exclude_prefixes = []
+    for chunk in (args.exclude_source_paths or "").split(","):
+        s = chunk.strip()
+        if not s:
+            continue
+        # 末尾 / を付けて prefix マッチに使う
+        exclude_prefixes.append(s.rstrip("/") + "/")
+
+    use_mailmap = not args.no_mailmap
+    state_to = compute_state(repo, args.to_ref, exclude_prefixes=exclude_prefixes, use_mailmap=use_mailmap)
     result = {
         "to_ref": args.to_ref,
         "to_state": state_to,
     }
 
     if args.from_ref:
-        state_from = compute_state(repo, args.from_ref)
+        state_from = compute_state(repo, args.from_ref, exclude_prefixes=exclude_prefixes, use_mailmap=use_mailmap)
         result["from_ref"] = args.from_ref
         result["from_state"] = state_from
         delta = None

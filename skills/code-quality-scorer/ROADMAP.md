@@ -2,9 +2,48 @@
 
 このファイルは **コンテキストクリア後の継続開発用の引き継ぎ文書**。SKILL.md は使用者向け、ROADMAP.md は開発者向け（次の version を作る人）。
 
-## 現在の状態（v0.4, 2026-05-04 確定）
+## 現在の状態（v0.4 + habee-app 適応, 2026-05-11 確定）
 
-v0.4 でやったことの要約:
+### habee-app (Flutter, 95k LOC) での dogfood で追加された対応 (2026-05-11)
+
+v0.4 を Flutter 大規模プロジェクトに適用したところ、Flutter プロジェクト広範に効く改善が複数見つかり反映した:
+
+| 改善 | 対象 | 内容 |
+|------|------|------|
+| 生成 suffix 拡充 | tier1 / tier3 / judge | `.gen.dart` (flutter_gen), `.config.dart` (injectable), `.mocks.dart` (mockito) を除外対象に追加 |
+| FVM 自動検出 | tier1 + score_history | `.fvmrc` or `.fvm/` + `fvm` バイナリで `fvm flutter` / `fvm dart` 経由実行。`tooling_used.fvm_detected/active` に出力 |
+| coverage ulimit ラップ | tier1 | macOS の fd 枯渇で coverage 欠落するのを `ulimit -n 10240 &&` ラップで防止 |
+| `@TypedGoRoute<>` 対応 | tier3 | `go_router_builder` 型安全 routing。`.g.dart` (除外対象) に展開されるので annotation/constructor 側で拾う |
+| `dart analyze` rc=2/3 許容 | tier1 | `custom_lint` plugin crash 等で rc≥2 でも先に書かれた INFO/WARNING 行は valid。partial output を warning 付きで活用 |
+| CODE 列の case 混在対応 | tier1 | built-in 系は `UNUSED_IMPORT` (UPPER) / lint 系は `unused_import` (lower) で出る。case-insensitive で比較 |
+| `dart pub audit` 不在の specific warning | tier1 | "subcommand not found" を検知して null + 明確な warning に |
+| `--exclude-source-paths` | tier1 / tier3 / judge / bus_factor / score_history | repo 相対パスを除外。「編集禁止」の generated location (lib/gen, lib/api_definitions 等) を全 tier から除外 |
+| `--skip-coverage` | tier1 / score_history (dart-flutter) | smoke test や CI 短縮用 |
+| coverage 失敗 warning の具体化 | tier1 | `.env` / asset bundle 失敗を検出して「`.env.sample` をコピーするか pubspec の assets を確認」というヒントを出す |
+| `.mailmap` サポート | bus_factor | `git log --use-mailmap --format=%aE` (デフォルト ON)。同一人物が複数 email で計上される問題を `.mailmap` で吸収 |
+| score_history の helper 引数透過 | score_history | tier1/tier3 helper に `--exclude-source-paths` `--skip-coverage` を流す仕組み (profile 別に振り分け) |
+| install_timeout 拡張 | score_history (dart-flutter) | 300s → 900s (古い pubspec で依存解決が長い場合の対策) |
+| bus_factor の Dart 対応 | run_bus_factor | `.dart` を SOURCE_EXTENSIONS に追加、生成 suffix を全部除外、`openapi/` を除外 prefix デフォルトに |
+
+dogfood 結果サマリ (habee-app, 1y → 6mo → HEAD):
+```
+LOC               62092 → 71714 → 94948  (+15.5% → +32.4%)
+files (gen 除外)   607 → 684 → 837
+routes              59 → 73 → 99   (TypedGoRoute 完全カウント)
+handlers           638 → 870 → 1049
+hallucinated         0 → 0 → 0      (AI 由来事故なし)
+lint/kloc         0.05 → 0.26 → 0.85 (悪化)
+dead_code            1 → 0 → 18     (悪化)
+type_errors          1 → 2 → 0      (改善)
+duplication%      8.14 → 9.43 → 8.07 (改善)
+coverage (HEAD ローカル): 57.06%
+
+Tier 2 (HEAD, N=3 全一致): cohesion 5, dry 3, bug_prone 4, test 4
+KCI 1y→HEAD: 0.91 → 0.75 (delta -0.16, 但し email 同一人物複数 alias あり)
+```
+
+### v0.4 でやったことの要約 (2026-05-04 確定)
+
 - **Tier 2 sub-agent 化** (`scripts/judge.py`) — `claude -p` を N=3 独立 process で spawn して真の独立判定。flutter_intents で smoke test 通過 (cohesion=4 を 2 サブエージェントが両方独立判定、confidence=high)。コスト ~$0.50-$1.00/run、`--judge-model haiku` で削減可
 - **score_history.py を 4 言語対応** — install command + tier1/tier3 script の選択を profile-aware に。Flutter は `flutter pub get`、Swift は `swift package resolve`、Kotlin は `./gradlew --version` (warm)
 - **Kotlin Android プロファイル skeleton** — reference doc は本実装、`run_tier1_kotlin_android.py` と `run_tier3_compose_ui.py` は dogfood 環境がないため structure だけ揃えて Detekt 系の主要メトリクスのみ実装。ユーザーが Compose プロジェクトで実走させて埋める想定
@@ -118,6 +157,18 @@ reference doc 完備、scripts は Detekt のみ実装した skeleton。実プ�
 - Tier 2 sub-agent の `--judge-model haiku` を実プロジェクトで試して、quality vs cost のトレードオフを確認。Opus 4.7 デフォルトは ~$0.50-$1.00/run、haiku は推定 1/10 程度。
 - score_history の Flutter / Swift / Kotlin プロファイルでの worktree 経路は **未 dogfood**。実プロジェクトで履歴 walk を走らせると `flutter pub get` の cache 共有問題、`swift package resolve` の repository fetch 問題、Gradle wrapper のダウンロード問題などで詰まる可能性あり。詰まったら `--skip-install` フォールバックで先に進める判断を入れる。
 
+
+---
+
+## v0.5 候補 (habee-app dogfood 由来)
+
+これらは habee-app dogfood で「あったら助かった」が、今回は workaround で凌いだもの:
+
+- **per-profile prep hook in score_history.py**: worktree 作成後・install 前に走るユーザー定義スクリプト。`.env.sample → .env` のコピー、git LFS の fetch、private registry の credential 配置などに対応。`--prep-cmd "[ -f .env.sample ] && cp .env.sample .env"` のような単純な CLI 引数で導入する案
+- **author email aliasing helper**: `.mailmap` が無い repo でも CLI で `--alias 'fujiyou1121@gmail.com=touyou' --alias '465697+touyou@users.noreply.github.com=touyou'` のようにエイリアスを渡せる仕組み
+- **coverage worktree-friendly モード**: `flutter test --coverage` の代わりに `flutter test --coverage --no-pub` 系で asset bundle 構築を回避できるか調査。あるいは `dart test` ベースの test only モードでカバレッジを取る
+- **`custom_lint` 起動失敗の自動検出 + warning**: tier1 で「`Failed to start plugins` を含む stderr」を検出したら、ヘルプメッセージ (例: `pub get で custom_lint_builder を解決してください、または custom_lint 系の依存バージョンを確認してください`) を warning に追加
+- **dart_code_metrics_presets の cyclomatic_complexity 評価**: Flutter で complexity が null のまま残っている問題への対処。v0.5 で dogfood しながら統合可否判断
 
 ---
 
@@ -314,6 +365,58 @@ python3 $SKILL/scripts/aggregate.py \
 5. **完了したら advisor に最終チェックを依頼** ← v0.1〜v0.4 すべてで良い指摘が来た
 
 advisor は会話の全文脈を見て指摘してくれるので、判断に迷ったら呼ぶ価値がある。Tier 2 の "fake N=3" 問題も、v0.3 の言語拡張優先順位も、Flutter `MaterialApp(home:)` の routes_count 漏れも advisor が捕まえた。
+
+## v0.4 habee-app dogfood で得た追加教訓 (2026-05-11)
+
+### 🔑 大規模 Flutter プロジェクトでは「generated location」が複数階層に散る
+
+habee-app では生成物が以下に分散していた:
+- **suffix ベース**: `.g.dart` / `.freezed.dart` / `.gr.dart` / `.intent.dart` / `.chopper.dart` / `.gen.dart` / `.config.dart` / `.mocks.dart`
+- **ディレクトリベース**: `lib/gen/` (flutter_gen), `lib/api_definitions/` (OpenAPI wrapper), `openapi/<pkg>/lib/` (path dep)
+- **analysis_options.yaml exclude**: `openapi/**`, `**/*.g.dart` (これは dart analyze 側だけが見るので scorer 側でも同期必要)
+
+「全部 suffix で除外できる」と前提を置くと取りこぼす。**プロジェクト固有の generated location を `--exclude-source-paths` で明示渡せる仕組み**が必須だった。
+
+### 🔑 `dart analyze` の rc 規則は厳密ではない
+
+公式仕様では rc=2 = ERROR 含む / rc≥3 = analyzer 自体の異常終了。だが実際には:
+- rc=2 でも valid な `INFO|...|...|...|...|...|...` 行が大量に出る (= 出力は使える)
+- rc=3 でも `custom_lint` plugin の起動失敗のような部分的 crash が起きていて、crash 前に書き込まれた INFO 行は valid
+
+`rc not in (0, 1)` で出力を捨てる実装は早まり。**rc≥2 でも `parse_analyze_lines()` で parseable 行が取れるなら採用 + warning** が正解。
+
+### 🔑 同一人物が複数 email でコミットしている問題は git の `.mailmap` で解く
+
+GitHub no-reply (`<id>+<name>@users.noreply.github.com`) + 個人 email + 会社 email + 旧個人 email の **4 種類が 1 人物** という状況は珍しくない (今回の habee-app dogfood で touyou が 3 email)。
+
+`run_bus_factor.py` は **デフォルトで `git log --use-mailmap --format=%aE`** を使うように変更。`.mailmap` ファイルが repo にあれば自動正規化、無ければ通常動作と同じ (後方互換)。
+
+ユーザーへの示唆: KCI の絶対値を信用する前に repo の `.mailmap` が整備されているか確認する。delta の符号は安全 (両端で同じバイアスがかかる)。
+
+### 🔑 `flutter test --coverage` は worktree で落ちやすい
+
+`.env` (gitignore) を pubspec の `assets:` で参照していると、worktree の clean checkout で asset bundle 構築に失敗 → coverage 取れず。`score_history.py` ベースの履歴 walk で coverage トレンドが取れない致命的な問題。
+
+短期回避: warning メッセージで「`.env.sample` を cp してから再実行」を案内 (実装済)。
+中期: `score_history.py` に per-profile prep hook (worktree 作成後・install 前に走るユーザー定義スクリプト) を追加 — **v0.5 候補**。
+
+### 🔑 FVM プロジェクトでは素の `flutter` を呼ぶと SDK 版違いで結果が乖離する
+
+`fvm` で SDK をピンしているプロジェクトで素の `flutter` (例: mise shim) を呼ぶと、analyze の rule セットや diagnostic が pinned 版と乖離する。`.fvmrc` の存在を check して `fvm flutter` 経由に自動切り替えするのが正解。
+
+`tooling_used.fvm_detected` / `.fvm_active` を出力に残すことで「pin が効いてるか」が監査可能になる。
+
+### 🔑 type-safe routing は annotation 側で拾う
+
+`go_router_builder` の `@TypedGoRoute<>` / nested `TypedGoRoute<>(...)` パターンは `.g.dart` (生成物 = 除外対象) に展開される。生成物を除外する原則を保ちつつ routes_count を取るには **annotation/constructor 側で `\bTypedGoRoute\s*<` を拾う**。
+
+同じ問題は他言語でも起こりうる:
+- Swift の `@TypedNavigation` 系 (将来 SwiftUI 5+?)
+- TS Web の `defineRoute({...})` 系 (TanStack Router)
+
+generated にだけ存在するメトリクスを source 側で観測する手法として今後も意識する。
+
+---
 
 ## v0.3 で得た追加教訓（v0.2 教訓に追加）
 
