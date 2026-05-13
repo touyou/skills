@@ -1,0 +1,19 @@
+{
+  "name": "touyou-skills",
+  "interface": {
+    "displayName": "touyou skills"
+  },
+  "plugins": [
+    {
+      "name": "touyou-skills",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
