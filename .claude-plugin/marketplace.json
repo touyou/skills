@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
@@ -25,6 +25,17 @@
       "strict": false,
       "skills": [
         "./skills/code-quality-scorer"
+      ]
+    },
+    {
+      "name": "dev-flow-pack",
+      "description": "PR・チケット・bot自動化系のスキル集。AI bot が作った PR の一括レビュー / PR レビューループ (auto-fix or comment-only) / チケット → 実装 → PR の一気通貫ワークフロー (Notion / Linear / GitHub Issue / Plain text 対応)。プロジェクト固有のコマンド・規約・reviewer ルールは各スキルの `.claude/<skill>.local.md` で設定可能。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/ai-bot-pr-review",
+        "./skills/pr-review-loop",
+        "./skills/ticket-implementation"
       ]
     }
   ]

@@ -1,7 +1,7 @@
 {
   "name": "touyou-skills",
-  "version": "0.2.0",
-  "description": "touyou's personal Agent Skills collection. Japanese proofreading + code quality scoring with deterministic tooling, LLM judges, and commit-by-commit trend analysis. Same skills are distributed to Claude Code (via .claude-plugin/marketplace.json) and OpenAI Codex (this file).",
+  "version": "0.3.0",
+  "description": "touyou's personal Agent Skills collection. Japanese proofreading + code quality scoring + dev-flow automation (AI bot PR triage, PR review loop, ticket-to-PR). Same skills are distributed to Claude Code (via .claude-plugin/marketplace.json) and OpenAI Codex (this file).",
   "author": {
     "name": "Fujii Yosuke",
     "email": "465697+touyou@users.noreply.github.com",
@@ -15,12 +15,15 @@
     "code-quality",
     "japanese",
     "proofreading",
-    "trend-analysis"
+    "trend-analysis",
+    "pr-review",
+    "ticket-workflow",
+    "ai-bot"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "touyou skills",
-    "shortDescription": "Japanese proofreading + code quality scoring",
+    "shortDescription": "Japanese proofreading + code quality scoring + dev-flow automation",
     "category": "Productivity"
   }
 }
