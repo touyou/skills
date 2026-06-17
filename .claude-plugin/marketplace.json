@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
@@ -15,7 +15,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/proofread-touyou"
+        "./skills/proofread-touyou",
+        "./skills/write-touyou"
       ]
     },
     {

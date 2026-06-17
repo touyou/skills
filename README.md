@@ -29,6 +29,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | Claude Plugin | Codex Plugin | Skill | 用途 |
 | --- | --- | --- | --- |
 | `writing-pack` | `touyou-skills` | [`proofread-touyou`](./skills/proofread-touyou/) | touyou が書いた日本語の文章を AI 臭を残さずに校正する |
+| `writing-pack` | `touyou-skills` | [`write-touyou`](./skills/write-touyou/) | touyou 名義で日本語の文章を新しく書く (生成・執筆・下書き)。本人の肉声で書き AI 臭を避ける |
 | `quality-pack` | `touyou-skills` | [`code-quality-scorer`](./skills/code-quality-scorer/) | コードベース品質をコミット単位でスコアリング。Tier 1 (決定論的ツール) / Tier 2 (LLM judge) / Tier 3 (UI ロジック量) を分けて報告。TS Web / Dart Flutter / Swift iOS が本実装、Kotlin Android は skeleton |
 | `dev-flow-pack` | `touyou-skills` | [`ai-bot-pr-review`](./skills/ai-bot-pr-review/) | AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系) が自動生成した PR を一括レビューして approve→マージ or クローズ |
 | `dev-flow-pack` | `touyou-skills` | [`pr-review-loop`](./skills/pr-review-loop/) | PR にレビュー → 修正 → 再レビューを「指摘がなくなるまで」繰り返す。自分の PR=auto-fix / 他人=comment-only に自動切替 |
