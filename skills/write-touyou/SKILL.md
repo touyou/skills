@@ -4,7 +4,7 @@ description: touyouさん（藤井さん）名義で、日本語の技術記事�
 license: MIT
 metadata:
   author: touyou
-  version: "0.1"
+  version: "0.2"
 ---
 
 # touyouさん名義で文章を書く（AI臭を出さずに）
@@ -74,6 +74,7 @@ touyouさん名義で新しい文章を書くときは、AIが無意識に出す
 - 見出しは「種別──主題」の罫線2要素型にしない。単一の自然な句にする。
 - 太字の強調を多用しない。誤読を防ぐ要所に絞る。
 - コード・差分・ログ・設定はコードブロックで示す。
+- より広い表記・用語・参照の一貫性は、両スキル共有の [`../proofread-touyou/references/japanese-tech-writing.md`](../proofread-touyou/references/japanese-tech-writing.md) を見る。**生成では A 節（表記ゆれ・読者が辿れる参照など）を満たすように書き、B 節（文体の特徴）は積極的に使う**。個人辞書と同じく writing-pack 共有。
 
 ## 書く前に素材を確認する
 
