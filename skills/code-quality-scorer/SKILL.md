@@ -1,10 +1,10 @@
 ---
 name: code-quality-scorer
-description: コードベースのコード品質をコミット単位でスコアリングし、コミット履歴を辿ってトレンドを可視化する。テストカバレッジ・lint違反・dead code・複雑度・cognitive complexity・deprecated API使用・セキュリティといった決定論的な指標と、凝集度・DRY・bug-prone構造といったLLM判定指標を分離して扱い、AI活用の効果測定や品質回帰の検知に使える。security delta は「コード由来 vs 依存由来」を分類して報告する。ユーザーが「コード品質を採点して」「品質トレンドを見たい」「AIで書いたコードの質を測りたい」「コミット履歴の品質変化を分析して」「このプロジェクトを評価して」「scorecardを作って」と依頼した時に発動する。現在 (v0.4.1) TypeScript Web / Dart Flutter / Swift iOS の3言語が本実装で dogfood 済み、Kotlin Android は skeleton。
+description: コードベースのコード品質をコミット単位でスコアリングし、コミット履歴を辿ってトレンドを可視化する。テストカバレッジ・lint違反・dead code・複雑度・cognitive complexity・deprecated API使用・セキュリティといった決定論的な指標と、凝集度・DRY・bug-prone構造といったLLM判定指標を分離して扱い、AI活用の効果測定や品質回帰の検知に使える。security delta は「コード由来 vs 依存由来」を分類して報告する。ユーザーが「コード品質を採点して」「品質トレンドを見たい」「AIで書いたコードの質を測りたい」「コミット履歴の品質変化を分析して」「このプロジェクトを評価して」「scorecardを作って」と依頼した時に発動する。現在 (v0.4.2) TypeScript Web / Dart Flutter / Swift iOS の3言語が本実装で dogfood 済み、Kotlin Android は skeleton。
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.1"
+  version: "0.4.2"
 ---
 
 # コード品質スコアラー
@@ -66,7 +66,7 @@ Tier 2 は**コストが高い**ので履歴walkではデフォルト無効。HE
 
 「機能量」を「コミット数」「行数」「リリース回数」で測るとコミットの質に依存して指標が壊れる。代わりに**UI に露出しているロジックの量**を測ることで、コミット履歴の整い方によらず「ユーザーに届いた価値の量」のプロキシとして使う。
 
-frontend プロジェクト（React/Vue/Svelte）向けの観点:
+以下は TS Web プロファイル（React/Vue/Svelte）の観点。Flutter / SwiftUI / Jetpack Compose には同等の観点を持つ profile 別 collector がある（後述の「プロファイル別の Tier 1 / Tier 3 スクリプト対応表」参照）:
 
 - **`routes_count`** — ルーティング上で公開されているページ数（Next.js App Router なら `page.tsx` 数、React Router なら `<Route>` 宣言数）
 - **`interactive_handlers_count`** — `.tsx` 内のイベントハンドラ総数（`onClick=`, `onChange=`, `onSubmit=` 等）
@@ -444,10 +444,10 @@ AI 活用効果としての読み方: AI を 1 人で使い始めると delta �
 ## References
 
 言語別:
-- `references/typescript-web.md` — TypeScript Web プロジェクト（v0.1 で実装済み）
-- `references/dart-flutter.md` — Dart Flutter（v0.1 はプレースホルダ）
-- `references/swift-ios.md` — Swift iOS（同上）
-- `references/kotlin-android.md` — Kotlin Android（同上）
+- `references/typescript-web.md` — TypeScript Web プロジェクト（v0.1 で本実装、v0.2 で dogfood 済み）
+- `references/dart-flutter.md` — Dart Flutter（v0.3 で本実装・dogfood 済み）
+- `references/swift-ios.md` — Swift iOS（v0.3 で本実装・dogfood 済み）
+- `references/kotlin-android.md` — Kotlin Android（reference は本実装、scripts は skeleton・未 dogfood）
 
 横断:
 - `references/normalization.md` — Tier 1 メトリクスを 0-100 に正規化するルール
