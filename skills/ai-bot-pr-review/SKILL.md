@@ -4,7 +4,7 @@ description: AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系 / 任
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # AI bot が生成した PR の一括レビュー
@@ -84,10 +84,12 @@ gh pr list --state open --json number,title,headRefName,body,author,labels \
        --argjson exclude_prefixes "$EXCLUDE_PREFIXES_JSON" \
        'map(select(
           (.author.login | IN($allowed_authors[]))
-          and (.headRefName | startswith($allowed_prefixes[]))
-          and (.headRefName | startswith($exclude_prefixes[]) | not)
+          and ([.headRefName | startswith($allowed_prefixes[])] | any)
+          and ([.headRefName | startswith($exclude_prefixes[])] | any | not)
         ))'
 ```
+
+prefix 判定は `[... | startswith($prefixes[])] | any` の形にする (`startswith($prefixes[])` を裸で `select` に渡すとストリーム展開で PR が重複したり、除外判定が「1つでも不一致なら通過」の意味になる)。`exclude_prefixes` が空のときは `any` が `false` → `not` で `true` になり、全 PR が通過する (意図通り)。
 
 **判別優先順**:
 
