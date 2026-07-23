@@ -20,9 +20,12 @@ touyou/skillsに起票して
 ## 動くこと / 動かないこと
 
 - **やる**: 変更点の特定 → 汎用性判定 → touyou/skills 側の既存スキルとの照合 → Issue ドラフト
-  作成 → ユーザー確認 → `gh issue create --repo touyou/skills`
-- **やらない**: touyou/skills への直接コミット・PR 作成、呼び出し元プロジェクトのファイル変更、
-  ユーザー確認なしでの Issue 起票
+  作成 → ユーザー確認 → `gh issue create --repo touyou/skills`。起票できない環境では権限に応じた
+  フォールバック（gh 認証の案内 / 管理者への案内 / ユーザー確認のうえ承認済みドラフトを
+  `docs/harness-intake-pending/` に保留保存して後で再送）
+- **やらない**: touyou/skills への直接コミット、ユーザー確認なしでの Issue 起票・PR 作成・
+  保留キュー保存。呼び出し元プロジェクトのファイル変更も、上記の保留キューを除いて行わない
+  （直接 PR はユーザーが明示的に希望した場合だけのエスケープハッチ。既定はあくまで Issue 起票）
 
 ## プロジェクト固有設定 (`.claude/harness-intake.local.md`)
 

@@ -318,7 +318,7 @@ CHANGED_FILES=$(git diff "$PREV_HEAD..HEAD" --name-only)
 
 ### 7.5. マージ可能性の確認 (mergeStateStatus)
 
-ループ終了後 (auto-fix なら最終 push 後、comment-only なら APPROVE を投稿する前) に、PR がベース遅れやコンフリクトを抱えていないかを確認する。CI 緑は「ベースコミット時点の main」に対する保証でしかなく、レビュー中に main が進むとセマンティックコンフリクト (マーカーなしで組み合わせると壊れる) の芽が残るため。
+ループ終了後 (auto-fix なら最終 push 後、comment-only ならレビュー投稿の前 — event が APPROVE か REQUEST_CHANGES かを問わず実施する) に、PR がベース遅れやコンフリクトを抱えていないかを確認する。CI 緑は「ベースコミット時点の main」に対する保証でしかなく、レビュー中に main が進むとセマンティックコンフリクト (マーカーなしで組み合わせると壊れる) の芽が残るため。
 
 ```bash
 gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus'
