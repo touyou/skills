@@ -1,7 +1,7 @@
 {
   "name": "touyou-skills",
-  "version": "0.5.0",
-  "description": "touyou's personal Agent Skills collection. Japanese writing + proofreading + code quality scoring + dev-flow automation (AI bot PR triage, PR review loop, ticket-to-PR) + Apple platform accessibility. Same skills are distributed to Claude Code (via .claude-plugin/marketplace.json) and OpenAI Codex (this file).",
+  "version": "0.6.0",
+  "description": "touyou's personal Agent Skills collection. Japanese writing + proofreading + code quality scoring + dev-flow automation (AI bot PR triage, PR review loop, ticket-to-PR) + Apple platform accessibility + harness-to-skill intake. Same skills are distributed to Claude Code (via .claude-plugin/marketplace.json) and OpenAI Codex (this file).",
   "author": {
     "name": "Fujii Yosuke",
     "email": "465697+touyou@users.noreply.github.com",
@@ -22,7 +22,9 @@
     "ai-bot",
     "accessibility",
     "swiftui",
-    "apple"
+    "apple",
+    "meta",
+    "harness"
   ],
   "skills": "./skills/",
   "interface": {

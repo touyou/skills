@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "plugins": [
     {
@@ -46,6 +46,15 @@
       "strict": false,
       "skills": [
         "./skills/apple-accessibility"
+      ]
+    },
+    {
+      "name": "meta-pack",
+      "description": "touyou/skills 自体の運用・拡充を支援するスキル群。実プロジェクトで磨いた AI エージェントハーネス (CLAUDE.md/AGENTS.md、hooks、自動化スクリプト等) から汎用化できるパターンを見つけて touyou/skills への GitHub Issue として起票する。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/harness-intake"
       ]
     }
   ]
