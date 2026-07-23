@@ -1,6 +1,10 @@
 # 実装パターン集（SwiftUI）
 
-[iosdevuk-accessibility-challenge PR #4](https://github.com/robinkanatzar/iosdevuk-accessibility-challenge/pull/4) の実装から抽出。すべて実アプリ（MythConf）で動作確認済みのパターン。SKILL.md のチェックリストと対応させて使う。
+良質なアクセシビリティ実装の実例からパターンを抽出して蓄積する。新しい良質な実例が見つかったら、下記「情報源」に追記した上で該当パターンを本文に追加していく（単一ソースに固定しない）。SKILL.md のチェックリストと対応させて使う。
+
+## 情報源
+
+- [iosdevuk-accessibility-challenge PR #4](https://github.com/robinkanatzar/iosdevuk-accessibility-challenge/pull/4)（MythConf アプリへの包括的アクセシビリティパス。iOSDevUK 2026 Accessibility Challenge 優勝PR） — 本ファイルの全パターンの一次情報源（2026-07時点）
 
 ## Vision — Dynamic Type
 
@@ -12,6 +16,9 @@
 struct AStack<Content: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    // 名前は「どちらのレイアウトで使う値か」を表す: hAlignment は HStack 採用時に使う
+    // VerticalAlignment（行内でのタテ位置合わせ）、vAlignment は VStack 採用時に使う
+    // HorizontalAlignment（列内でのヨコ位置合わせ）。HStack/VStack の alignment 引数の型と揃えている。
     let hAlignment: VerticalAlignment
     let vAlignment: HorizontalAlignment
     let hSpacing: CGFloat?
@@ -118,7 +125,7 @@ extension View {
 
 ## Vision / Speech — VoiceOver・Switch Control で複雑なUIを畳む
 
-`MapKit` の `Map` のような複雑なネイティブビューは、そのままだと VoiceOver/Switch Control のスキャン対象が大量発生して事実上操作不能になる。`.accessibilityRepresentation` で「単一のボタン」に置き換え、実処理（例: 外部の地図アプリを開く）に委譲するのが定石。
+`MapKit` の `Map` のような複雑なネイティブビューは、そのままだと VoiceOver/Switch Control のスキャン対象が大量発生して事実上操作不能になる。`.accessibilityRepresentation`（iOS 15+）で「単一のボタン」に置き換え、実処理（例: 外部の地図アプリを開く）に委譲するのが定石。
 
 ```swift
 private var mapView: some View {
@@ -200,7 +207,7 @@ var body: some View {
 
 ## Hearing — ハプティクスの併用
 
-音声フィードバックだけに頼る操作結果通知には `.sensoryFeedback` を添える。
+音声フィードバックだけに頼る操作結果通知には `.sensoryFeedback`（iOS 17+。それ以前は `UINotificationFeedbackGenerator` 等で代替）を添える。
 
 ```swift
 .sensoryFeedback(.success, trigger: isFavourite)
@@ -212,7 +219,7 @@ var body: some View {
 
 ## Cognitive — 空状態の明示
 
-検索結果0件などを無言の空リストで終わらせず、`ContentUnavailableView` で「何も見つからなかった」ことを視覚・VoiceOver双方に明示する。
+検索結果0件などを無言の空リストで終わらせず、`ContentUnavailableView`（iOS 17+。それ以前は同等のカスタムビューで代替）で「何も見つからなかった」ことを視覚・VoiceOver双方に明示する。
 
 ## 横展開の視点（レビュー時に確認すること）
 

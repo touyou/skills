@@ -11,7 +11,7 @@ metadata:
 
 Apple HIG は Accessibility を Vision / Mobility / Cognitive / Hearing / Speech の5カテゴリに分けている。このスキルはその5カテゴリに沿ったチェックリストと、実際に動く SwiftUI 実装パターンを提供する。実装依頼にもレビュー依頼にも使う。
 
-出典: [iosdevuk-accessibility-challenge PR #4](https://github.com/robinkanatzar/iosdevuk-accessibility-challenge/pull/4)（MythConf という実アプリへの包括的アクセシビリティパスから抽出）。具体的なコード例は `references/implementation-patterns.md` を参照。
+実装パターンは良質な実例から抽出して蓄積していく方針。現在の情報源と具体的なコード例は `references/implementation-patterns.md` の冒頭「情報源」節を参照。新しい良質な実例（コンテスト優勝PR、著名OSSの実装等）が見つかったら、そこにソースを追記してパターンを拡充する。
 
 ## 使い方
 
@@ -45,7 +45,7 @@ Apple HIG は Accessibility を Vision / Mobility / Cognitive / Hearing / Speech
 
 ### Speech（発話）
 - [ ] **音声入力なしで全操作可能**: キーボード操作・Switch Control・Voice Controlのタップ代替だけで全機能に到達できることを確認する
-- [ ] **Switch Control対応**: 複雑なUI（地図など）は `.accessibilityRepresentation` で単一の操作可能要素に畳み込み、スキャン回数を減らす
+- [ ] **Switch Control対応**: 複雑なUI（地図など）は `.accessibilityRepresentation` で単一の操作可能要素に畳み込み、スキャン回数を減らす（Switch Control は発話が困難なユーザーの主要な代替入力手段の一つのため HIG では Speech カテゴリの支援技術として扱われる。運動機能の観点でも同様に有効）
 
 ## 実装時の注意
 
