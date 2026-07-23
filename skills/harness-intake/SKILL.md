@@ -1,8 +1,7 @@
 ---
 name: harness-intake
 description: >
-  touyou が実プロジェクト（jt 配下の habee-app / habee-app-codex / momentia-app-harness 等、
-  sparkle 配下の sparkle-design / sparkle-design-internal 等）で日々磨いている AI エージェント
+  touyou が実プロジェクト（jt 配下・sparkle 配下の各プロジェクト等）で日々磨いている AI エージェント
   ハーネス（CLAUDE.md / AGENTS.md、.claude/skills・agents・hooks、自動化スクリプト等）から、
   他プロジェクトにも汎用化できる気づき・パターンを見つけて touyou/skills リポジトリへの
   GitHub Issue として起票する。作業フォルダが touyou/skills 自体とは分かれているため、直接
@@ -25,8 +24,7 @@ metadata:
 するスキル。取り込み（SKILL.md の実装・PR 作成）は `touyou/skills` リポジトリ側で別途行う。
 
 このスキルは `touyou/skills` の外、つまり実際にハーネスを磨いている作業ディレクトリ（例:
-jt 配下の habee-app / habee-app-codex / momentia-app-harness、sparkle 配下の sparkle-design /
-sparkle-design-internal など）から呼び出される想定。ローカル開発用の symlink
+jt 配下・sparkle 配下の各プロジェクト）から呼び出される想定。ローカル開発用の symlink
 (`~/.agents/skills/harness-intake` 経由で `~/.claude/skills/harness-intake` からも解決される)
 で、`touyou/skills` をクローンしていない任意のディレクトリからでも使えるようにしてある。
 

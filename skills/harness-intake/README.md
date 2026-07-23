@@ -5,9 +5,8 @@
 リポジトリへの GitHub Issue として起票するスキル。取り込み（SKILL.md への実装・PR）は
 `touyou/skills` 側で別途行う — このスキルは起票までを担当する。
 
-`touyou/skills` の外、つまりハーネスを磨いている作業ディレクトリ（例: jt 配下の
-habee-app / habee-app-codex / momentia-app-harness、sparkle 配下の sparkle-design /
-sparkle-design-internal など）から呼び出す想定。
+`touyou/skills` の外、つまりハーネスを磨いている作業ディレクトリ（例: jt 配下・sparkle 配下の
+各プロジェクト）から呼び出す想定。
 
 ## いつ発動するか
 
