@@ -4,7 +4,8 @@
 
 ## 情報源
 
-- [iosdevuk-accessibility-challenge PR #4](https://github.com/robinkanatzar/iosdevuk-accessibility-challenge/pull/4)（MythConf アプリへの包括的アクセシビリティパス。iOSDevUK 2026 Accessibility Challenge 優勝PR） — 本ファイルの全パターンの一次情報源（2026-07時点）
+- [iosdevuk-accessibility-challenge PR #4](https://github.com/robinkanatzar/iosdevuk-accessibility-challenge/pull/4)（MythConf アプリへの包括的アクセシビリティパス。iOSDevUK 2026 Accessibility Challenge 優勝PR） — 「Vision — 色以外の手がかりを併記する」節までの大半のパターンの一次情報源（2026-07時点）
+- graphica（iOS SwiftUIアプリ、touyou/graphica、private） — 本スキルのチェックリストで実アプリをレビューした際に見つかった追加パターンの情報源（Increase Contrast colorset variant、VoiceOverへの能動通知。2026-07時点、[Issue #5](https://github.com/touyou/skills/issues/5)）。private リポジトリのため直接リンクは張らず、コード抜粋のみ引用する
 
 ## Vision — Dynamic Type
 
@@ -114,6 +115,19 @@ extension View {
 
 ブランドカラーやステータスカラー（黄色・ミント等）も同様に、light/dark それぞれで実測し WCAG AA（本文4.5:1 / UI部品・大文字3:1）を下回るものは差し替える。`AccentColor` も light/dark で別値を明示的に持たせると管理しやすい。
 
+### 「コントラストを上げる」設定への追従は Asset Catalog の appearance variant で
+
+`.secondaryTextStyle()` のような単一カラー置き換えは light/dark の2軸はカバーできるが、システム設定「設定 → アクセシビリティ → コントラストを上げる」（Increase Contrast, `contrast: high`）には追従しない。テーマカラーが複数ある場合、個別に `@Environment(\.colorSchemeContrast)` を見て分岐するより、**Asset Catalog の Color Set 側に `contrast: high` の appearance variant を追加する**方が低コストかつ網羅的。
+
+```swift
+// Theme.swift
+// Contrast: High（Settings → アクセシビリティ → コントラストを上げる）の Variant も
+// LineColor.colorset 側に持たせてあり、不透明度の高い色に切り替わる。
+static let line = Color("LineColor")
+```
+
+`LineColor.colorset/Contents.json` に `"appearances": [{"appearance": "contrast", "value": "high"}]` を持つ colorset を1つ追加するだけで、コード側は一切変更せずにシステム設定へ自動追従する。テーマカラーが複数ある app（例: 6色のパレットを持つ app）では、ViewModifierを都度分岐させるより Asset Catalog 側にvariantを積む方が全体に一貫して展開しやすい。
+
 ## Vision — 色以外の手がかりを併記する
 
 色分けだけに頼らず、SF Symbol・アイコン・テキストで冗長化する。
@@ -156,6 +170,23 @@ private var mapView: some View {
 - 画面タイトルには `.accessibilityAddTraits(.isHeader)`
 - URLやホスト名をそのまま読み上げさせず、サービス名など人間が分かる形に変換した `.accessibilityLabel` を組み立てる（例: 生の "github.com/alice" ではなく "GitHub account, alice"）
 - VoiceOverには読ませたいが Switch Control / Full Keyboard Access のフォーカス対象からは外したい非インタラクティブ要素（区切り行等）には `.accessibilityRespondsToUserInteraction(false)`
+
+## Vision — 非同期処理の状態遷移を能動的にアナウンスする
+
+進捗表示や画面上のステータス文言の更新だけでは、フォーカスがそこに無いVoiceOverユーザーには完了/失敗が伝わらない。特に処理に数秒〜十数秒かかる非同期処理で顕著な穴になる。`AccessibilityNotification.Announcement`（iOS 17+ の `post()` API。それ以前は `UIAccessibility.post(notification: .announcement, argument:)`）で、フォーカス位置に関係なくVoiceOverに読み上げさせる。
+
+```swift
+// CreateView.swift
+// 生成は数秒〜十数秒かかる async 処理。VoiceOver 利用者がステータスラインに focus を
+// 当て続けなくても局面遷移（特に完了/失敗）が分かるよう、phase 変化を能動読み上げする。
+.onChange(of: generationPhase) { _, newPhase in
+    if let spoken = newPhase.spokenLabel {
+        AccessibilityNotification.Announcement(spoken).post()
+    }
+}
+```
+
+「進捗インジケーターが動いているだけでは完了が伝わらない」「特定要素にフォーカスを固定できない」というケース全般（保存・送信・生成・同期処理等）に応用できる汎用パターン。乱用すると読み上げが煩くなるため、状態遷移の節目（開始・完了・失敗）だけに絞る。
 
 ## Mobility — Voice Control のエイリアス
 

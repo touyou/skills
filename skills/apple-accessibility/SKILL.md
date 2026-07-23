@@ -4,7 +4,7 @@ description: SwiftUI / UIKit など Apple プラットフォームのアプリ�
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Apple プラットフォームのアクセシビリティ対応
@@ -23,9 +23,9 @@ Apple HIG は Accessibility を Vision / Mobility / Cognitive / Hearing / Speech
 
 ### Vision（視覚）
 - [ ] **Dynamic Type**: AX1以上のサイズでレイアウトが崩れない・情報が欠落しない（横並びの折返し、行数制限の緩和）
-- [ ] **カラーコントラスト**: 本文テキストは WCAG AA（4.5:1）以上、UI部品・大きい文字は 3:1 以上。`.secondary` 等システム標準色を無条件に信用しない（実測すること）
+- [ ] **カラーコントラスト**: 本文テキストは WCAG AA（4.5:1）以上、UI部品・大きい文字は 3:1 以上。`.secondary` 等システム標準色を無条件に信用しない（実測すること）。テーマカラーが複数ある場合は「コントラストを上げる」設定（Increase Contrast）にも Asset Catalog の appearance variant で追従させる
 - [ ] **色だけに依存しない**: 色分けしている情報には形（SF Symbol）・アイコン・テキストラベルなど色以外の手がかりを併記する
-- [ ] **VoiceOver**: 全てのインタラクティブ要素に意味のある `.accessibilityLabel` / 必要に応じ `.accessibilityHint`。装飾要素は `.accessibilityHidden(true)`。読み上げ順序は `.accessibilitySortPriority` で制御し、UI上の視覚順序と体感が乖離しないようにする
+- [ ] **VoiceOver**: 全てのインタラクティブ要素に意味のある `.accessibilityLabel` / 必要に応じ `.accessibilityHint`。装飾要素は `.accessibilityHidden(true)`。読み上げ順序は `.accessibilitySortPriority` で制御し、UI上の視覚順序と体感が乖離しないようにする。フォーカス位置に依存せず伝えたい状態遷移（非同期処理の完了/失敗等）は `AccessibilityNotification.Announcement` で能動的にアナウンスする
 
 ### Mobility（運動機能）
 - [ ] **タップ領域は最低 44×44pt**（Apple HIG基準）。見た目のアイコンサイズと `.contentShape` によるヒット領域を分離して確保する
