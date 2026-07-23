@@ -4,7 +4,7 @@ description: PR に対してレビュー → (自分の PR なら) 自動修正 
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # レビューループ
@@ -17,6 +17,7 @@ PR に対してレビュー → 修正 → 再レビューのサイクルを、�
 - **収束しない指摘は 2 回試行で打ち切る** (Discussion 格上げ)。無限ループを構造的に防ぐ。
 - **push 失敗時に `--force` は使わない**。rebase が競合したら `git rebase --abort` でクリーンに戻す。
 - **resolved スレッドの再投稿はしない**。GraphQL の `isResolved` で除外、無理なら REST + ループ収束で吸収。
+- **APPROVE は「マージ安全」の保証ではない**。CI 緑はベースコミット時点の main に対する保証でしかないので、終了前に `mergeStateStatus` を確認して結果に添える (後述)。
 
 ## モード
 
@@ -315,6 +316,24 @@ CHANGED_FILES=$(git diff "$PREV_HEAD..HEAD" --name-only)
 
 **同じ指摘の判定**: (ファイルパス, 行範囲, 指摘要旨) のタプルで同一性を見る。「指摘 ID → 試行回数」のマップをインメモリで保持し、修正成功でエントリ削除、同一指摘の再出現でカウント増加。**カウント ≥ 2 で Discussion に格上げ**。
 
+### 7.5. マージ可能性の確認 (mergeStateStatus)
+
+ループ終了後 (auto-fix なら最終 push 後、comment-only ならレビュー投稿の前 — event が APPROVE か REQUEST_CHANGES かを問わず実施する) に、PR がベース遅れやコンフリクトを抱えていないかを確認する。CI 緑は「ベースコミット時点の main」に対する保証でしかなく、レビュー中に main が進むとセマンティックコンフリクト (マーカーなしで組み合わせると壊れる) の芽が残るため。
+
+```bash
+gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus'
+```
+
+| mergeStateStatus | 対応 |
+|---|---|
+| `CLEAN` | そのまま終了。レポートに「マージ可」と記載 |
+| `BEHIND` | auto-fix (= 自分の PR) なら `gh pr update-branch` して CI 再完走を待つ。comment-only なら手を出さず、レポートに「base 遅れ。update-branch 後の CI 確認を推奨」と明記 |
+| `DIRTY` | コンフリクト解消が必要。レポートに明記してユーザーに戻す |
+| `BLOCKED` / `UNSTABLE` | CI・レビュー要件待ち。状態をレポートに記載 |
+| `UNKNOWN` | 数秒待って再取得。それでも不明なら「状態未確定」と記載 |
+
+comment-only モードの APPROVE はレビュー上の判断であって、この確認を省略する理由にはならない (APPROVE + `BEHIND` はあり得る組み合わせ。その旨をサマリに書く)。
+
 ### 8. 最終レポート
 
 #### auto-fix モード
@@ -328,6 +347,7 @@ CHANGED_FILES=$(git diff "$PREV_HEAD..HEAD" --name-only)
 - 修正コミット数: M件
 - 使用レビューエージェント: <列挙>
 - 失敗したエージェント: （あれば記載）
+- マージ可能性 (mergeStateStatus): CLEAN / BEHIND（update-branch 済み・CI 待ち）等
 
 ### 修正済み（N件）
 | イテレーション | コミット | 内容 |
@@ -357,6 +377,7 @@ CHANGED_FILES=$(git diff "$PREV_HEAD..HEAD" --name-only)
 - 投稿 event: APPROVE / REQUEST_CHANGES / COMMENT（フォールバック時のみ）
 - 使用レビューエージェント: <列挙>
 - 投稿先: <REVIEW_URL>
+- マージ可能性 (mergeStateStatus): CLEAN / BEHIND（base 遅れ・update-branch 推奨）等
 
 ### 投稿した指摘
 - 🔴 修正必須: N件（インラインコメント）
