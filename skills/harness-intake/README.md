@@ -5,8 +5,7 @@
 リポジトリへの GitHub Issue として起票するスキル。取り込み（SKILL.md への実装・PR）は
 `touyou/skills` 側で別途行う — このスキルは起票までを担当する。
 
-`touyou/skills` の外、つまりハーネスを磨いている作業ディレクトリ（例: jt 配下・sparkle 配下の
-各プロジェクト）から呼び出す想定。
+`touyou/skills` の外、つまりハーネスを磨いている作業ディレクトリから呼び出す想定。
 
 ## いつ発動するか
 
@@ -33,8 +32,8 @@ touyou/skillsに起票して
 ---
 target_repo: "touyou/skills"   # 既定値。fork先に提案したい場合などに上書き
 known_harness_roots:
-  - "~/Developer/Projects/jt"
-  - "~/Developer/Internal/sparkle"
+  - "~/path/to/harness-project-a"
+  - "~/path/to/harness-project-b"
 ---
 ```
 

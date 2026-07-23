@@ -1,12 +1,11 @@
 ---
 name: harness-intake
 description: >
-  touyou が実プロジェクト（jt 配下・sparkle 配下の各プロジェクト等）で日々磨いている AI エージェント
-  ハーネス（CLAUDE.md / AGENTS.md、.claude/skills・agents・hooks、自動化スクリプト等）から、
-  他プロジェクトにも汎用化できる気づき・パターンを見つけて touyou/skills リポジトリへの
-  GitHub Issue として起票する。作業フォルダが touyou/skills 自体とは分かれているため、直接
-  ファイルを編集せず Issue 経由で提案する運用を仲介するスキル。
-  touyou/skills リポジトリ以外の任意のディレクトリ（jt・sparkle 配下に限らない）から呼び出す
+  touyou が実プロジェクトで日々磨いている AI エージェントハーネス（CLAUDE.md / AGENTS.md、
+  .claude/skills・agents・hooks、自動化スクリプト等）から、他プロジェクトにも汎用化できる
+  気づき・パターンを見つけて touyou/skills リポジトリへの GitHub Issue として起票する。
+  作業フォルダが touyou/skills 自体とは分かれているため、直接ファイルを編集せず Issue 経由で
+  提案する運用を仲介するスキル。touyou/skills リポジトリ以外の任意のディレクトリから呼び出す
   ことを想定している。ユーザーが「このハーネス改善を skills に提案して」「touyou/skills に
   起票して」「この気づきをスキル側に取り込みたい」「ハーネスの改善を Issue 化して」
   「/harness-intake」と依頼した時に発動する。
@@ -23,8 +22,8 @@ metadata:
 `touyou/skills` へ直接コミットするのではなく、**GitHub Issue として起票するところまで**を担当
 するスキル。取り込み（SKILL.md の実装・PR 作成）は `touyou/skills` リポジトリ側で別途行う。
 
-このスキルは `touyou/skills` の外、つまり実際にハーネスを磨いている作業ディレクトリ（例:
-jt 配下・sparkle 配下の各プロジェクト）から呼び出される想定。ローカル開発用の symlink
+このスキルは `touyou/skills` の外、つまり実際にハーネスを磨いている作業ディレクトリから
+呼び出される想定。ローカル開発用の symlink
 (`~/.agents/skills/harness-intake` 経由で `~/.claude/skills/harness-intake` からも解決される)
 で、`touyou/skills` をクローンしていない任意のディレクトリからでも使えるようにしてある。
 
@@ -117,5 +116,5 @@ jt 配下・sparkle 配下の各プロジェクト）から呼び出される想
 - このスキルは `touyou/skills` リポジトリへの `gh issue create` 以外、いかなるファイルも
   書き換えない。ハーネス側（呼び出し元のプロジェクト）のファイルも変更しない。
 - Issue 起票前の確認をスキップしない。
-- 対象は jt / sparkle 配下に限らない。ハーネスを磨いている任意のディレクトリから汎用的に
-  使えるスキルとして設計している。
+- 対象プロジェクトを特定のディレクトリに限定しない。ハーネスを磨いている任意のディレクトリ
+  から汎用的に使えるスキルとして設計している。
