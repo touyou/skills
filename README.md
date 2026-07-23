@@ -11,6 +11,7 @@ touyou 個人の Agent Skills 集。**Claude Code** と **OpenAI Codex** の両�
 /plugin install writing-pack@touyou-skills    # 日本語ライティング系
 /plugin install quality-pack@touyou-skills    # コード品質計測系
 /plugin install dev-flow-pack@touyou-skills   # PR・チケット・bot 自動化系
+/plugin install a11y-pack@touyou-skills       # Apple プラットフォームのアクセシビリティ対応
 ```
 
 プラグインは目的別に分かれているので、必要なものだけ入れて OK。
@@ -34,6 +35,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `dev-flow-pack` | `touyou-skills` | [`ai-bot-pr-review`](./skills/ai-bot-pr-review/) | AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系) が自動生成した PR を一括レビューして approve→マージ or クローズ |
 | `dev-flow-pack` | `touyou-skills` | [`pr-review-loop`](./skills/pr-review-loop/) | PR にレビュー → 修正 → 再レビューを「指摘がなくなるまで」繰り返す。自分の PR=auto-fix / 他人=comment-only に自動切替 |
 | `dev-flow-pack` | `touyou-skills` | [`ticket-implementation`](./skills/ticket-implementation/) | Notion / Linear / GitHub Issue / Plain text のチケットから実装 → テスト → PR 作成まで一気通貫 |
+| `a11y-pack` | `touyou-skills` | [`apple-accessibility`](./skills/apple-accessibility/) | SwiftUI / UIKit のアクセシビリティ実装・レビュー。HIG の Vision / Mobility / Cognitive / Hearing / Speech チェックリストと実装パターン集 |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
 

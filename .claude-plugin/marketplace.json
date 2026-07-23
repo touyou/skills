@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "plugins": [
     {
@@ -37,6 +37,15 @@
         "./skills/ai-bot-pr-review",
         "./skills/pr-review-loop",
         "./skills/ticket-implementation"
+      ]
+    },
+    {
+      "name": "a11y-pack",
+      "description": "Apple プラットフォーム（SwiftUI / UIKit）向けのアクセシビリティ実装・レビュースキル。HIG の Vision / Mobility / Cognitive / Hearing / Speech 5カテゴリのチェックリストと、Dynamic Type・VoiceOver・Voice Control・Switch Control・Reduce Motion・WCAGカラーコントラストなどの実装パターンを提供する。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/apple-accessibility"
       ]
     }
   ]
