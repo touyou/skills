@@ -4,7 +4,7 @@ description: AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系 / 任
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.1"
+  version: "0.2.0"
 ---
 
 # AI bot が生成した PR の一括レビュー
@@ -173,6 +173,24 @@ PR 説明に bot の実行ログが含まれる場合、テスト結果 (pass/fa
 | CI 失敗だが main 側の問題の可能性 | ローカルで `<test_command>` 実行して判断 |
 | 大規模リファクタ / カテゴリ不明 | ユーザー確認 (skip → report) |
 | リリース PR / バックポート等 | スキップ (対象外として報告) |
+
+### マージ前ゲート: mergeStateStatus
+
+CI が緑でも、それは**その PR のベースコミット時点の main に対する保証**でしかない。CI 緑の PR を複数連続でマージすると、コンフリクトマーカーは出ないのに組み合わせるとコンパイル不能・挙動不整合になるセマンティックコンフリクトが起きうる。approve 後、`gh pr merge` を実行する**直前**に必ず確認する:
+
+```bash
+gh pr view <number> --json mergeStateStatus --jq '.mergeStateStatus'
+```
+
+| mergeStateStatus | 対応 |
+|---|---|
+| `CLEAN` | 即マージ可 |
+| `BEHIND` | `gh pr update-branch <number>` → CI 再完走を待ってから再判定 |
+| `DIRTY` | コンフリクト解消が必要。スキップしてユーザーに戻す |
+| `BLOCKED` / `UNSTABLE` | CI・レビュー要件が未完。完了を待つか、スキップして報告 |
+| `UNKNOWN` | GitHub 側の計算待ち。数秒待って再取得 |
+
+複数 PR を処理するときは**マージを直列に行う**: 1 件マージ → 次の PR の `mergeStateStatus` を再取得 → 判定、の順で進める。並列にマージするとこのゲートをすり抜ける (先にマージした PR によって残りの PR が `BEHIND` になるのを検出できない)。
 
 ### マージ方法
 
