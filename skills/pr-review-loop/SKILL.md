@@ -18,7 +18,7 @@ PR に対してレビュー → 修正 → 再レビューのサイクルを、�
 - **push 失敗時に `--force` は使わない**。rebase が競合したら `git rebase --abort` でクリーンに戻す。
 - **resolved スレッドの再投稿はしない**。GraphQL の `isResolved` で除外、無理なら REST + ループ収束で吸収。
 - **APPROVE は「マージ安全」の保証ではない**。CI 緑はベースコミット時点の main に対する保証でしかないので、終了前に `mergeStateStatus` を確認して結果に添える (後述)。
-- **レビューエージェントに絞り込みをさせない**。発見 (ステップ 3) と絞り込み (ステップ 4・5b) は別工程。発見側に「重要なものだけ」と言うと、その指示に忠実に従って本物のバグを握り潰す。網羅させてラベルを付けさせ、絞るのはこのスキル側の仕事にする。
+- **レビューエージェントに絞り込みをさせない**。発見 (ステップ 3) と絞り込み (ステップ 4・5a・5b・7) は別工程。発見側に「重要なものだけ」と言うと、その指示に忠実に従って本物のバグを握り潰す。網羅させてラベルを付けさせ、絞るのはこのスキル側の仕事にする。**絞った結果は捨てずに「要確認 / 要相談」として残す** — 握り潰しをスキル側でやり直しては意味がない。
 
 ## モード
 
@@ -259,6 +259,8 @@ ACTIONABLE_COUNT=$(echo "$ITEMS_JSON" | jq 'length')
 LOW_CONF_JSON=$(echo "$CLASSIFIED_FINDINGS_JSON" | jq '
   map(select(.category == "actionable" and .confidence == "low"))
 ')
+# 下のサマリ本文テンプレートの「要確認（確度低）: P件」と該当セクションを埋めるのに使う
+LOW_CONF_COUNT=$(echo "$LOW_CONF_JSON" | jq 'length')
 
 # インラインコメント (側は RIGHT 固定、LEFT 側削除行は近傍の追加行へ移すか summary に降ろす)
 COMMENTS_JSON=$(jq -n --argjson items "$ITEMS_JSON" '
