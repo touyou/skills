@@ -176,7 +176,7 @@ PR #<NUMBER> の対象差分をレビューしてください。
 ```json
 [
   {
-    "category": "actionable | discussion | minor | out-of-scope",
+    "category": "actionable | discussion | out-of-scope",
     "severity": "🔴 | 🟡 | 🟢",
     "confidence": "high | medium | low",
     "path": "lib/example.dart",
@@ -191,12 +191,15 @@ PR #<NUMBER> の対象差分をレビューしてください。
 
 **スコープ判定**: PR の変更ファイル (`gh pr diff <number> --name-only`) に含まれないファイルへの指摘、サブモジュール (`.gitmodules` 配下) への指摘は `out-of-scope` に振り分け、最終レポートに件数のみ記載。
 
-**カテゴリ**:
+**カテゴリ**: **軽微さは `category` ではなく `severity` で表す**。両方に「軽微」の軸を持たせると、どちらの経路からも漏れる指摘ができる。`category` は種別、`severity` は重み、`confidence` は確からしさ、と 1 軸 1 意味で保つ。
 
-- **actionable**: 正解が明確なもの (バグ、エラー握りつぶし、スタイル違反、デッドコード、テスト不足、コメント不正確)
+- **actionable**: 正解が明確なもの (バグ、エラー握りつぶし、スタイル違反、デッドコード、テスト不足、コメント不正確)。軽微なものはここに入れて `severity: 🟢` を付ける
 - **discussion**: 設計判断・トレードオフ (アーキ選択、命名の好み、仕様の曖昧さ、パフォーマンスの両立)
+- **out-of-scope**: PR の変更範囲外 (下記スコープ判定で自動的に振り分ける)
 
 迷ったら actionable 側に倒す (修正してテストが通ればそれが正解)。
+
+**3 カテゴリすべてに出力先がある**ことを確認してから次に進む。actionable は severity と confidence でインライン / サマリ / 要確認に振り分け、discussion はサマリの「議論が必要」、out-of-scope は件数のみ。**どのカテゴリにも当てはまらない指摘を作らない** — 行き先のない値を作った時点で、そこに落ちた指摘は黙って消える。
 
 ### 5a. 自動修正 (auto-fix モード)
 
@@ -262,6 +265,20 @@ LOW_CONF_JSON=$(echo "$CLASSIFIED_FINDINGS_JSON" | jq '
 # 下のサマリ本文テンプレートの「要確認（確度低）: P件」と該当セクションを埋めるのに使う
 LOW_CONF_COUNT=$(echo "$LOW_CONF_JSON" | jq 'length')
 
+# 🟢 軽微 (actionable だがインライン化しない) → サマリ本文のみ
+MINOR_JSON=$(echo "$CLASSIFIED_FINDINGS_JSON" | jq '
+  map(select(.category == "actionable" and .severity == "🟢"))
+')
+MINOR_COUNT=$(echo "$MINOR_JSON" | jq 'length')
+
+# 経路の網羅チェック: どのバケットにも入らない指摘が無いことを確認する
+# (入らないものがあればカテゴリ / severity / confidence の付け方が壊れている)
+echo "$CLASSIFIED_FINDINGS_JSON" | jq -e '
+  map(select(
+    (.category == "actionable" or .category == "discussion" or .category == "out-of-scope") | not
+  )) | length == 0
+' >/dev/null || echo "WARN: 出力先の無い指摘がある。カテゴリ付けを見直すこと" >&2
+
 # インラインコメント (側は RIGHT 固定、LEFT 側削除行は近傍の追加行へ移すか summary に降ろす)
 COMMENTS_JSON=$(jq -n --argjson items "$ITEMS_JSON" '
   $items | map({
@@ -281,10 +298,13 @@ SUMMARY_BODY=$(cat <<'EOF'
 ### サマリ
 - 🔴 修正必須: N件
 - 🟡 推奨: M件
-- 🟢 軽微: K件（インラインのみ・サマリ重複なし）
+- 🟢 軽微: K件（サマリ本文のみ・インラインには出していません）
 - 要確認（確度低）: P件（下記列挙・インラインには出していません）
 - 議論が必要: L件（下記列挙）
 - スコープ外: J件（件数のみ）
+
+### 軽微（🟢・対応は任意）
+- ...
 
 ### 要確認（確度低・誤検知の可能性あり）
 - ...
