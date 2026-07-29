@@ -4,7 +4,7 @@ description: PR に対してレビュー → (自分の PR なら) 自動修正 
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # レビューループ
@@ -18,6 +18,7 @@ PR に対してレビュー → 修正 → 再レビューのサイクルを、�
 - **push 失敗時に `--force` は使わない**。rebase が競合したら `git rebase --abort` でクリーンに戻す。
 - **resolved スレッドの再投稿はしない**。GraphQL の `isResolved` で除外、無理なら REST + ループ収束で吸収。
 - **APPROVE は「マージ安全」の保証ではない**。CI 緑はベースコミット時点の main に対する保証でしかないので、終了前に `mergeStateStatus` を確認して結果に添える (後述)。
+- **レビューエージェントに絞り込みをさせない**。発見 (ステップ 3) と絞り込み (ステップ 4・5a・5b・7) は別工程。発見側に「重要なものだけ」と言うと、その指示に忠実に従って本物のバグを握り潰す。網羅させてラベルを付けさせ、絞るのはこのスキル側の仕事にする。**絞った結果は捨てずに「要確認 / 要相談」として残す** — 握り潰しをスキル側でやり直しては意味がない。
 
 ## モード
 
@@ -152,7 +153,17 @@ PR #<NUMBER> の対象差分をレビューしてください。
 - 2 回目以降: 前回レビュー以降の変更差分のみを対象に (全体再レビュー禁止)
 - <conventions_file> のプロジェクト規約に照らして確認
 - 各指摘に重要度を付ける (🔴 修正必須 / 🟡 推奨 / 🟢 軽微)
+- 各指摘に確度を付ける (high / medium / low)
+- 見つけたものは確度が低いものも軽微なものも全部出す。重要度や確信度での絞り込みはこの段階では行わない。
+  絞り込みは後続の別工程が担当するので、ここでの目的は網羅性。
+  拾いすぎて後で落とされるほうが、黙って落として本物のバグを見逃すよりよい。
+- 発見が無ければ「無し」と明言する (無理に絞り出さない)
+- 各指摘は「場所 (file:line) / 内容 / 根拠 / 重要度 / 確度」を 1〜3 文で。前置きと総括は不要。
 ```
+
+**「重要なものだけ報告して」「保守的に」といった指示を足さない**。取りこぼしが増えるだけで、精度はステップ 4・5b で確保できる。
+
+**推論の深さを段階で分ける**: 実行環境が推論量を調整できる場合 (Claude Code の effort、Codex の reasoning effort 等)、レビューエージェント側は浅め〜中程度で足りることが多い。深い推論を割り当てる価値があるのはステップ 4 の分類 (actionable / discussion の判断、確度の補完) と 5a の修正。**出力を短くしたいときに推論量を下げても可視出力は短くならない**ので、長さはプロンプト側 (上記の「1〜3 文」「前置き不要」) で指示する。
 
 エラー時:
 - 一部のエージェントのみ失敗 → 成功分で続行、最終レポートに失敗を明記
@@ -165,8 +176,9 @@ PR #<NUMBER> の対象差分をレビューしてください。
 ```json
 [
   {
-    "category": "actionable | discussion | minor | out-of-scope",
+    "category": "actionable | discussion | out-of-scope",
     "severity": "🔴 | 🟡 | 🟢",
+    "confidence": "high | medium | low",
     "path": "lib/example.dart",
     "line": 42,
     "side": "RIGHT",
@@ -175,18 +187,25 @@ PR #<NUMBER> の対象差分をレビューしてください。
 ]
 ```
 
+**確度の扱い**: ステップ 3 で網羅させた分、確度の低い指摘も混ざる。ここが絞り込みの担当なので、`confidence` を落とさずに持ち回して後段で使う。エージェントが確度を返さなかった場合は、複数エージェントが同じ箇所を指摘していれば `high`、単独なら `medium` として補完する (握り潰さない)。
+
 **スコープ判定**: PR の変更ファイル (`gh pr diff <number> --name-only`) に含まれないファイルへの指摘、サブモジュール (`.gitmodules` 配下) への指摘は `out-of-scope` に振り分け、最終レポートに件数のみ記載。
 
-**カテゴリ**:
+**カテゴリ**: **軽微さは `category` ではなく `severity` で表す**。両方に「軽微」の軸を持たせると、どちらの経路からも漏れる指摘ができる。`category` は種別、`severity` は重み、`confidence` は確からしさ、と 1 軸 1 意味で保つ。
 
-- **actionable**: 正解が明確なもの (バグ、エラー握りつぶし、スタイル違反、デッドコード、テスト不足、コメント不正確)
+- **actionable**: 正解が明確なもの (バグ、エラー握りつぶし、スタイル違反、デッドコード、テスト不足、コメント不正確)。軽微なものはここに入れて `severity: 🟢` を付ける
 - **discussion**: 設計判断・トレードオフ (アーキ選択、命名の好み、仕様の曖昧さ、パフォーマンスの両立)
+- **out-of-scope**: PR の変更範囲外 (下記スコープ判定で自動的に振り分ける)
 
 迷ったら actionable 側に倒す (修正してテストが通ればそれが正解)。
 
+**3 カテゴリすべてに出力先がある**ことを確認してから次に進む。actionable は severity と confidence でインライン / サマリ / 要確認に振り分け、discussion はサマリの「議論が必要」、out-of-scope は件数のみ。**どのカテゴリにも当てはまらない指摘を作らない** — 行き先のない値を作った時点で、そこに落ちた指摘は黙って消える。
+
 ### 5a. 自動修正 (auto-fix モード)
 
-Actionable な指摘を修正する。関連する指摘はまとめて 1 コミットにしてよい。
+**確度 high/medium の** Actionable な指摘を修正する。関連する指摘はまとめて 1 コミットにしてよい。
+
+確度 `low` の指摘は自動修正の対象外にして「要相談」へ回す。ステップ 3 で網羅させている以上、誤検知が一定混ざる前提で、自動でコードに手を入れる範囲だけは確度で絞る (捨てるのではなく、人間の判断に回す)。
 
 各修正 (または修正グループ) ごとに:
 
@@ -221,17 +240,44 @@ git commit -m ":recycle: レビュー指摘対応: <修正内容の要約>"
 
 | 状態 | event | 意図 |
 |---|---|---|
-| 🔴 または 🟡 が 1 件以上 | `REQUEST_CHANGES` | 対応を促す。インラインコメントで該当箇所を指す |
-| 🟢 のみ / discussion のみ / 0 件 | `APPROVE` | レビュー上問題なし。サマリだけ残す |
+| 確度 high/medium の 🔴 または 🟡 が 1 件以上 | `REQUEST_CHANGES` | 対応を促す。インラインコメントで該当箇所を指す |
+| 🟢 のみ / discussion のみ / 確度 low のみ / 0 件 | `APPROVE` | レビュー上ブロックしない。確度 low はサマリの「要確認」に残す |
 
 **例外**: PR author が自分 (自分自身に APPROVE は GitHub 側で弾かれる) → `event: COMMENT` にフォールバック。
 
+インライン化するのは **actionable かつ 🔴/🟡 かつ確度 high/medium** に限る。確度 `low` の actionable は誤検知の割合が高くインラインだとノイズになるので、**捨てずに**サマリ本文の「要確認」に降ろす (ステップ 3 で網羅させた分をここで受け止める場所)。
+
 ```bash
-# Actionable のみ抽出 (🔴 + 🟡)
+# インライン化する指摘 (actionable + 🔴/🟡 + 確度 high/medium)
 ITEMS_JSON=$(echo "$CLASSIFIED_FINDINGS_JSON" | jq '
-  map(select(.category == "actionable" and (.severity == "🔴" or .severity == "🟡")))
+  map(select(
+    .category == "actionable"
+    and (.severity == "🔴" or .severity == "🟡")
+    and (.confidence != "low")
+  ))
 ')
 ACTIONABLE_COUNT=$(echo "$ITEMS_JSON" | jq 'length')
+
+# 確度 low の actionable → サマリの「要確認」へ (インラインには出さない)
+LOW_CONF_JSON=$(echo "$CLASSIFIED_FINDINGS_JSON" | jq '
+  map(select(.category == "actionable" and .confidence == "low"))
+')
+# 下のサマリ本文テンプレートの「要確認（確度低）: P件」と該当セクションを埋めるのに使う
+LOW_CONF_COUNT=$(echo "$LOW_CONF_JSON" | jq 'length')
+
+# 🟢 軽微 (actionable だがインライン化しない) → サマリ本文のみ
+MINOR_JSON=$(echo "$CLASSIFIED_FINDINGS_JSON" | jq '
+  map(select(.category == "actionable" and .severity == "🟢"))
+')
+MINOR_COUNT=$(echo "$MINOR_JSON" | jq 'length')
+
+# 経路の網羅チェック: どのバケットにも入らない指摘が無いことを確認する
+# (入らないものがあればカテゴリ / severity / confidence の付け方が壊れている)
+echo "$CLASSIFIED_FINDINGS_JSON" | jq -e '
+  map(select(
+    (.category == "actionable" or .category == "discussion" or .category == "out-of-scope") | not
+  )) | length == 0
+' >/dev/null || echo "WARN: 出力先の無い指摘がある。カテゴリ付けを見直すこと" >&2
 
 # インラインコメント (側は RIGHT 固定、LEFT 側削除行は近傍の追加行へ移すか summary に降ろす)
 COMMENTS_JSON=$(jq -n --argjson items "$ITEMS_JSON" '
@@ -252,9 +298,16 @@ SUMMARY_BODY=$(cat <<'EOF'
 ### サマリ
 - 🔴 修正必須: N件
 - 🟡 推奨: M件
-- 🟢 軽微: K件（インラインのみ・サマリ重複なし）
+- 🟢 軽微: K件（サマリ本文のみ・インラインには出していません）
+- 要確認（確度低）: P件（下記列挙・インラインには出していません）
 - 議論が必要: L件（下記列挙）
 - スコープ外: J件（件数のみ）
+
+### 軽微（🟢・対応は任意）
+- ...
+
+### 要確認（確度低・誤検知の可能性あり）
+- ...
 
 ### 議論が必要（参考）
 - ...
@@ -309,10 +362,12 @@ CHANGED_FILES=$(git diff "$PREV_HEAD..HEAD" --name-only)
 
 以下のいずれかで終了:
 
-- **Actionable な指摘が 0 件** → 成功
+- **確度 high/medium の Actionable な指摘が 0 件** → 成功
 - **前回と同じ指摘が繰り返されている** → 自動修正の限界。Discussion に格上げ
 - **修正可能な指摘が全てスキップされた** → これ以上自動では直せない
 - **`max_iterations` 到達** → 打ち切り
+
+収束判定に確度 `low` の指摘を含めない。ステップ 5a で自動修正の対象外にしている以上、含めるとループが終わらない。残った確度 low の指摘は最終レポートの「要相談」に載せて人間の判断に回す (件数 0 を装わない)。
 
 **同じ指摘の判定**: (ファイルパス, 行範囲, 指摘要旨) のタプルで同一性を見る。「指摘 ID → 試行回数」のマップをインメモリで保持し、修正成功でエントリ削除、同一指摘の再出現でカウント増加。**カウント ≥ 2 で Discussion に格上げ**。
 
@@ -359,6 +414,7 @@ comment-only モードの APPROVE はレビュー上の判断であって、こ�
 ### 要相談（M件）
 - 🟡 ... — アーキ判断が必要
 - 🟡 ... — 仕様確認が必要
+- 🟡 ... — 確度低（自動修正の対象外。誤検知の可能性あり）
 
 ### スキップ（K件）
 - ... — テスト修正を試みたが別の箇所で失敗
@@ -383,12 +439,13 @@ comment-only モードの APPROVE はレビュー上の判断であって、こ�
 - 🔴 修正必須: N件（インラインコメント）
 - 🟡 推奨: M件（インラインコメント）
 - 🟢 軽微: K件（サマリ本文のみ）
+- 要確認（確度低）: P件（サマリ本文のみ）
 - 議論が必要: L件（サマリ本文のみ）
 - スコープ外: J件（件数のみ）
 
 ### 判定の根拠
-- Actionable（🔴/🟡）が <count> 件 → REQUEST_CHANGES（対応を促す）
-- もしくは 0 件 → APPROVE（マージ可と判断）
+- 確度 high/medium の Actionable（🔴/🟡）が <count> 件 → REQUEST_CHANGES（対応を促す）
+- もしくは 0 件 → APPROVE（マージ可と判断。確度 low の指摘は「要確認」として本文に残す）
 
 詳細は PR の Reviews タブを参照してください。
 ```
