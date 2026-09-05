@@ -20,7 +20,7 @@ issue #123 着手
 
 | Source | 判別 | 読み取り |
 |--------|------|----------|
-| **Notion** | URL に `notion.so` / `notion.com` | Notion MCP (`mcp__notion-api__*`) |
+| **Notion** | URL に `notion.so` / `notion.com` | 利用可能な Notion コネクタ / MCP |
 | **Linear** | URL に `linear.app` | Linear MCP / CLI |
 | **GitHub Issue** | URL に `github.com/.../issues/N` | `gh issue view` |
 | **Plain text** | URL なし、本文を直接 | そのまま使う (ステータス更新は対象外) |
@@ -28,18 +28,18 @@ issue #123 着手
 ## ワークフローの核
 
 1. **チケット読み取り** (Source 別、並列実行)
-2. **ステータスを「着手中」に更新** (Source が許せばベストエフォート)
+2. **ステータスを「着手中」に更新** (依頼・運用で許可されている場合。失敗は報告)
 3. **タスク分析**: 結論 → 要件 → コメント (新しい順) → 概要 → 備考 の優先順位
-4. **コード実態の検証**: チケット記述を鵜呑みにせず Grep / Read で実コード確認。乖離があれば現在のコードを正にして指摘してから進める
-5. **実装計画**: ブランチ名 / 変更対象ファイル / 親チケットならサブを一覧してユーザー選択
+4. **コード実態の検証**: チケット記述を鵜呑みにせず 検索・参照 で実コード確認。構造は現在コード、期待動作は合意済み要件を基準にする
+5. **実装計画**: ブランチ名 / 変更対象ファイル / 親チケットならサブと依頼範囲を照合
 6. **実装 + テスト** (`<testing_policy>` に従う)
 7. **コミット + PR 作成** (`<pr_template>` + assignee + reviewer)
-8. **マージ後フック** (`post_merge_hooks`): path 条件付きで別スキルを起動
+8. **完了報告**: PR・テスト・状態更新を報告。マージ後のフックは実際のマージと追加作業の依頼がある場合のみ
 
 ## バッチモード / 親チケット
 
 - 複数 URL をスペース区切りで渡すと並列 (独立) or 直列 (依存チェーン) で処理
-- サブアイテムを持つ親チケットは未着手サブを一覧表示 → ユーザー選択 → バッチ実行 (勝手に始めない)
+- 親チケットは未着手サブと依頼範囲を照合し、対象が曖昧な場合だけ選択を求める
 
 ## 仕様ベースのテスト
 
@@ -52,50 +52,7 @@ issue #123 着手
 
 ## プロジェクト固有設定 (`.claude/ticket-implementation.local.md`)
 
-```markdown
----
-branch_prefix_rules:
-  feature: "feat/"
-  fix: "fix/"
-  ui: "ui/"
-  bug: "bug/"
-  refactor: "refact/"
-  default: "feat/"
-branch_naming_doc: "docs/BRANCH_RULE.md"
-
-test_command: "make test"
-format_command: "make format"
-codegen_command: "make codegen"
-codegen_triggers:
-  - "openapi/"
-  - "lib/**/*.dart"
-
-conventions_file: "AGENTS.md"
-testing_policy: "仕様ベース"     # "仕様ベース" or "実装ベース"
-pr_template: ".github/PULL_REQUEST_TEMPLATE.md"
-
-reviewer_rules:
-  - if_author: "alice"
-    add_reviewer: "bob"
-  - if_author: "bob"
-    add_reviewer: "alice"
-
-notion:
-  status_property: "Status"
-  status_in_progress: "着手中"
-  status_review: "レビュー"
-  status_done: "完了"
-
-forbidden_paths:
-  - "lib/gen"
-  - "lib/api_definitions"
-  - "openapi/"
-
-post_merge_hooks:
-  - skill: "update-spec"
-    when_changed: ["lib/app/pages/"]
----
-```
+設定の完全版は [references/configuration.md](references/configuration.md) を参照。
 
 ## 依存
 

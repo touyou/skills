@@ -1,10 +1,10 @@
 ---
 name: review-followup
-description: 過去に自分がレビューコメントを付けた PR を横断スキャンし、著者側の対応をコード (コミット差分) で裏取りしてから approve するかを判断するフォローアップ専用スキル。新規レビューは行わず、「前回指摘した内容が実際に直っているか」の確認に特化する。ユーザーが「指摘した PR のフォローアップして」「レビュー済み PR の対応確認して」「直ってたら approve して」「review followup」「指摘対応の裏取りして」と依頼した時、または `/review-followup [PR番号]` を実行した時に発動する。
+description: 自分が過去にレビューした PR で、指摘への対応をコミット差分と現在のコードから確認する。「レビュー済み PR の対応確認」「直っていたら approve」「指摘した PR のフォローアップ」に使う。新規レビューや自動修正は行わず、承認の依頼がある場合に対応済み PR を approve する。
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # review-followup
@@ -16,6 +16,7 @@ metadata:
 - **フォローアップ専用**: 新規の指摘を見つけても投稿しない。気づいたことがあれば最終レポートに「参考」として書くに留める (必要ならユーザーが `pr-review-loop` を別途回す)。
 - **裏取りなしで approve しない**: 著者の「直しました」コメントだけを根拠にしない。必ず対応コミットの diff を読んで、指摘の意図が満たされているかを確認する。
 - **判断できないものはスキップ**: 対応が部分的・意図と違う・diff から判断不能な場合は approve せず、レポートに理由付きで残す。
+- **承認は依頼で許可された場合だけ**。対応確認だけなら結果を返す。既存の承認依頼は再確認しない。
 - **CI 未通過の PR は approve しない**: 対応が正しくても CI が赤ならスキップして報告。
 
 ## 対象 PR の特定 (決定的パート)
@@ -29,34 +30,36 @@ metadata:
 GH_USER=$(gh api user --jq '.login')
 
 # 自分がレビューした open PR (自分が author のものは除外)
-gh pr list --state open --json number,title,author,reviews \
-  --jq --arg me "$GH_USER" '
+gh pr list --state open --limit 1000 --json number,title,author,reviews \
+  | jq --arg me "$GH_USER" '
     map(select(
       (.author.login != $me)
       and ([.reviews[].author.login] | index($me))
     )) | .[] | {number, title, author: .author.login}'
 ```
 
+横断スキャンは現在のリポジトリ内を既定とし、複数リポジトリは依頼された範囲だけ扱う。PR URL がある場合はそのリポジトリを全コマンドに指定する。取得上限に達したら検索を分割し、取り残しを明記する。
+
 各対象 PR について、裏取りに使う材料を決定的に収集する:
 
 ```bash
 # 1. 自分のレビューコメント一覧 (インライン + review body)。最後に自分がレビューした時刻も控える
-gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments" \
-  --jq --arg me "$GH_USER" 'map(select(.user.login == $me)) | .[] | {path, line, body, created_at}'
+gh api --paginate --slurp "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments" \
+  | jq --arg me "$GH_USER" 'add | map(select(.user.login == $me)) | .[] | {path, line, body, created_at}'
 gh pr view "$PR_NUMBER" --json reviews \
-  --jq --arg me "$GH_USER" '.reviews | map(select(.author.login == $me)) | .[] | {state, body, submittedAt}'
+  | jq --arg me "$GH_USER" '.reviews | map(select(.author.login == $me)) | .[] | {state, body, submittedAt}'
 
 # 2. 自分の最終レビュー以降に積まれたコミット
 gh pr view "$PR_NUMBER" --json commits \
   --jq '.commits | .[] | {oid: .oid, message: .messageHeadline, date: .committedDate}'
-# 最終レビュー時刻より後のコミットに絞り、それぞれ diff を取得
+# 最終レビュー時刻は探索の補助。レビューの commit_id と現在 head の差分を優先し、rebase 時は現在コードで確認
 git fetch origin "pull/$PR_NUMBER/head" && git show <oid> --stat && git show <oid>
 
 # 3. CI 状態
 gh pr checks "$PR_NUMBER"
 ```
 
-resolved 状態も判断材料になる (resolved 済みスレッドは著者が対応済みと主張しているサイン)。取れる環境なら GraphQL の `reviewThreads.isResolved` を使う (`pr-review-loop` のステップ 2 と同じクエリ)。
+resolved 状態も判断材料になる (resolved 済みスレッドは著者が対応済みと主張しているサイン)。取れる環境なら GraphQL の `reviewThreads.isResolved` を使う （reviewThreads と各 comments を pageInfo / after でページングする）。
 
 ## 対応の裏取り (LLM 判定パート)
 
@@ -70,25 +73,32 @@ resolved 状態も判断材料になる (resolved 済みスレッドは著者が
 
 注意点:
 
+- レビュー開始時に head SHA を保存し、approve 直前に同一 SHA と必須 CI を再確認する。変化があれば新差分も確認する。レビュー API に commit_id を指定して、その SHA への承認として投稿する。
+- 取得失敗・ページ未取得・チェックなし・対象指摘 0 件は保留。承認は「全て直っている」を確認できた場合に限る。新たに重大な問題を発見した場合も承認を保留し、参考欄に根拠を残す。
+- 前回 APPROVE 済みでも、その後に自分が未解決の指摘を出していれば対象とする。
+
 - **表面的な一致で済ませない**: 指摘した行が変わっていても、意図 (例: 「境界値テストを足してほしい」) が満たされていなければ partial。
 - **別の形での対応も認める**: 指摘と違う実装でも意図が満たされていれば resolved (指摘はあくまで例示。対応方法を強制しない)。
-- **コメント返信での反論**: 著者が「これは仕様です」等と返信していて筋が通っているなら resolved 扱いにしてよい。ただしレポートに「反論を受け入れた」と明記する。
+- **コメント返信での反論**: 著者が「これは仕様です」等と返信していて筋が通っているなら resolved 扱いにしてよい。仕様・テスト・コードで反論の根拠を確認し、レポートに「反論を受け入れた」と明記する。
 
 ## 判定とアクション
 
 | 状態 | アクション |
 |---|---|
-| 全指摘 resolved + CI green | approve (`gh pr review --approve`) |
+| 1 件以上の対象指摘があり全件 resolved + CI green + approve 許可あり | レビュー済み SHA を指定して approve（後述） |
 | 全指摘 resolved + CI red / pending | スキップ。「対応確認済み、CI 待ち」として報告 |
 | partial / unverifiable が残る | スキップ。どの指摘が未対応かを報告 (PR にはコメントしない) |
-| 自分の前回レビューが APPROVE 済み | 対象外 (フォローアップ不要) として報告 |
+| 自分の前回レビューが APPROVE 済みで後続の未解決指摘なし | 対象外 (フォローアップ不要) として報告 |
 
 approve コメントには裏取りの根拠を 1〜2 行で書く (audit ログとして後で読める):
 
 ```bash
-gh pr review "$PR_NUMBER" --approve \
-  --body "前回指摘 (エラーハンドリング / テスト追加) が <oid> で対応済みであることを diff で確認しました。CI green。"
+jq -n --arg sha "$REVIEWED_HEAD" --rawfile body "$APPROVAL_BODY_FILE" \
+  '{commit_id: $sha, event: "APPROVE", body: $body}' > "$PAYLOAD_FILE"
+gh api -X POST "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" --input "$PAYLOAD_FILE"
 ```
+
+OWNER/REPO は対象 PR のリポジトリ、APPROVAL_BODY_FILE は完成した根拠文の保存先。投稿がタイムアウトしたらレビュー一覧で成否を照合してから再試行し、重複投稿を避ける。
 
 ## 最終レポート
 

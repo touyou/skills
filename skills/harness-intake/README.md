@@ -17,28 +17,11 @@ touyou/skillsに起票して
 /harness-intake
 ```
 
-## 動くこと / 動かないこと
+## ワークフロー
 
-- **やる**: 変更点の特定 → 汎用性判定 → touyou/skills 側の既存スキルとの照合 → Issue ドラフト
-  作成 → ユーザー確認 → `gh issue create --repo touyou/skills`。起票できない環境では権限に応じた
-  フォールバック（gh 認証の案内 / 管理者への案内 / ユーザー確認のうえ承認済みドラフトを
-  `docs/harness-intake-pending/` に保留保存して後で再送）
-- **やらない**: touyou/skills への直接コミット、ユーザー確認なしでの Issue 起票・PR 作成・
-  保留キュー保存。呼び出し元プロジェクトのファイル変更も、上記の保留キューを除いて行わない
-  （直接 PR はユーザーが明示的に希望した場合だけのエスケープハッチ。既定はあくまで Issue 起票）
+変更点を特定し、汎用性と既存スキル・Issue を照合してドラフトを作る。起票まで依頼されていれば Issue を作成し、下書きだけの依頼なら本文を返す。起票できない場合は失敗を報告し、一意な名前の保留ファイルに保存する。タイムアウト時は既存 Issue を照合して二重投稿を避ける。
 
-## プロジェクト固有設定 (`.claude/harness-intake.local.md`)
-
-省略可。よく使うハーネスプロジェクトの呼び名や、対象リポジトリを変えたい場合に設定する。
-
-```markdown
----
-target_repo: "touyou/skills"   # 既定値。fork先に提案したい場合などに上書き
-known_harness_roots:
-  - "~/path/to/harness-project-a"
-  - "~/path/to/harness-project-b"
----
-```
+既定の提案先は touyou/skills。実際のスキル実装や PR は別の作業として扱う。完全な手順は [SKILL.md](SKILL.md) を参照する。
 
 ## 関連
 

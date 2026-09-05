@@ -33,7 +33,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `writing-pack` | `touyou-skills` | [`proofread-touyou`](./skills/proofread-touyou/) | touyou が書いた日本語の文章を AI 臭を残さずに校正する |
 | `writing-pack` | `touyou-skills` | [`write-touyou`](./skills/write-touyou/) | touyou 名義で日本語の文章を新しく書く (生成・執筆・下書き)。本人の肉声で書き AI 臭を避ける |
 | `quality-pack` | `touyou-skills` | [`code-quality-scorer`](./skills/code-quality-scorer/) | コードベース品質をコミット単位でスコアリング。Tier 1 (決定論的ツール) / Tier 2 (LLM judge) / Tier 3 (UI ロジック量) を分けて報告。TS Web / Dart Flutter / Swift iOS が本実装、Kotlin Android は skeleton |
-| `dev-flow-pack` | `touyou-skills` | [`ai-bot-pr-review`](./skills/ai-bot-pr-review/) | AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系) が自動生成した PR を一括レビューして approve→マージ or クローズ |
+| `dev-flow-pack` | `touyou-skills` | [`ai-bot-pr-review`](./skills/ai-bot-pr-review/) | AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系) が自動生成した PR を一括レビューして マージ・クローズ・保留を判定し、依頼で許可された操作を実行 |
 | `dev-flow-pack` | `touyou-skills` | [`pr-review-loop`](./skills/pr-review-loop/) | PR にレビュー → 修正 → 再レビューを「指摘がなくなるまで」繰り返す。自分の PR=auto-fix / 他人=comment-only に自動切替 |
 | `dev-flow-pack` | `touyou-skills` | [`review-followup`](./skills/review-followup/) | 過去に自分がレビューコメントを付けた PR を横断スキャンし、対応をコミット diff で裏取りしてから approve する |
 | `dev-flow-pack` | `touyou-skills` | [`parallel-review-harness`](./skills/parallel-review-harness/) | 任意のレビュー観点を N 個の独立レビューアに割り当てて並列レビュー。実行環境を自己診断して二系統クロス / 単系統並列 / 逐次マルチパスに自動フォールバック |
@@ -44,6 +44,14 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `meta-pack` | `touyou-skills` | [`retrospective`](./skills/retrospective/) | セッション失敗と PR 指摘の「繰り返し」を掘り起こし、AGENTS.md / スキル / memory への恒久ルール候補として提示する |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
+
+## スキルの選び方と設定
+
+- 最小限の文章校正は `proofread-touyou`、新規執筆・大幅なリライトは `write-touyou`。
+- 新規 PR レビューと修正は `pr-review-loop`、過去の指摘への対応確認は `review-followup`、bot PR の一括判定は `ai-bot-pr-review`。
+- 複数視点の独立レビューは `parallel-review-harness`、数値の採点・比較は `code-quality-scorer`。
+
+PR・チケット系の既存 `.claude/<skill>.local.md` は Claude Code / Codex 共通で使う。設定の完全版は各スキルの `references/configuration.md`、実行判断は `SKILL.md` を正本とする。投稿・push・マージ等はユーザーの依頼で許可された範囲に従い、設定例だけで権限を広げない。
 
 ## 開発・運用ルール
 

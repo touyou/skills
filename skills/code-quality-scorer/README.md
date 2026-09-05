@@ -22,7 +22,7 @@ scorecardを作って
 | **Tier 2** | LLM judge (N=3 独立 spawn、中央値) | cohesion / dry / bug_prone_patterns / test_effectiveness |
 | **Tier 3** | UI に露出したロジックの量 (delta で読む観測軸) | routes_count / interactive_handlers / state_hooks / ui_complexity_sum |
 
-特に **`hallucinated_imports_count`** は「AI が捏造した import が残っていないか」の核心指標。Tier 2 は `claude -p` を**独立 process として N 回 spawn** することで、1 ターン内アンカリングを避けて真の独立判定を実現している。
+解決できない import は依存不足や設定誤りでも発生するため、AI の捏造とは断定しない。Tier 2 は別プロセスで判定し、モデル・ルーブリック・サンプル条件と一致度を残す。独立した判定でも結果は揺らぐ。
 
 ## 対応言語プロファイル
 
@@ -39,11 +39,13 @@ scorecardを作って
 |--------|-----------|------|
 | **HEAD スコアリング** | `scripts/run_tier1_<profile>.py` + `scripts/run_tier3_<profile>.py` + `scripts/judge.py` + `scripts/aggregate.py` | 現在の HEAD を 1 回採点 |
 | **履歴 walk** | `scripts/score_history.py` | コミット履歴を辿って複数 score.json を生成、`scripts/generate_trend.py` で trend report |
-| **bus factor delta** | `scripts/run_bus_factor.py` | 2 ref 間の知識集中度の変化 (AI 活用で知識が分散するかサイロ化するか) |
+| **2 ref 比較** | `scripts/score_history.py --commits SHA1,SHA2` | 同条件の 2 snapshot から指標の差を報告 |
+
+必要に応じて `scripts/run_bus_factor.py` で著者分布の変化も観測できる。知識の実測や AI の因果効果とは区別する。
 
 ## コスト感
 
-Tier 1 / Tier 3 はツール実行のみで安い。Tier 2 は **4 dimension × N=3 samples = 12 claude calls** で **~$0.50-$1.00 / run** (cache 命中時)、最悪 ~$1.50-$3.00。`--judge-model haiku` で約 1/10 に。履歴 walk では Tier 2 はデフォルト無効、HEAD scoring ではデフォルト有効。
+Tier 2 の既定は 4 観点 × 3 判定 = 12 CLI 呼び出し。費用はモデルと実行時の料金・入力・キャッシュ条件に依存する。履歴スクリプトには Tier 2 の自動実行フラグはない。実行手順とキャッシュの制限は [references/execution.md](references/execution.md) を参照。
 
 ## 詳細
 

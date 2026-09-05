@@ -20,7 +20,7 @@ skills/                       ← 単一のソース。スキル本体はすべ�
     └── evals/                ← eval ハーネス (将来用)
 
 .claude-plugin/
-└── marketplace.json          ← Claude Code 用 (writing-pack / quality-pack の 2 plugin に分離)
+└── marketplace.json          ← Claude Code 用 (目的別の 5 plugin に分離)
 
 .codex-plugin/
 └── plugin.json               ← Codex 用 (touyou-skills 1 plugin として全 skill を提供)
@@ -131,6 +131,9 @@ SKILL.md 1 枚で完結する小さいスキルにはこの分割を強制しな
 
 - **writing-pack**: 文章・コンテンツ系 (校正、リライト、翻訳)
 - **quality-pack**: コード品質計測・分析系 (スコアリング、トレンド、bus factor)
+- **dev-flow-pack**: PR レビュー・チケット実装・初回導入検証
+- **a11y-pack**: Apple プラットフォームのアクセシビリティ
+- **meta-pack**: ハーネス改善の起票・振り返り
 
 新しい skill を追加するときは、既存プラグインの description と一致するなら同居 OK、ズレるなら別プラグインを切る判断を README / marketplace.json と一緒に行う。
 

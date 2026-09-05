@@ -42,25 +42,7 @@ automated PR triage
 
 ## プロジェクト固有設定 (`.claude/ai-bot-pr-review.local.md`)
 
-```markdown
----
-bot_authors:
-  - app/github-actions
-  - dependabot[bot]
-branch_prefixes:
-  - chore/codex-refactor-
-  - dependabot/
-exclude_branch_prefixes:
-  - release/
-  - backport/
-test_command: "make test"
-format_command: "make format"
-merge_method: "auto"                # auto / merge / squash / rebase
-ci_check_name: "Flutter Tests"      # 空なら全 check 集約
-conventions_file: "AGENTS.md"
-allow_dependency_only_merges: true
----
-```
+設定の完全版は [references/configuration.md](references/configuration.md) を参照。
 
 `test_command` 未設定なら package.json / Makefile / pubspec.yaml から自動推測。`merge_method: auto` なら `gh api repos/.../` の `allow_squash_merge` / `allow_merge_commit` / `allow_rebase_merge` を読んで squash → merge → rebase の優先順で fallback。
 

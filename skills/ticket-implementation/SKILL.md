@@ -1,10 +1,10 @@
 ---
 name: ticket-implementation
-description: チケット URL またはチケット本文を渡されたら、内容を読み取って実装計画 → ブランチ作成 → 実装 → テスト → コミット → PR 作成まで一気通貫で実行する。Notion / Linear / GitHub Issue / plain text の各 source に対応。「結論 → 要件 → コメント → 概要」の優先順位で読み取り、チケット記述を鵜呑みにせずコード実態を Grep で検証してから実装に入る。ユーザーが「チケットを実装して」「このチケット対応して」「チケットからPR作って」「Notionチケットを実装」「Linear のissue やって」「issue #123 着手」と依頼した時、または `/ticket <URL or 本文>` を実行した時に発動する。
+description: Notion・Linear・GitHub Issue の URL、Issue 番号、チケット本文から実装・テスト・PR 作成まで進める。「チケットを実装して」「この Issue に着手」「チケットから PR を作って」に使う。要約・調査だけの依頼では実装やチケット更新を始めない。
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.0"
+  version: "0.2.1"
 ---
 
 # チケット → 実装 → PR
@@ -15,78 +15,16 @@ metadata:
 
 | Source | 判別 | 読み取り手段 |
 |--------|------|-------------|
-| **Notion** | URL に `notion.so` / `notion.com` | Notion MCP (`mcp__notion-api__*`) |
+| **Notion** | URL に `notion.so` / `notion.com` | 利用可能な Notion コネクタ / MCP |
 | **Linear** | URL に `linear.app` | Linear MCP (例: `linear` plugin) または Linear CLI |
 | **GitHub Issue** | URL に `github.com/.../issues/N` | `gh issue view N --json title,body,comments,labels` |
 | **Plain text** | URL なし、本文がそのまま渡される | 受け取った本文をそのまま使う |
 
-Source 別の細かい手順 (ページ ID 抽出、ステータス遷移、コメント取得) は「Source 別補足」を参照。コア手順は source によらず同じ。
+Source 別の細かい手順 (ページ ID 抽出、ステータス遷移、コメント取得) は[references/sources.md](references/sources.md) を参照。コア手順は source によらず同じ。
 
-## 設定 (project ごと)
+## 設定
 
-リポジトリのルートに `.claude/ticket-implementation.local.md` を置くと挙動を調整できる。
-
-```markdown
----
-# ブランチ命名 prefix のマッピング (チケット種別 → prefix)
-branch_prefix_rules:
-  feature: "feat/"
-  fix: "fix/"
-  ui: "ui/"
-  bug: "bug/"
-  refactor: "refact/"
-  default: "feat/"
-
-# ブランチ名フォーマット: <prefix><英語ケバブケース要約>
-# 規約ファイル (例: docs/BRANCH_RULE.md) に詳細があるならここで指定
-branch_naming_doc: "docs/BRANCH_RULE.md"
-
-# テスト・フォーマット・コード生成
-test_command: "make test"
-format_command: "make format"
-codegen_command: "make codegen"           # 任意。API 定義 / Freezed / Riverpod 等の生成が必要なときに
-codegen_triggers:                         # この path 配下に変更があれば codegen 実行
-  - "openapi/"
-  - "lib/**/*.dart"  # @freezed / @riverpod アノテーションを含む可能性
-
-# 規約・テスト方針の参照先
-conventions_file: "AGENTS.md"             # AGENTS.md / CLAUDE.md / CONTRIBUTING.md
-testing_policy: "仕様ベース"              # "仕様ベース" or "実装ベース"
-
-# PR テンプレートとレビュアー
-pr_template: ".github/PULL_REQUEST_TEMPLATE.md"
-reviewer_rules:
-  # 作成者 → 自動アサインするレビュアー (互いに見合いするペア)
-  - if_author: "touyou"
-    add_reviewer: "mnkd"
-  - if_author: "mnkd"
-    add_reviewer: "touyou"
-  # マッチしない場合はユーザー確認
-
-# Notion 専用 (Notion source のとき)
-notion:
-  status_property: "Status"
-  status_in_progress: "着手中"
-  status_review: "レビュー"
-  status_done: "完了"
-
-# 編集禁止ディレクトリ (生成物等)
-forbidden_paths:
-  - "lib/gen"
-  - "lib/api_definitions"
-  - "openapi/"
-
-# 実装後に他スキルを起動するか
-post_merge_hooks:
-  - skill: "update-spec"
-    when_changed: ["lib/app/pages/"]
----
-
-# プロジェクト固有の注意点
-（任意のメモ）
-```
-
-`test_command` / `format_command` / `codegen_command` 未設定時の自動推測は `ai-bot-pr-review` / `pr-review-loop` と同じ。
+既存の `.claude/ticket-implementation.local.md` を両エージェント共通で読む。設定ファイルを作成する場合や既定値を調べる場合だけ、[references/configuration.md](references/configuration.md) の完全版を読む。コマンド例は設定例であり、対象リポジトリの規約・CI・利用可能なツールから実行コマンドを決める。
 
 ## ワークフロー
 
@@ -96,47 +34,18 @@ post_merge_hooks:
 
 - 引数が URL → ドメインで source 判別
 - 引数が `#NNN` または数値のみ → GitHub Issue (現在のリポジトリ)
-- 引数なし or 本文っぽいテキスト → Plain text
+- 本文っぽいテキスト → Plain text。引数も参照できる本文もない場合は対象チケットを確認する
 - 複数の URL がスペース区切り → **バッチモード** (後述)
 
 ### 1. チケット読み取り
 
-Source 別に並列で取得 (各ステップは並列実行可、一部失敗しても取れた情報で続行)。
+Source に合う利用可能なツールを探し、プロパティ・本文・コメントを取得する。ページングと本文の子ブロックも辿る。一部失敗時は欠けた情報を報告し、受け入れ条件が確認できる独立部分だけ進める。本文が取れないままタイトルから仕様を作らない。
 
-#### Notion
-
-```text
-1) URL 末尾 32 文字からページ ID を抽出
-2) 並列実行:
-   - mcp__notion-api__API-retrieve-a-page  (プロパティ)
-   - mcp__notion-api__API-get-block-children (本文)
-   - mcp__notion-api__API-retrieve-a-comment (コメント)
-3) サブアイテム (relation) を持つなら親チケットとして扱う (後述)
-```
-
-#### Linear
-
-```text
-1) URL から issue identifier (例: TEAM-123) を抽出
-2) Linear MCP または `linear` CLI で issue / comments / sub-issues を取得
-3) sub-issues があれば親チケットとして扱う
-```
-
-#### GitHub Issue
-
-```bash
-gh issue view <number> --json title,body,comments,labels,assignees,milestone
-```
-
-GitHub Issue の sub-issue (task list) は body の `- [ ]` チェックリストで擬似的に表現される。これも親チケット扱いの対象 (該当する場合)。
-
-#### Plain text
-
-ユーザーから渡された本文をそのままチケット内容として扱う。コメント・ステータスは無いものとして進める。
+具体的な取得方法は [references/sources.md](references/sources.md) の該当 Source のみ読む。
 
 ### 2. ステータスを「着手中」に更新
 
-Source 別 (失敗しても処理は続行、ベストエフォート):
+チケット更新が依頼やプロジェクト運用で許可されている場合に行う。取得した実在のプロパティ・状態を使い、失敗は最終報告に残す。ステータス更新失敗だけなら実装は続行する:
 
 | Source | 操作 |
 |--------|------|
@@ -153,7 +62,7 @@ Source 別 (失敗しても処理は続行、ベストエフォート):
 
 1. **結論** (チケットで明示されている「やること」)
 2. **要件** (受け入れ条件 / 仕様)
-3. **コメント** (新しい順で読む、後出しの仕様変更を見落とさないため)
+3. **コメント** (新しい順で読み、明示的に合意された仕様変更は古い結論・要件より優先する。未合意の提案だけで要件を上書きしない)
 4. **概要** (背景情報)
 5. **備考**
 
@@ -162,7 +71,7 @@ Source 別 (失敗しても処理は続行、ベストエフォート):
 - **仕様の解釈が割れる点は実装前にユーザー確認** (勝手に判断しない)
 - **軽微な判断は自分で決めて、決めたことを PR 本文に注記する**。変数名・関数名、フォーマット、デフォルト値、同等な実装案のどちらを採るか、といった「どちらでも成立する」選択でいちいち止まらない。確認で往復するコストのほうが、後から直すコストより高い
 - 自分側 (このプロジェクト側) の変更対象を特定する。バックエンド側 / 他プロジェクト側の変更は対象外として明示
-- 親チケットの場合はサブチケットを一覧して、ユーザーが選んだものをバッチモードで実行 (勝手に着手しない)
+- 親チケットの場合はサブチケットを一覧し、依頼済みの範囲を処理する。対象が曖昧な管理用コンテナの場合だけ選択を求める
 
 **確認する / しないの線引き**:
 
@@ -176,35 +85,35 @@ Source 別 (失敗しても処理は続行、ベストエフォート):
 
 ### 4. コード実態の検証
 
-**チケットの記述を鵜呑みにしない**。現在のコードベースを Grep / Read で実際に検証して、チケットと乖離があれば**現在のコードを正とする** (乖離があったらコメントで指摘してから進める)。
+**チケットの記述を鵜呑みにしない**。現在のコードベースを Grep / Read で実際に検証して、チケットと乖離があればファイル位置や既存構造は現在コードに合わせる。ただし期待動作は受け入れ条件・合意済み仕様を正とし、既存のバグを仕様として追認しない。両者の矛盾が仕様判断を要する場合だけ確認する。
 
 ```bash
 # チケットで言及されたシンボル / ファイルパスが実在するか
-grep -rn "<symbol>" <relevant_dirs>
+rg -n --fixed-strings "<symbol>" <relevant_dirs>
 ```
 
 `<conventions_file>` (例: `AGENTS.md`) に「探索の起点」が書かれている場合はそれに従う。
 
 ### 5. 実装計画の決定
 
-- **ブランチ名**: `<branch_prefix_rules>` のマッピングに従って prefix を決定、末尾は英語ケバブケースで簡潔に。`<branch_naming_doc>` があれば最終確認に使う。
+- **ブランチ名**: 実行環境・リポジトリの命名規約を優先し、未指定なら `<branch_prefix_rules>` のマッピングに従って prefix を決定、末尾は英語ケバブケースで簡潔に。`<branch_naming_doc>` があれば最終確認に使う。
 - **変更対象ファイル**: コードベースを Grep / Glob で探索して列挙。`<forbidden_paths>` 配下は変更しない。
-- **親チケットの場合**: 未対応のサブチケットを一覧提示し、ユーザーが選択したものをバッチモードで処理する。**勝手にサブの実装を始めない**。
+- **親チケットの場合**: 未対応のサブチケットと依頼範囲を照合し、対象分をバッチモードで処理する。
 
 ### 6. 実装実行
 
-1. **ワーキングツリーチェック**: uncommitted な変更があればユーザーに確認
+1. **ワーキングツリーチェック**: 既存変更を保護し、必要なら専用 worktree で進める。同じ変更箇所の競合や起点が曖昧な場合だけ確認する
 2. **起点ブランチ**:
-   - 独立チケット: `git checkout main && git pull origin main`
+   - 独立チケット: リモートの既定ブランチまたは指定された base を fetch し、その SHA から worktree / ブランチを作る。main 固定や既存 checkout の切り替えはしない
    - 依存チケット (バッチモード): 先行チケットのブランチを起点に
 3. **新ブランチ**: `git checkout -b <ブランチ名>`
 4. **実装**: `<conventions_file>` のコーディング規約に従う
 5. **テスト**: `<testing_policy>` に従って構築
    - `仕様ベース` (推奨): チケットの仕様を正に書く。実装が間違っていたらテストが検出する
    - `実装ベース`: 実装の挙動をスナップショットする (regression 防止用途)
-6. **フォーマット**: `<format_command>`
-7. **テスト実行**: `<test_command>` (失敗したら修正)
-8. **コード生成**: `<codegen_triggers>` の path に変更があれば `<codegen_command>` を実行
+6. **コード生成**: `<codegen_triggers>` に該当し生成が必要な場合は `<codegen_command>` を実行
+7. **フォーマット**: `<format_command>`
+8. **テスト実行**: 生成物を含む最終差分に対して `<test_command>` と関連 lint/build を実行。失敗は原因を直すか未完として報告する
 
 #### 仕様ベースのテストとは
 
@@ -230,7 +139,7 @@ grep -rn "<symbol>" <relevant_dirs>
 
 `<pr_template>` (`.github/PULL_REQUEST_TEMPLATE.md`) があればそのテンプレートに従って本文を組み立てる。共通項目:
 
-- **チケットリンク**: `Notion Ticket: <URL>` / `Linear Issue: <URL>` / `Closes #<N>` を必ず含める
+- **チケットリンク**: `Notion Ticket: <URL>` / `Linear Issue: <URL>` / `Closes #<N>` を含める（他リポジトリなら owner/repo#N。Plain text ではリンクを創作せず要件を記す）
 - **概要**: 変更内容の箇条書き
 - **As-Is / To-Be**: 変更前後が明確な場合はテーブル
 - **動作確認手順**: 検証手順を具体的に
@@ -243,117 +152,27 @@ grep -rn "<symbol>" <relevant_dirs>
 CURRENT_USER=$(gh api /user --jq '.login')
 
 # reviewer は <reviewer_rules> のマッチングで決定
-# マッチしない場合はユーザー確認
+# マッチしない場合は未割当で作成し報告
 gh pr create ... --assignee "$CURRENT_USER" --reviewer "<reviewer>"
 ```
 
-reviewer rule に該当するものがなければ、空のまま PR 作成 → ユーザーに「reviewer 誰にする?」と確認。
+reviewer rule に該当せず指定もなければ未割当で PR を作り、その旨を報告する。レビュアー通知はユーザーの依頼・許可された運用に含まれる場合だけ行う。例の人名を既定値として使わない。
 
-### 8. マージ後の連携 (`post_merge_hooks`)
+### 8. 完了とマージ後の連携
 
-PR がマージされたら、`<post_merge_hooks>` に従って関連スキルを起動する:
+PR 作成までがこの依頼の完了範囲。許可されたチケット更新は PR 作成時にレビュー待ちへ移す。マージ・完了ステータスへの更新・`post_merge_hooks` は、実際のマージを確認し、その作業も依頼されている場合だけ行う。PR 作成だけで完了扱いにしたり、無期限にマージを待ったりしない。hook のスキルが利用不能なら未実行として報告する。
 
-```yaml
-post_merge_hooks:
-  - skill: "update-spec"
-    when_changed: ["lib/app/pages/"]
-```
+## バッチ・親チケット
 
-例: マージした PR の diff に `lib/app/pages/` 配下の変更があれば、`update-spec` スキルを自動起動して関連ドキュメントを更新する。Source が Notion なら、ついでにチケットのステータスを `<status_review>` または `<status_done>` に更新。
-
-## バッチモード
-
-複数のチケット URL をスペース区切りで渡すと、依存関係を分析して並列 or 直列で処理する。
-
-### 実行戦略
-
-- **独立チケット** (依存関係なし) → `Agent` の `isolation: "worktree"` で**並列実行**
-  - 各 worktree で `.env` 等の untracked file を参照できるよう、シンボリックリンクを張る:
-    ```bash
-    ln -s /path/to/original/.env /path/to/worktree/.env
-    ```
-- **依存チケット** → 直列処理し、先行ブランチを起点にチェーン
-  - 例: チケット A → B (A の変更に依存)
-    - A: main → branch-a → PR-A (base: main)
-    - B: branch-a → branch-b → PR-B (base: branch-a)
-
-### 依存判定
-
-- B の要件が A の変更結果を前提としている
-- 同じファイルを変更する可能性が高い
-- チケット本文 / コメントで明示的に順序が指定されている
-
-判断が難しければユーザー確認。
-
-### エラーハンドリング
-
-- 1 つのチケットが失敗しても残りは続行
-- 依存チェーンで先行が失敗したら後続もスキップ
-- 全完了後、結果をまとめて報告
-
-## 親チケット
-
-サブアイテムを持つ親チケットが渡された場合:
-
-1. 親のサブアイテムを取得 (Notion `relation` プロパティ / Linear sub-issues / GitHub task list)
-2. 各サブのステータス確認
-3. 未着手・着手中のサブを一覧表示
-4. ユーザーが選択したサブをバッチモードで実行
-
-```
-親チケット <ID> のサブチケット:
-- [ ] <ID-1>: <タイトル>（未着手）
-- [x] <ID-2>: <タイトル>（完了）
-- [ ] <ID-3>: <タイトル>（未着手）
-
-どのサブチケットを処理しますか？（スペース区切りで番号、または all で全未着手を処理）
-```
-
-**ユーザー確認なしに勝手にサブの実装を始めない**。
+複数チケットや親子関係を扱う場合だけ [references/batch.md](references/batch.md) を読む。ユーザーが指定済みの対象は再選択を求めず、指定範囲を超えるサブチケットは開始しない。
 
 ## 完了条件
 
 - テストが全て通っている
 - PR が作成されている
-- PR 本文にチケットへのリンクがある
-- assignee と reviewer が設定されている (reviewer は空の場合はユーザー確認済み)
-- ステータスが適切に更新されている (Source 別)
-
-## Source 別補足
-
-### Notion
-
-ページ ID 抽出 (URL 末尾 32 文字):
-
-```bash
-PAGE_ID=$(echo "$URL" | grep -oE '[0-9a-f]{32}' | tail -1)
-```
-
-ハイフンを 8-4-4-4-12 形式に整形してから API へ渡す (API が要求するため):
-
-```bash
-PAGE_ID_HYPHENATED=$(echo "$PAGE_ID" | sed -E 's/^(........)(....)(....)(....)(.{12})$/\1-\2-\3-\4-\5/')
-```
-
-### Linear
-
-`linear` plugin が入っていれば MCP 経由、なければ `linear-cli` か web で手動取得。issue identifier (例: `TEAM-123`) の抽出は URL から:
-
-```bash
-ISSUE_ID=$(echo "$URL" | grep -oE '[A-Z]+-[0-9]+' | head -1)
-```
-
-### GitHub Issue
-
-```bash
-gh issue view <number> --json title,body,comments,labels,assignees,milestone,projectItems
-```
-
-Issue の task list (`- [ ]` チェックボックス) を sub-issue として扱う場合は body から正規表現で抽出。GitHub の "sub-issues" 機能 (Projects v2) は API で別途取得。
-
-### Plain text
-
-ユーザーが Notion / Linear / Jira / etc. の本文をそのまま貼り付けた場合。「結論 → 要件 → コメント → 概要 → 備考」の優先順位で抜き出すルールはそのまま使える。ステータス更新は対象外、コメント追加もできない (チケットシステムが分からないため)。
+- PR 本文にチケットリンク、または Plain text の要件がある
+- assignee / reviewer の設定結果または未割当理由を報告している
+- 許可されたステータス更新の結果、未実行・失敗の理由を報告している
 
 ## 由来とブラッシュアップ方針
 
