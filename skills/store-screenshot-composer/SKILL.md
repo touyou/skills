@@ -18,9 +18,9 @@ metadata:
 1. **素のスクショの置き場を確かめる**。撮影スクリプトがあるリポジトリ（例: `scripts/capture_screenshots.sh` の出力 `Screenshots/<platform>/<locale>/`）はそれを使う。無ければ先に撮影を用意する（このスキルの範囲外）
 2. **設定ファイルを書く**。リポジトリの `scripts/store_frames.json` などに置き、パスはその設定ファイルからの相対で書く。雛形は [examples/store_frames.json](examples/store_frames.json)、全項目は [references/config.md](references/config.md)
 3. **見出しを決める**。1 枚 1 メッセージ。画面の説明（「一覧画面」）ではなく、使う人が得るもの（「話しかけるだけで片づく」）を書く。ストアの説明文・プロモーションテキストから拾うと文言がぶれない。ja は 14 字前後、en は 5 語前後に収まると 2 行に入る
-4. **レイアウトだけ先に確認する**: `python3 scripts/compose.py <config> --placeholder --sheet`。素のスクショが無くても枠と文字の収まりが見られる
-5. **本番を作る**: `python3 scripts/compose.py <config> --sheet`。各出力フォルダの `_overview.png` で並びを確認し、ユーザーに見せる
-6. 出力は既定で gitignore 済みの場所に置く（素のスクショと同じ扱い）。設定ファイルだけをコミットする
+4. **レイアウトだけ先に確認する**: `python3 <このスキルのフォルダ>/scripts/compose.py <config> --placeholder --sheet`。素のスクショが無くても枠と文字の収まりが見られる。スクリプトはアプリのリポジトリにコピーせず、このスキルの中のものを呼ぶ
+5. **本番を作る**: `python3 <このスキルのフォルダ>/scripts/compose.py <config> --sheet`。各出力フォルダの `_overview.png` で並びを確認し、ユーザーに見せる
+6. `output` には gitignore 済みの場所を指定する（無ければ `.gitignore` に足す。素のスクショと同じ扱い）。設定ファイルだけをコミットする
 
 ストアへのアップロード（`asc screenshots upload` など）と審査提出はユーザーの OK を取ってから。
 

@@ -60,7 +60,7 @@
 | `device_offset` | `0` | 端末の上下位置の追加ずらし（キャンバス高さ比、+ で下） |
 | `corner_radius` | `0.11` | 画面の角丸（画面幅比）。iPhone の実機に近い値 |
 | `bezel` | なし | 端末の枠。`{"width":0.035,"color":"#0A0A0A","edge":"#4A4A4E"}`。`edge` は外周の縁取り |
-| `shadow` | `{"blur":0.03,"opacity":0.45,"offset":0.012}` | 端末の影。`null` で消す |
+| `shadow` | `{"blur":0.03,"opacity":0.2,"offset":0.012}` | 端末の影。`null` で消す |
 | `tilt` | `0` | 端末の傾き（度、反時計回りが正） |
 | `rotate_input` | `0` | 素のスクショを回してから使う（90 / 180 / 270、時計回り） |
 | `callout` | なし | 下の「拡大カード」 |
@@ -106,12 +106,14 @@
 
 ## コマンド
 
+`compose.py` はこのスキルの `scripts/` にある。設定ファイルはアプリのリポジトリに置き、スクリプトをそのパスで呼ぶ（このスキルの `examples/store_frames.json` を試すなら `python3 scripts/compose.py examples/store_frames.json --placeholder`）。
+
 ```bash
-python3 compose.py store_frames.json                    # 全ロケール・全セット
-python3 compose.py store_frames.json --locale ja        # ロケールを絞る（複数回指定可）
-python3 compose.py store_frames.json --set iphone       # セットを絞る（複数回指定可）
-python3 compose.py store_frames.json --sheet            # 出力フォルダに _overview.png も書く
-python3 compose.py store_frames.json --placeholder      # 素のスクショ無しで配置だけ確かめる
+python3 <skill>/scripts/compose.py store_frames.json                    # 全ロケール・全セット
+python3 <skill>/scripts/compose.py store_frames.json --locale ja        # ロケールを絞る（複数回指定可）
+python3 <skill>/scripts/compose.py store_frames.json --set iphone       # セットを絞る（複数回指定可）
+python3 <skill>/scripts/compose.py store_frames.json --sheet            # 出力フォルダに _overview.png も書く
+python3 <skill>/scripts/compose.py store_frames.json --placeholder      # 素のスクショ無しで配置だけ確かめる
 ```
 
 素のスクショが欠けていると、作れた分を書き出したうえで欠けたパスを列挙して終了コード 1 で終わる。

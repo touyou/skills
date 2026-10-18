@@ -78,7 +78,7 @@ THEMES = {
         "background": {"type": "gradient", "colors": ["#FBFBFD", "#EDEDF2"], "angle": 165},
         "text_color": "#1D1D1F",
         "subtitle_color": "#6E6E73",
-        "shadow": {"blur": 0.05, "opacity": 0.3, "offset": 0.025},
+        "shadow": {"blur": 0.05, "opacity": 0.1, "offset": 0.025},
         # A white screen on a near-white ground needs a hairline, like the site's cards.
         "outline": "#00000014",
     },
@@ -86,7 +86,7 @@ THEMES = {
         "background": {"type": "gradient", "colors": ["#1A1A1F", "#0A0A0C"], "angle": 165},
         "text_color": "#F5F5F7",
         "subtitle_color": "#A1A1A6",
-        "shadow": {"blur": 0.05, "opacity": 0.6, "offset": 0.025},
+        "shadow": {"blur": 0.05, "opacity": 0.36, "offset": 0.025},
     },
 }
 
@@ -106,7 +106,7 @@ DEFAULTS = {
     "corner_radius": 0.11,  # fraction of the screen width; ~matches modern iPhones
     "bezel": None,
     "outline": None,  # hairline around the screen, e.g. "#00000014"  # {"width": 0.035, "color": "#0A0A0A", "edge": "#3A3A3C"}
-    "shadow": {"blur": 0.03, "opacity": 0.45, "offset": 0.012},
+    "shadow": {"blur": 0.03, "opacity": 0.2, "offset": 0.012},
     "tilt": 0.0,  # degrees, counter-clockwise
     "rotate_input": 0,  # 90 / 180 / 270: for landscape captures shown upright, etc.
 }
@@ -338,11 +338,12 @@ def drop_shadow(device, opt, canvas_w):
     blur = max(1, round(canvas_w * s.get("blur", 0.03)))
     pad = blur * 3
     out = Image.new("RGBA", (device.width + 2 * pad, device.height + 2 * pad), (0, 0, 0, 0))
-    alpha = device.getchannel("A").point(lambda a: int(a * s.get("opacity", 0.45)))
-    shadow = Image.new("RGBA", device.size, (0, 0, 0, 255))
-    shadow.putalpha(alpha)
+    alpha = device.getchannel("A").point(lambda a: int(a * s.get("opacity", 0.2)))
     off = round(canvas_w * s.get("offset", 0.012))
-    out.paste(shadow, (pad, pad + off), shadow)
+    # Write the alpha directly: pasting an RGBA shadow with itself as the mask squares it.
+    mask = Image.new("L", out.size, 0)
+    mask.paste(alpha, (pad, pad + off))
+    out.putalpha(mask)
     out = out.filter(ImageFilter.GaussianBlur(blur))
     out.alpha_composite(device, (pad, pad))
     return out, (pad, pad)
@@ -466,7 +467,7 @@ def compose(shot_img, opt, size, background, fonts, title, subtitle):
     if opt.get("callout"):
         spec = opt["callout"]
         card = callout(shot_img, spec, W)
-        card, (cpx, cpy) = drop_shadow(card, {"shadow": {"blur": 0.02, "opacity": 0.5, "offset": 0.01}}, W)
+        card, (cpx, cpy) = drop_shadow(card, {"shadow": {"blur": 0.02, "opacity": 0.25, "offset": 0.01}}, W)
         cx = round(W * spec.get("x", 0.5)) - card.width // 2
         cy = round(H * spec.get("y", 0.62)) - card.height // 2
         canvas.paste(card, (cx, cy), card)
@@ -516,7 +517,7 @@ def main():
 
     cfg_path = pathlib.Path(args.config).resolve()
     base = cfg_path.parent
-    cfg = json.loads(cfg_path.read_text())
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
 
     fonts_cfg = cfg.get("fonts", {})
     locales = args.locale or cfg.get("locales", ["en"])
@@ -548,8 +549,13 @@ def main():
                 if opt.get("eyebrow"):
                     eb = dict(opt["eyebrow"])
                     eb["name"] = localized(eb.get("name"), locale) or ""
-                    if eb.get("icon"):
-                        eb["_icon"] = Image.open(base / eb["icon"]).convert("RGBA")
+                    icon_path = base / eb["icon"] if eb.get("icon") else None
+                    if icon_path and icon_path.exists():
+                        eb["_icon"] = Image.open(icon_path).convert("RGBA")
+                    elif icon_path and args.placeholder:
+                        pass  # a layout check should not need the real icon
+                    elif icon_path:
+                        missing.append(str(icon_path))
                     opt["eyebrow"] = eb
                 src = base / st["input"].format(locale=locale) / shot["file"]
                 if args.placeholder:
