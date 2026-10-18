@@ -1,19 +1,36 @@
 ---
 name: store-screenshot-composer
-description: 撮影済みの素のスクリーンショットから、見出し・背景・端末の枠・拡大カードを付けた App Store / Google Play 用の画像を JSON 設定 1 枚で一括生成する。「ストア画像を作って」「スクショに見出しを付けて」「App Store のスクリーンショットを工夫したい」「スクショを撮り直したのでストア画像も作り直して」に使う。
+description: App Store / Google Play 用のスクリーンショット画像を作る。撮影済みの素のスクリーンショットに見出し・背景・端末の枠を付けて JSON 設定から一括生成するか、Web ページに横長の 1 枚絵として描いてブラウザで撮り、1 枚ずつに切り分ける。「ストア画像を作って」「スクショに見出しを付けて」「App Store のスクリーンショットを工夫したい」「スクショを撮り直したのでストア画像も作り直して」に使う。
 license: MIT
 metadata:
   author: touyou
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # store-screenshot-composer
 
-アプリの画面を撮る工程（XCUITest / `simctl io screenshot` / adb など）と、ストアに載せる画像に仕上げる工程を分ける。仕上げは `scripts/compose.py` が JSON 設定から決定論的に作るので、画面を撮り直したらコマンド 1 回で全ロケール・全サイズが作り直せる。Illustrator や Figma の手作業を挟まない。
+アプリの画面を撮る工程（XCUITest / `simctl io screenshot` / adb など）と、ストアに載せる画像に仕上げる工程を分ける。仕上げは JSON 設定（`scripts/compose.py`）か Web ページ（`scripts/capture_web.py`）から決定論的に作るので、撮り直しや文言の変更はコマンド 1 回で全ロケールに反映できる。Illustrator や Figma の手作業を挟まない。
 
 必要なのは Python 3 と Pillow（`python3 -m pip install pillow`）だけ。Mac 以外で動かすときは先に `scripts/fetch_fonts.sh` で Noto Sans JP を入れる（入れないと太字の無い書体で代用して見え方が変わる）。
 
-## 手順
+## 2 つの作り方
+
+| 作り方 | 向いているとき | 道具 |
+|---|---|---|
+| **Web で描いて切る** | LP や紹介ページがあり、その部品（描き直した UI・吹き出し・ウィジェット）で絵を作りたい。部品を画像の境目をまたいで置きたい | `scripts/capture_web.py` |
+| **素のスクショに枠と見出しを付ける** | 実機の画面をそのまま見せたい。ページを作る手間をかけたくない | `scripts/compose.py` |
+
+touyou のアプリで紹介ページ（touyou.dev）があるものは Web のほうを選ぶ。紹介ページと同じ部品・書体・色になり、見た目を合わせ直す手間がない。
+
+## Web で描いて切る
+
+1. **横長の 1 枚絵のページを作る**。画像 1 枚ぶんを CSS の寸法で決め（iPhone 6.9" なら 440×956 を 3 倍、iPad 13" なら 1032×1376 を 2 倍）、その N 枚ぶんの幅の要素を左上に置く。部品は帯の左端からの位置で絶対配置するので、境目をまたいで置ける。紹介ページの部品は、表示だけの部品（状態を props で受ける）に切り出して両方から使う
+2. ページはアニメーションと遷移を止め、開発サーバーのインジケータを隠す。本番では開けないようにする（`notFound()`）
+3. **撮って切る**: `python3 <このスキルのフォルダ>/scripts/capture_web.py <URL> --frame 440x956 --count 6 --scale 3 --out <出力先>`。Chrome（無ければ Chromium）を headless で動かし、RGB の PNG を `01.png` から書き出す。`_overview.png` は切る前の 1 枚絵
+4. 境目に部品の切れ端が数ピクセルだけ残っていないか、1 枚ずつ並べて見る。またがせるなら半分くらい大きく、またがせないなら境目から離す
+5. 実例は touyou.github.io の `src/app/store/intento/`（`scripts/store-screenshots.sh` で撮る）
+
+## 素のスクショに枠と見出しを付ける
 
 1. **素のスクショの置き場を確かめる**。撮影スクリプトがあるリポジトリ（例: `scripts/capture_screenshots.sh` の出力 `Screenshots/<platform>/<locale>/`）はそれを使う。無ければ先に撮影を用意する（このスキルの範囲外）
 2. **設定ファイルを書く**。リポジトリの `scripts/store_frames.json` などに置き、パスはその設定ファイルからの相対で書く。雛形は [examples/store_frames.json](examples/store_frames.json)、全項目は [references/config.md](references/config.md)
