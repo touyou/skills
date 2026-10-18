@@ -13,6 +13,7 @@ touyou 個人の Agent Skills 集。**Claude Code** と **OpenAI Codex** の両�
 /plugin install dev-flow-pack@touyou-skills   # PR・チケット・bot 自動化系
 /plugin install a11y-pack@touyou-skills       # Apple プラットフォームのアクセシビリティ対応
 /plugin install meta-pack@touyou-skills       # このリポジトリ自体の運用・拡充支援
+/plugin install store-pack@touyou-skills      # ストア画像（スクショに見出し・背景・枠）
 ```
 
 プラグインは目的別に分かれているので、必要なものだけ入れて OK。
@@ -42,6 +43,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `a11y-pack` | `touyou-skills` | [`apple-accessibility`](./skills/apple-accessibility/) | SwiftUI / UIKit のアクセシビリティ実装・レビュー。HIG の Vision / Mobility / Cognitive / Hearing / Speech チェックリストと実装パターン集 |
 | `meta-pack` | `touyou-skills` | [`harness-intake`](./skills/harness-intake/) | 実プロジェクトで磨いた AI エージェントハーネスの汎用パターンを、touyou/skills への GitHub Issue として起票する |
 | `meta-pack` | `touyou-skills` | [`retrospective`](./skills/retrospective/) | セッション失敗と PR 指摘の「繰り返し」を掘り起こし、AGENTS.md / スキル / memory への恒久ルール候補として提示する |
+| `store-pack` | `touyou-skills` | [`store-screenshot-composer`](./skills/store-screenshot-composer/) | 撮影済みのスクショに見出し・背景・端末の枠・拡大カードを付けて、App Store / Google Play 用の画像を JSON 設定から全ロケール・全サイズ一括で作る |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
 
