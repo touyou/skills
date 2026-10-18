@@ -4,7 +4,7 @@ description: 撮影済みの素のスクリーンショットから、見出し�
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # store-screenshot-composer
@@ -23,6 +23,10 @@ metadata:
 6. 出力は既定で gitignore 済みの場所に置く（素のスクショと同じ扱い）。設定ファイルだけをコミットする
 
 ストアへのアップロード（`asc screenshots upload` など）と審査提出はユーザーの OK を取ってから。
+
+## touyou のアプリなら touyou.dev の型に合わせる
+
+touyou の個人アプリは、ポートフォリオの紹介ページと OG 画像で見た目の型（左上にアイコンとアプリ名、太い黒の見出しを句点まで、ほぼ白かほぼ黒の背景に 1 色だけ差す、柔らかい影）がそろっている。`"theme": "light"`（または `"dark"`）+ `"align": "left"` + `"eyebrow"` でこの型になる。アプリごとの配色と設定例は [references/touyou-house-style.md](references/touyou-house-style.md)。
 
 ## 工夫の引き出し
 

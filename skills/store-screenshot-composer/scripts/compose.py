@@ -24,9 +24,17 @@ import sys
 import unicodedata
 
 try:
-    from PIL import Image, ImageDraw, ImageFilter, ImageFont
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont, features
 except ImportError:  # pragma: no cover
     sys.exit("Pillow is required: python3 -m pip install pillow")
+
+# Proportional kana (CSS `font-feature-settings: 'palt'`), the same setting touyou.dev's
+# headings use. Needs Pillow built with libraqm; without it the text is just a little looser.
+FONT_FEATURES = ["palt"] if features.check("raqm") else None
+
+
+def measure(font, text):
+    return font.getlength(text, features=FONT_FEATURES)
 
 # Sizes App Store Connect accepts for the slots most apps fill (portrait). Landscape is the
 # same pair swapped. Google Play only bounds the aspect ratio, so it has no entry here.
@@ -63,8 +71,29 @@ FONT_CANDIDATES = {
     ],
 }
 
+# Starting points matching the touyou.dev app pages and their OG images: a near-white or
+# near-black ground, a heavy #1d1d1f headline, muted grey supporting text, soft shadows.
+THEMES = {
+    "light": {
+        "background": {"type": "gradient", "colors": ["#FBFBFD", "#EDEDF2"], "angle": 165},
+        "text_color": "#1D1D1F",
+        "subtitle_color": "#6E6E73",
+        "shadow": {"blur": 0.05, "opacity": 0.3, "offset": 0.025},
+        # A white screen on a near-white ground needs a hairline, like the site's cards.
+        "outline": "#00000014",
+    },
+    "dark": {
+        "background": {"type": "gradient", "colors": ["#1A1A1F", "#0A0A0C"], "angle": 165},
+        "text_color": "#F5F5F7",
+        "subtitle_color": "#A1A1A6",
+        "shadow": {"blur": 0.05, "opacity": 0.6, "offset": 0.025},
+    },
+}
+
 DEFAULTS = {
     "background": {"type": "solid", "color": "#1C1C1E"},
+    "align": "center",  # center | left
+    "eyebrow": None,  # {"icon": "path.png", "name": "App", "color": "#6E6E73"}
     "text_color": "#FFFFFF",
     "subtitle_color": None,  # falls back to text_color at 75% opacity
     "caption": "top",  # top | bottom
@@ -75,7 +104,8 @@ DEFAULTS = {
     "device_width": 0.80,  # fraction of the canvas width the screen (bezel excluded) takes
     "device_offset": 0.0,  # extra vertical shift, fraction of canvas height (+ = down)
     "corner_radius": 0.11,  # fraction of the screen width; ~matches modern iPhones
-    "bezel": None,  # {"width": 0.035, "color": "#0A0A0A", "edge": "#3A3A3C"}
+    "bezel": None,
+    "outline": None,  # hairline around the screen, e.g. "#00000014"  # {"width": 0.035, "color": "#0A0A0A", "edge": "#3A3A3C"}
     "shadow": {"blur": 0.03, "opacity": 0.45, "offset": 0.012},
     "tilt": 0.0,  # degrees, counter-clockwise
     "rotate_input": 0,  # 90 / 180 / 270: for landscape captures shown upright, etc.
@@ -148,7 +178,7 @@ def wrap(text, font, max_width):
         line = ""
         for tok in tokens(paragraph):
             candidate = line + tok
-            if line and font.getlength(candidate) > max_width and tok != " ":
+            if line and measure(font, candidate) > max_width and tok != " ":
                 if tok in NO_LINE_START and len(tok) == 1:
                     # Hang the punctuation on the current line rather than orphan it.
                     line = candidate
@@ -178,7 +208,7 @@ def balanced_wrap(text, font, max_width):
         for i, ch in enumerate(text[:-1]):
             if ch in PREFERRED_BREAKS:
                 a, b = text[: i + 1].rstrip(), text[i + 1 :].strip()
-                widest = max(font.getlength(a), font.getlength(b))
+                widest = max(measure(font, a), measure(font, b))
                 if b and widest <= max_width and (best is None or widest < best[0]):
                     best = (widest, [a, b])
         if best:
@@ -195,11 +225,14 @@ def balanced_wrap(text, font, max_width):
 
 def fit_text(text, font_path, start_px, max_width, max_lines, min_px):
     """Largest size (<= start_px) at which `text` wraps into at most `max_lines`."""
+    if "\n" in text:
+        # Explicit breaks are the author's call: shrink until each line fits, never re-wrap.
+        max_lines = text.count("\n") + 1
     size = start_px
     while True:
         font = ImageFont.truetype(font_path, size)
         lines = balanced_wrap(text, font, max_width)
-        widest = max((font.getlength(line) for line in lines), default=0)
+        widest = max((measure(font, line) for line in lines), default=0)
         if (len(lines) <= max_lines and widest <= max_width) or size <= min_px:
             return font, lines
         size = max(min_px, int(size * 0.94))
@@ -277,6 +310,10 @@ def build_device(shot, opt, screen_w):
     if not bezel:
         device = Image.new("RGBA", screen.size, (0, 0, 0, 0))
         device.paste(screen, (0, 0), rounded_mask(screen.size, radius))
+        if opt.get("outline"):
+            ImageDraw.Draw(device).rounded_rectangle(
+                (0, 0, device.width - 1, device.height - 1), radius=radius,
+                outline=color(opt["outline"]), width=max(2, device.width // 300))
         return device
     b = round(screen.width * bezel.get("width", 0.035))
     size = (screen.width + 2 * b, screen.height + 2 * b)
@@ -342,6 +379,11 @@ def compose(shot_img, opt, size, background, fonts, title, subtitle):
     margin = round(W * 0.08)
     text_w = W - 2 * margin
     blocks = []
+    eyebrow = opt.get("eyebrow")
+    if eyebrow:
+        ef = ImageFont.truetype(fonts["bold"], round(W * opt.get("eyebrow_size", 0.042)))
+        blocks.append(("eyebrow", ef, eyebrow))
+    bold_block = len(blocks)
     if title:
         f, lines = fit_text(title, fonts["bold"], round(W * opt["title_size"]), text_w, opt["max_title_lines"], round(W * 0.04))
         blocks.append((f, lines, color(opt["text_color"])))
@@ -350,26 +392,59 @@ def compose(shot_img, opt, size, background, fonts, title, subtitle):
         sub_col = color(opt["subtitle_color"]) if opt.get("subtitle_color") else color(opt["text_color"], 191)
         blocks.append((f, lines, sub_col))
 
+    def row_height(block):
+        if block[0] == "eyebrow":
+            return round(block[1].size * 2.0)
+        return len(block[1]) * round(block[0].size * 1.28)
+
     def block_height():
         total = 0
-        for i, (f, lines, _) in enumerate(blocks):
-            total += len(lines) * round(f.size * 1.28)
+        for i, block in enumerate(blocks):
+            total += row_height(block)
             if i:
-                total += round(f.size * 0.6)
+                total += round(blocks[i][1 if block[0] == "eyebrow" else 0].size * 0.6)
         return total
+
+    left = opt.get("align") == "left"
+
+    def x_for(width):
+        return margin if left else (W - width) / 2
 
     caption_top = opt["caption"] == "top"
     th = block_height()
-    ty = (cap_h - th) // 2 + round(H * 0.02) if caption_top else H - cap_h + (cap_h - th) // 2 - round(H * 0.01)
+    # Top captions start at a fixed line so the app name and headline sit at the same height
+    # on every image; the set reads as one row when the store lays them side by side.
+    ty = round(H * 0.045) if caption_top else H - cap_h + (cap_h - th) // 2 - round(H * 0.01)
     text_layer = Image.new("RGBA", size, (0, 0, 0, 0))
     tdraw = ImageDraw.Draw(text_layer)
-    for i, (f, lines, col) in enumerate(blocks):
+    for i, block in enumerate(blocks):
+        if block[0] == "eyebrow":
+            _, ef, eb = block
+            icon_px = round(ef.size * 2.0)
+            gap = round(ef.size * 0.55)
+            icon = eb.get("_icon")
+            row_w = (icon_px + gap if icon else 0) + measure(ef, eb.get("name", ""))
+            x = x_for(row_w)
+            if icon:
+                icon = icon.resize((icon_px, icon_px), Image.LANCZOS)
+                text_layer.paste(icon, (round(x), ty), rounded_mask(icon.size, round(icon_px * 0.225)))
+                x += icon_px + gap
+            tdraw.text((x, ty + icon_px / 2), eb.get("name", ""), font=ef, fill=color(eb.get("color", "#6E6E73")),
+                       anchor="lm", features=FONT_FEATURES)
+            ty += icon_px
+            continue
+        f, lines, col = block
         if i:
             ty += round(f.size * 0.6)
+        # No real bold face on this machine (bold and regular resolved to one file):
+        # thicken the headline with a same-colour stroke so previews read like the real thing.
+        stroke = round(f.size * 0.03) if i == bold_block and fonts["bold"] == fonts["regular"] else 0
         for line in lines:
-            lw = f.getlength(line)
-            tdraw.text(((W - lw) / 2, ty), line, font=f, fill=col)
+            tdraw.text((x_for(measure(f, line)), ty), line, font=f, fill=col, features=FONT_FEATURES,
+                       stroke_width=stroke, stroke_fill=col)
             ty += round(f.size * 1.28)
+
+    text_bottom = ty
 
     # Device.
     screen_w = round(W * opt["device_width"])
@@ -379,7 +454,8 @@ def compose(shot_img, opt, size, background, fonts, title, subtitle):
     device, (pad_x, pad_y) = drop_shadow(device, opt, W)
     dx = (W - device.width) // 2
     if caption_top:
-        dy = cap_h + round(H * 0.01) - pad_y
+        # A long headline pushes the device down rather than running into it.
+        dy = max(cap_h + round(H * 0.01), text_bottom + round(H * 0.025)) - pad_y
     else:
         dy = H - cap_h - (device.height - 2 * pad_y) - round(H * 0.01) - pad_y
         dy = max(dy, round(H * 0.04) - pad_y)
@@ -453,7 +529,8 @@ def main():
         lf = fonts_cfg.get(locale, fonts_cfg)
         fonts = {"bold": find_font(lf.get("bold"), "bold"), "regular": find_font(lf.get("regular"), "regular")}
         for st in sets:
-            style = {**DEFAULTS, **cfg.get("style", {}), **st.get("style", {})}
+            theme = st.get("style", {}).get("theme") or cfg.get("style", {}).get("theme")
+            style = {**DEFAULTS, **THEMES.get(theme, {}), **cfg.get("style", {}), **st.get("style", {})}
             size = tuple(st["size"]) if "size" in st else PRESETS[st["preset"]]
             out_dir = base / st["output"].format(locale=locale)
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -468,6 +545,12 @@ def main():
             outputs = []
             for i, shot in enumerate(shots):
                 opt = {**style, **shot.get("style", {})}
+                if opt.get("eyebrow"):
+                    eb = dict(opt["eyebrow"])
+                    eb["name"] = localized(eb.get("name"), locale) or ""
+                    if eb.get("icon"):
+                        eb["_icon"] = Image.open(base / eb["icon"]).convert("RGBA")
+                    opt["eyebrow"] = eb
                 src = base / st["input"].format(locale=locale) / shot["file"]
                 if args.placeholder:
                     img = placeholder(size, shot["file"])
