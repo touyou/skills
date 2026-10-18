@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.7.3"
+    "version": "0.8.0"
   },
   "plugins": [
     {
@@ -59,6 +59,15 @@
       "skills": [
         "./skills/harness-intake",
         "./skills/retrospective"
+      ]
+    },
+    {
+      "name": "store-pack",
+      "description": "アプリストア掲載物の制作スキル。撮影済みのスクリーンショットから、見出し・背景・端末の枠・拡大カードを付けた App Store / Google Play 用の画像を JSON 設定 1 枚で一括生成する。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/store-screenshot-composer"
       ]
     }
   ]

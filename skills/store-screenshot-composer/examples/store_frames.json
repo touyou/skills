@@ -1,0 +1,67 @@
+{
+  "locales": ["ja", "en"],
+  "style": {
+    "background": {
+      "type": "gradient",
+      "colors": ["#1B1F4B", "#2D4B8E", "#3F8F9A"],
+      "angle": 110,
+      "glow": { "color": "#FFFFFF", "opacity": 0.18, "y": 0.62 }
+    },
+    "panorama": true,
+    "bezel": { "width": 0.03, "color": "#0A0A0A", "edge": "#4A4A4E" }
+  },
+  "sets": [
+    {
+      "name": "iphone",
+      "preset": "iphone-6.9",
+      "input": "Screenshots/iphone/{locale}",
+      "output": "StoreImages/iphone/{locale}",
+      "shots": [
+        {
+          "file": "01-list.png",
+          "title": { "ja": "話しかけるだけで、\nやることが片づく", "en": "Just say it.\nYour todos are handled." },
+          "subtitle": { "ja": "Siri・ウィジェット・コントロールセンターから", "en": "From Siri, widgets and Control Center" }
+        },
+        {
+          "file": "02-detail.png",
+          "title": { "ja": "期限もメモも、\nひと目でわかる", "en": "Due dates and notes\nat a glance" }
+        },
+        {
+          "file": "03-add.png",
+          "title": { "ja": "思いついたら、\nすぐ追加", "en": "Add it the moment\nit comes to mind" }
+        },
+        {
+          "file": "04-settings.png",
+          "title": { "ja": "25 のアクションで\nショートカットに", "en": "25 actions\nfor Shortcuts" },
+          "subtitle": { "ja": "ほかのアプリと組み合わせて自動化", "en": "Automate with any other app" }
+        },
+        {
+          "file": "05-lists.png",
+          "title": { "ja": "リストとタグで\nすっきり整理", "en": "Organize with\nlists and tags" }
+        }
+      ]
+    },
+    {
+      "name": "ipad",
+      "preset": "ipad-13",
+      "input": "Screenshots/ipad/{locale}",
+      "output": "StoreImages/ipad/{locale}",
+      "style": { "title_size": 0.06, "subtitle_size": 0.028, "caption_height": 0.18, "device_width": 0.84, "corner_radius": 0.03 },
+      "shots": [
+        {
+          "file": "01-list.png",
+          "title": { "ja": "話しかけるだけで、やることが片づく", "en": "Just say it. Your todos are handled." },
+          "subtitle": { "ja": "Siri・ウィジェット・コントロールセンターから", "en": "From Siri, widgets and Control Center" }
+        },
+        { "file": "02-detail.png", "title": { "ja": "期限もメモも、ひと目でわかる", "en": "Due dates and notes at a glance" } },
+        { "file": "03-add.png", "title": { "ja": "思いついたら、すぐ追加", "en": "Add it the moment it comes to mind" } },
+        {
+          "file": "04-settings.png",
+          "title": { "ja": "25 のアクションでショートカットに", "en": "25 actions for Shortcuts" },
+          "subtitle": { "ja": "ほかのアプリと組み合わせて自動化", "en": "Automate with any other app" }
+        },
+        { "file": "05-lists.png", "title": { "ja": "リストとタグですっきり整理", "en": "Organize with lists and tags" } }
+      ]
+    }
+  ]
+}
