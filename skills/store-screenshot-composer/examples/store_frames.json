@@ -17,48 +17,127 @@
         {
           "file": "01-list.png",
           "title": { "ja": "話しかけるだけで、\nやることが片づく。", "en": "Just say it.\nIt's on your list." },
-          "subtitle": { "ja": "Siri・ウィジェット・コントロールセンターから", "en": "From Siri, widgets and Control Center" }
+          "subtitle": { "ja": "Siri・ウィジェット・コントロールセンターから", "en": "From Siri, widgets and Control Center" },
+          "style": {
+            "device_x": 0.56,
+            "device_width": 0.78,
+            "callout": {
+              "box": [0.0, 0.18, 1.0, 0.12],
+              "width": 0.66,
+              "x": 0.34,
+              "y": 0.8,
+              "tilt": -3,
+              "corner_radius": 0.06
+            }
+          }
         },
         {
           "file": "02-detail.png",
-          "title": { "ja": "期限もメモも、\nひと目で。", "en": "Due dates and notes,\nat a glance." }
+          "title": { "ja": "期限もメモも、\nひと目で。", "en": "Due dates and notes,\nat a glance." },
+          "style": { "device_x": 0.98, "tilt": -7 }
         },
         {
           "file": "03-add.png",
           "title": { "ja": "思いついたら、\nすぐ追加。", "en": "Add it the moment\nit comes to mind." },
-          "style": { "tilt": -4 }
+          "style": { "device_x": 0.63, "device_width": 0.64, "tilt": 3, "device_offset": 0.05 }
         },
         {
           "file": "04-settings.png",
           "title": { "ja": "25 のアクションで、\nショートカットに。", "en": "25 actions,\nready for Shortcuts." },
-          "subtitle": { "ja": "ほかのアプリと組み合わせて自動化", "en": "Automate with any other app" }
+          "subtitle": { "ja": "ほかのアプリと組み合わせて自動化", "en": "Automate with any other app" },
+          "style": { "tilt": 4, "device_x": 0.52 }
         },
         {
           "file": "05-lists.png",
-          "title": { "ja": "リストとタグで、\nすっきり整理。", "en": "Lists and tags\nkeep it tidy." }
+          "title": { "ja": "リストとタグで、\nすっきり整理。", "en": "Lists and tags\nkeep it tidy." },
+          "style": { "device_width": 0.9, "device_offset": 0.06 }
         }
-      ]
+      ],
+      "style": {
+        "panorama": true,
+        "background": {
+          "type": "gradient",
+          "colors": ["#FBFBFD", "#EDEDF2"],
+          "angle": 100,
+          "ribbons": [
+            {
+              "color": "#0A84FF",
+              "opacity": 0.16,
+              "y": 0.66,
+              "width": 0.16,
+              "amplitude": 0.07,
+              "period": 1.9,
+              "slope": 0.04
+            },
+            {
+              "color": "#0A84FF",
+              "opacity": 0.1,
+              "y": 0.78,
+              "width": 0.07,
+              "amplitude": 0.09,
+              "period": 1.3,
+              "phase": 0.3,
+              "slope": 0.04
+            }
+          ]
+        }
+      }
     },
     {
       "name": "ipad",
       "preset": "ipad-13",
       "input": "Screenshots/ipad/{locale}",
       "output": "StoreImages/ipad/{locale}",
-      "style": { "title_size": 0.066, "subtitle_size": 0.028, "eyebrow_size": 0.03, "caption_height": 0.26, "device_width": 0.84, "corner_radius": 0.03 },
+      "style": {
+        "title_size": 0.066,
+        "subtitle_size": 0.028,
+        "eyebrow_size": 0.03,
+        "caption_height": 0.26,
+        "device_width": 0.84,
+        "corner_radius": 0.03,
+        "panorama": true,
+        "background": {
+          "type": "gradient",
+          "colors": ["#FBFBFD", "#EDEDF2"],
+          "angle": 100,
+          "ribbons": [
+            {
+              "color": "#0A84FF",
+              "opacity": 0.14,
+              "y": 0.7,
+              "width": 0.12,
+              "amplitude": 0.05,
+              "period": 1.6,
+              "slope": 0.03
+            }
+          ]
+        }
+      },
       "shots": [
         {
           "file": "01-list.png",
           "title": { "ja": "話しかけるだけで、\nやることが片づく。", "en": "Just say it.\nIt's on your list." },
           "subtitle": { "ja": "Siri・ウィジェット・コントロールセンターから", "en": "From Siri, widgets and Control Center" }
         },
-        { "file": "02-detail.png", "title": { "ja": "期限もメモも、ひと目で。", "en": "Due dates and notes, at a glance." } },
-        { "file": "03-add.png", "title": { "ja": "思いついたら、すぐ追加。", "en": "Add it the moment it comes to mind." } },
+        {
+          "file": "02-detail.png",
+          "title": { "ja": "期限もメモも、ひと目で。", "en": "Due dates and notes, at a glance." }
+        },
+        {
+          "file": "03-add.png",
+          "title": { "ja": "思いついたら、すぐ追加。", "en": "Add it the moment it comes to mind." },
+          "style": { "tilt": -3 }
+        },
         {
           "file": "04-settings.png",
           "title": { "ja": "25 のアクションで、ショートカットに。", "en": "25 actions, ready for Shortcuts." },
           "subtitle": { "ja": "ほかのアプリと組み合わせて自動化", "en": "Automate with any other app" }
         },
-        { "file": "05-lists.png", "title": { "ja": "リストとタグで、すっきり整理。", "en": "Lists and tags keep it tidy." } }
+        {
+          "file": "05-lists.png",
+          "title": { "ja": "リストとタグで、すっきり整理。", "en": "Lists and tags keep it tidy." },
+          "style": { "device_offset": 0.04 }
+        }
       ]
     }
   ]

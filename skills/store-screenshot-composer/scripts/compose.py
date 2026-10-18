@@ -51,19 +51,25 @@ PRESETS = {
     "play-phone": (1080, 1920),
 }
 
+# touyou.dev's app pages ask for -apple-system, Hiragino Sans, then Noto Sans JP, and set
+# headings at 700. Hiragino Sans renders 700 as W6 and 400 as W3, so on a Mac that is what
+# the page looks like. Elsewhere the page falls back to Noto Sans JP, a variable font (one
+# file serves both weights) that `fetch_fonts.sh` puts in the cache folder.
+FONT_CACHE = pathlib.Path("~/.cache/store-screenshot-composer").expanduser()
+NOTO_JP = [
+    FONT_CACHE / "NotoSansJP[wght].ttf",
+    pathlib.Path("~/Library/Fonts/NotoSansJP[wght].ttf").expanduser(),
+    pathlib.Path("~/Library/Fonts/NotoSansJP-VariableFont_wght.ttf").expanduser(),
+    pathlib.Path("/usr/share/fonts/truetype/noto/NotoSansJP[wght].ttf"),
+]
 FONT_CANDIDATES = {
-    "bold": [
-        "/System/Library/Fonts/ヒラギノ角ゴシック W7.ttc",
-        "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc",
-        "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "bold": ["/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"] + [(p, 700) for p in NOTO_JP] + [
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
         "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf",
         "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
     ],
-    "regular": [
-        "/System/Library/Fonts/ヒラギノ角ゴシック W4.ttc",
-        "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
+    "regular": ["/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc"] + [(p, 400) for p in NOTO_JP] + [
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf",
@@ -134,13 +140,38 @@ def localized(value, locale):
 
 
 def find_font(explicit, weight):
-    for path in ([explicit] if explicit else []) + FONT_CANDIDATES[weight]:
-        if path and pathlib.Path(path).expanduser().exists():
-            return str(pathlib.Path(path).expanduser())
+    """A (path, weight) pair. `weight` is None for a static font file.
+
+    `explicit` is a path, or {"path": ..., "weight": 800} to pick a weight of a variable font.
+    """
+    if isinstance(explicit, dict):
+        explicit = (explicit["path"], explicit.get("weight"))
+    for entry in ([explicit] if explicit else []) + FONT_CANDIDATES[weight]:
+        path, wght = entry if isinstance(entry, tuple) else (entry, None)
+        path = pathlib.Path(path).expanduser()
+        if path.exists():
+            return str(path), wght
     sys.exit(
-        f"no {weight} font found. Set fonts.{weight} in the config "
+        f"no {weight} font found. Run scripts/fetch_fonts.sh, or set fonts.{weight} in the config "
         "(any .ttf/.otf/.ttc that covers the languages you use)."
     )
+
+
+def load_font(spec, size):
+    path, wght = spec
+    font = ImageFont.truetype(path, size)
+    if wght is not None:
+        try:
+            axes = font.get_variation_axes()
+        except OSError:  # not a variable font: the file's own weight is all there is
+            return font
+        font.set_variation_by_axes([wght if a["name"] in (b"Weight", "Weight") else a["default"] for a in axes])
+    return font
+
+
+def fake_bold(fonts):
+    """True when no real bold face was found (both weights resolved to one static file)."""
+    return fonts["bold"][0] == fonts["regular"][0] and fonts["bold"][1] is None
 
 
 def is_wide(ch):
@@ -230,7 +261,7 @@ def fit_text(text, font_path, start_px, max_width, max_lines, min_px):
         max_lines = text.count("\n") + 1
     size = start_px
     while True:
-        font = ImageFont.truetype(font_path, size)
+        font = load_font(font_path, size)
         lines = balanced_wrap(text, font, max_width)
         widest = max((measure(font, line) for line in lines), default=0)
         if (len(lines) <= max_lines and widest <= max_width) or size <= min_px:
@@ -269,6 +300,27 @@ def cover(image, size):
     return image.crop((left, top, left + w, top + h))
 
 
+def ribbon(spec, size):
+    """A soft wave of colour across the canvas. Sized in canvas heights, so on a panorama
+    it keeps one shape and flows from image to image."""
+    w, h = size
+    yc, half = spec.get("y", 0.6) * h, spec.get("width", 0.12) * h / 2
+    amp, period = spec.get("amplitude", 0.08) * h, spec.get("period", 1.6) * h
+    phase = spec.get("phase", 0.0) * 2 * math.pi
+    slope = spec.get("slope", 0.0)  # canvas heights of rise per canvas height of run
+    xs = range(-int(half * 2), w + int(half * 2) + 1, max(4, w // 600))
+
+    def centre(x):
+        return yc + amp * math.sin(2 * math.pi * x / period + phase) - slope * x
+
+    top = [(x, centre(x) - half) for x in xs]
+    bottom = [(x, centre(x) + half) for x in reversed(xs)]
+    layer = Image.new("RGBA", size, (0, 0, 0, 0))
+    ImageDraw.Draw(layer).polygon(top + bottom, fill=color(spec["color"], int(255 * spec.get("opacity", 0.12))))
+    blur = spec.get("blur", 0.002) * h
+    return layer.filter(ImageFilter.GaussianBlur(blur)) if blur >= 1 else layer
+
+
 def render_background(spec, size, base_dir):
     kind = spec.get("type", "solid")
     if kind == "solid":
@@ -281,14 +333,16 @@ def render_background(spec, size, base_dir):
             bg = Image.alpha_composite(bg, Image.new("RGBA", size, (0, 0, 0, int(255 * spec["dim"]))))
     else:
         raise ValueError(f"unknown background type: {kind}")
-    if spec.get("glow"):
+    glows = spec.get("glow") or []
+    for g in glows if isinstance(glows, list) else [glows]:
         # A soft light blob behind the device: the cheapest way to stop a flat fill looking flat.
-        g = spec["glow"]
         layer = Image.new("RGBA", size, (0, 0, 0, 0))
         cx, cy = g.get("x", 0.5) * size[0], g.get("y", 0.6) * size[1]
-        r = g.get("radius", 0.45) * size[0]
+        r = g.get("radius", 0.45) * min(size)
         ImageDraw.Draw(layer).ellipse((cx - r, cy - r, cx + r, cy + r), fill=color(g["color"], int(255 * g.get("opacity", 0.5))))
         bg = Image.alpha_composite(bg, layer.filter(ImageFilter.GaussianBlur(r * 0.5)))
+    for r in spec.get("ribbons", []):
+        bg = Image.alpha_composite(bg, ribbon(r, size))
     return bg
 
 
@@ -368,113 +422,138 @@ def callout(shot, spec, canvas_w):
 # --- one image -------------------------------------------------------------------------
 
 
-def compose(shot_img, opt, size, background, fonts, title, subtitle):
+# Headlines follow the site's `leading-[1.2]`; supporting text gets more air.
+LINE_HEIGHT = {"title": 1.22, "subtitle": 1.4}
+
+
+def layout_text(opt, size, fonts, title, subtitle):
+    """The caption as a transparent layer, plus the y where it ends."""
     W, H = size
-    canvas = background.copy()
-
-    if opt.get("rotate_input"):
-        shot_img = shot_img.rotate(-opt["rotate_input"], expand=True)
-
-    # Text block.
     cap_h = round(H * opt["caption_height"])
     margin = round(W * 0.08)
     text_w = W - 2 * margin
     blocks = []
     eyebrow = opt.get("eyebrow")
     if eyebrow:
-        ef = ImageFont.truetype(fonts["bold"], round(W * opt.get("eyebrow_size", 0.042)))
+        ef = load_font(fonts["bold"], round(W * opt.get("eyebrow_size", 0.042)))
         blocks.append(("eyebrow", ef, eyebrow))
-    bold_block = len(blocks)
     if title:
         f, lines = fit_text(title, fonts["bold"], round(W * opt["title_size"]), text_w, opt["max_title_lines"], round(W * 0.04))
-        blocks.append((f, lines, color(opt["text_color"])))
+        blocks.append(("title", f, lines, color(opt["text_color"])))
     if subtitle:
         f, lines = fit_text(subtitle, fonts["regular"], round(W * opt["subtitle_size"]), text_w, 3, round(W * 0.025))
         sub_col = color(opt["subtitle_color"]) if opt.get("subtitle_color") else color(opt["text_color"], 191)
-        blocks.append((f, lines, sub_col))
+        blocks.append(("subtitle", f, lines, sub_col))
 
     def row_height(block):
         if block[0] == "eyebrow":
             return round(block[1].size * 2.0)
-        return len(block[1]) * round(block[0].size * 1.28)
+        return len(block[2]) * round(block[1].size * LINE_HEIGHT[block[0]])
 
-    def block_height():
-        total = 0
-        for i, block in enumerate(blocks):
-            total += row_height(block)
-            if i:
-                total += round(blocks[i][1 if block[0] == "eyebrow" else 0].size * 0.6)
-        return total
+    def gap_before(i):
+        return round(blocks[i][1].size * 0.6) if i else 0
 
     left = opt.get("align") == "left"
 
     def x_for(width):
         return margin if left else (W - width) / 2
 
-    caption_top = opt["caption"] == "top"
-    th = block_height()
-    # Top captions start at a fixed line so the app name and headline sit at the same height
-    # on every image; the set reads as one row when the store lays them side by side.
-    ty = round(H * 0.045) if caption_top else H - cap_h + (cap_h - th) // 2 - round(H * 0.01)
-    text_layer = Image.new("RGBA", size, (0, 0, 0, 0))
-    tdraw = ImageDraw.Draw(text_layer)
+    th = sum(row_height(b) + gap_before(i) for i, b in enumerate(blocks))
+    # Top captions start at a fixed line so headlines sit at the same height on every
+    # image; the set reads as one row when the store lays them side by side.
+    ty = round(H * 0.045) if opt["caption"] == "top" else H - cap_h + (cap_h - th) // 2 - round(H * 0.01)
+    layer = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
     for i, block in enumerate(blocks):
+        ty += gap_before(i)
         if block[0] == "eyebrow":
             _, ef, eb = block
             icon_px = round(ef.size * 2.0)
+            if eb.get("_reserve"):
+                ty += icon_px
+                continue
             gap = round(ef.size * 0.55)
             icon = eb.get("_icon")
             row_w = (icon_px + gap if icon else 0) + measure(ef, eb.get("name", ""))
             x = x_for(row_w)
             if icon:
                 icon = icon.resize((icon_px, icon_px), Image.LANCZOS)
-                text_layer.paste(icon, (round(x), ty), rounded_mask(icon.size, round(icon_px * 0.225)))
+                layer.paste(icon, (round(x), ty), rounded_mask(icon.size, round(icon_px * 0.225)))
                 x += icon_px + gap
-            tdraw.text((x, ty + icon_px / 2), eb.get("name", ""), font=ef, fill=color(eb.get("color", "#6E6E73")),
-                       anchor="lm", features=FONT_FEATURES)
+            draw.text((x, ty + icon_px / 2), eb.get("name", ""), font=ef, fill=color(eb.get("color", "#6E6E73")),
+                      anchor="lm", features=FONT_FEATURES)
             ty += icon_px
             continue
-        f, lines, col = block
-        if i:
-            ty += round(f.size * 0.6)
-        # No real bold face on this machine (bold and regular resolved to one file):
-        # thicken the headline with a same-colour stroke so previews read like the real thing.
-        stroke = round(f.size * 0.03) if i == bold_block and fonts["bold"] == fonts["regular"] else 0
+        kind, f, lines, col = block
+        # No real bold face on this machine: thicken the headline with a same-colour stroke
+        # so previews read like the real thing.
+        stroke = round(f.size * 0.03) if kind == "title" and fake_bold(fonts) else 0
         for line in lines:
-            tdraw.text((x_for(measure(f, line)), ty), line, font=f, fill=col, features=FONT_FEATURES,
-                       stroke_width=stroke, stroke_fill=col)
-            ty += round(f.size * 1.28)
+            draw.text((x_for(measure(f, line)), ty), line, font=f, fill=col, features=FONT_FEATURES,
+                      stroke_width=stroke, stroke_fill=col)
+            ty += round(f.size * LINE_HEIGHT[kind])
+    return layer, ty
 
-    text_bottom = ty
 
-    # Device.
+def device_layer(shot_img, opt, size, text_bottom):
+    """The framed, shadowed device and where its top-left goes, relative to the image."""
+    W, H = size
+    cap_h = round(H * opt["caption_height"])
     screen_w = round(W * opt["device_width"])
     device = build_device(shot_img, opt, screen_w)
     if opt.get("tilt"):
         device = device.rotate(opt["tilt"], resample=Image.BICUBIC, expand=True)
     device, (pad_x, pad_y) = drop_shadow(device, opt, W)
-    dx = (W - device.width) // 2
-    if caption_top:
+    dx = round(W * opt.get("device_x", 0.5)) - device.width // 2
+    if opt["caption"] == "top":
         # A long headline pushes the device down rather than running into it.
         dy = max(cap_h + round(H * 0.01), text_bottom + round(H * 0.025)) - pad_y
     else:
         dy = H - cap_h - (device.height - 2 * pad_y) - round(H * 0.01) - pad_y
         dy = max(dy, round(H * 0.04) - pad_y)
     dy += round(H * opt["device_offset"])
-    # paste, not alpha_composite: the device may hang off the canvas edge on purpose.
-    canvas.paste(device, (dx, dy), device)
+    return device, (dx, dy)
 
-    if opt.get("callout"):
-        spec = opt["callout"]
-        card = callout(shot_img, spec, W)
-        card, (cpx, cpy) = drop_shadow(card, {"shadow": {"blur": 0.02, "opacity": 0.25, "offset": 0.01}}, W)
-        cx = round(W * spec.get("x", 0.5)) - card.width // 2
-        cy = round(H * spec.get("y", 0.62)) - card.height // 2
-        canvas.paste(card, (cx, cy), card)
 
-    canvas.alpha_composite(text_layer)
+def callout_layer(shot_img, opt, size):
+    W, H = size
+    spec = opt["callout"]
+    card = callout(shot_img, spec, W)
+    if spec.get("tilt"):
+        card = card.rotate(spec["tilt"], resample=Image.BICUBIC, expand=True)
+    card, _ = drop_shadow(card, {"shadow": {"blur": 0.025, "opacity": 0.25, "offset": 0.014}}, W)
+    return card, (round(W * spec.get("x", 0.5)) - card.width // 2, round(H * spec.get("y", 0.62)) - card.height // 2)
+
+
+def compose_strip(items, size, background):
+    """Lay out several images side by side on one canvas, then cut it apart.
+
+    `items` are (capture, opt, title, subtitle, fonts). Everything is drawn on the shared
+    canvas, so a device or card placed past an image's edge (`device_x` > 1, a callout `x`
+    < 0) carries on into the neighbouring image. All devices go down before any caption,
+    so a device reaching over from next door never covers that image's headline.
+    """
+    W, H = size
+    canvas = background.copy()
+    texts, cards = [], []
+    for i, (shot_img, opt, title, subtitle, fonts) in enumerate(items):
+        if opt.get("rotate_input"):
+            shot_img = shot_img.rotate(-opt["rotate_input"], expand=True)
+        text, text_bottom = layout_text(opt, size, fonts, title, subtitle)
+        texts.append((text, i * W))
+        if opt.get("device", True):
+            device, (dx, dy) = device_layer(shot_img, opt, size, text_bottom)
+            # paste, not alpha_composite: the device may hang off the canvas edge on purpose.
+            canvas.paste(device, (i * W + dx, dy), device)
+        if opt.get("callout"):
+            card, (cx, cy) = callout_layer(shot_img, opt, size)
+            cards.append((card, (i * W + cx, cy)))
+    for card, pos in cards:
+        canvas.paste(card, pos, card)
+    for text, x in texts:
+        canvas.alpha_composite(text, (x, 0))
     # ASC rejects images with an alpha channel.
-    return canvas.convert("RGB")
+    return [canvas.crop((i * W, 0, (i + 1) * W, H)).convert("RGB") for i in range(len(items))]
 
 
 # --- driver ----------------------------------------------------------------------------
@@ -537,16 +616,15 @@ def main():
             out_dir.mkdir(parents=True, exist_ok=True)
             shots = st["shots"]
 
-            # Panorama: render one wide background and hand each image its slice, so the
-            # images line up into one continuous picture when scrolled in the store.
-            panorama = style.get("panorama")
-            if panorama:
-                wide = render_background(style["background"], (size[0] * len(shots), size[1]), base)
-
-            outputs = []
+            items, dests = [], []
             for i, shot in enumerate(shots):
                 opt = {**style, **shot.get("style", {})}
-                if opt.get("eyebrow"):
+                # The app's icon and name introduce the set; repeated on every image they
+                # read as a watermark. "eyebrow_scope": "all" puts them back everywhere.
+                # Its row stays reserved, so every headline still starts at the same height.
+                if opt.get("eyebrow") and i > 0 and opt.get("eyebrow_scope", "first") == "first":
+                    opt["eyebrow"] = {"_reserve": True}
+                if opt.get("eyebrow") and not opt["eyebrow"].get("_reserve"):
                     eb = dict(opt["eyebrow"])
                     eb["name"] = localized(eb.get("name"), locale) or ""
                     icon_path = base / eb["icon"] if eb.get("icon") else None
@@ -565,15 +643,23 @@ def main():
                     continue
                 else:
                     img = Image.open(src).convert("RGBA")
-                if panorama:
-                    bg = wide.crop((size[0] * i, 0, size[0] * (i + 1), size[1]))
+                items.append((img, opt, localized(shot.get("title"), locale), localized(shot.get("subtitle"), locale), fonts))
+                dests.append(out_dir / shot.get("output", shot["file"]))
+
+            # Panorama: the whole set is one wide picture cut into images, so the background
+            # and anything placed across an edge line up when scrolled in the store. A set
+            # with a missing capture is skipped: its neighbours' pieces would not line up.
+            if style.get("panorama"):
+                if len(items) < len(shots):
+                    rendered = []
                 else:
-                    bg = render_background(opt["background"], size, base)
-                out = compose(
-                    img, opt, size, bg, fonts,
-                    localized(shot.get("title"), locale), localized(shot.get("subtitle"), locale),
-                )
-                dest = out_dir / shot.get("output", shot["file"])
+                    wide = render_background(style["background"], (size[0] * len(items), size[1]), base)
+                    rendered = compose_strip(items, size, wide)
+            else:
+                rendered = [compose_strip([item], size, render_background(item[1]["background"], size, base))[0]
+                            for item in items]
+            outputs = []
+            for out, dest in zip(rendered, dests):
                 out.save(dest, optimize=True)
                 outputs.append(dest)
                 written += 1

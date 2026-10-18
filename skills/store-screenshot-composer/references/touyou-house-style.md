@@ -11,7 +11,8 @@ OG 画像から読み取ったもの。`theme` と `align: "left"` と `eyebrow`
 - **補足は 1 行、グレーで小さく**（対応端末や数字）
 - **背景はほぼ白かほぼ黒**。色はアプリごとに 1 色だけ差す（下表）
 - **画面は柔らかく大きい影で浮かせる**。端末の枠は付けない。白い画面には細い縁取り
-- 傾けるのは 1 セットに 1 枚まで（OG の Intento は浮いた UI を少し傾けている）
+- アイコンとアプリ名は 1 枚目だけ。2 枚目以降は見出しから始める
+- 並びで動きを出す。差し色の帯を全体に流し、1〜2 枚の端末を傾けて隣の画像にまたがせる（OG の Intento も浮いた UI を少し傾けている）。表紙と最後の 1 枚は落ち着かせる
 
 文言は LP の見出し・App Store の説明文の小見出しから取る。LP とストアで言い回しを変えない。
 
@@ -29,7 +30,7 @@ OG 画像と LP のトップのカルーセル（`src/components/home/AppCarouse
 | GRAPHICA | dark | `#06060A` | `#D9FF4D` | LP は graphica.touyou.dev |
 | Graphica Playground | dark | `#16171A` → `#0B0C0E` | `#67DABD` / `#C792EA` | |
 
-差し色は背景に塗らず、`background.glow` の色や拡大カードの `border` に少しだけ使う。
+差し色は背景に塗らず、`background.ribbons` の帯（不透明度 0.1〜0.16）や `background.glow` の色、拡大カードの `border` に少しだけ使う。
 
 ```jsonc
 // チェケラ
@@ -44,4 +45,4 @@ OG 画像と LP のトップのカルーセル（`src/components/home/AppCarouse
 
 ## 書体
 
-LP は `-apple-system, Hiragino Sans, Noto Sans JP` の順。Mac で動かせば既定でヒラギノ（見出しは W7）になり、LP と同じに見える。見出しには `palt`（詰め組み）を掛ける（Pillow が libraqm 付きのとき）。
+アプリの LP は `-apple-system, Hiragino Sans, Noto Sans JP` の順で、見出しは 700（`font-bold`）、行送り 1.2、`palt`。Mac / iPhone で見るとヒラギノ角ゴ W6、それ以外では Noto Sans JP 700 になる。スクリプトはこの順で探すので、Mac ではヒラギノ、クラウドや Linux では `fetch_fonts.sh` で入れた Noto Sans JP になり、どちらも LP と同じに見える。英数字は LP（SF Pro）と少し違う。
