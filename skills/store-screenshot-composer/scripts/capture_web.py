@@ -83,11 +83,14 @@ def main():
         strip = Image.open(shot).convert("RGB")
 
     w, h = round(fw * args.scale), round(fh * args.scale)
-    if strip.width != w * args.count or strip.height < h:
-        sys.exit(f"got a {strip.size[0]}x{strip.size[1]} shot, expected at least {w * args.count}x{h}")
-    strip = strip.crop((0, 0, w * args.count, h))
-    for i, name in enumerate(names):
-        strip.crop((i * w, 0, (i + 1) * w, h)).save(out / name, optimize=True)
+    # A fractional --scale rounds the whole strip once, not per frame, so frame i starts at
+    # round(i * fw * scale) and every frame is cut at exactly w px.
+    starts = [round(i * fw * args.scale) for i in range(args.count)]
+    if abs(strip.width - round(fw * args.count * args.scale)) > 1 or strip.height < h or starts[-1] + w > strip.width:
+        sys.exit(f"got a {strip.size[0]}x{strip.size[1]} shot, expected {round(fw * args.count * args.scale)}x{h} or taller")
+    for x, name in zip(starts, names):
+        strip.crop((x, 0, x + w, h)).save(out / name, optimize=True)
+    strip = strip.crop((0, 0, starts[-1] + w, h))
     strip.resize((round(strip.width * 900 / h), 900)).save(out / "_overview.png")
     print(f"{args.count} image(s) of {w}x{h} -> {out}")
 
