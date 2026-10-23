@@ -199,6 +199,6 @@ gh pr close <number> --comment "クローズ理由: <具体的な理由>"
 
 ## 由来とブラッシュアップ方針
 
-このスキルは habee-app (Flutter) で運用していた `codex-review` スキル (Codex GitHub Actions 専用) を、複数 bot 対応に汎用化したもの。`make test` / Flutter Tests / squash merge 無効 / `AGENTS.md` 等のプロジェクト固有要素を `.claude/ai-bot-pr-review.local.md` に外出ししてある。
+このスキルは Flutter アプリのリポジトリで運用していた `codex-review` スキル (Codex GitHub Actions 専用) を、複数 bot 対応に汎用化したもの。`make test` / Flutter Tests / squash merge 無効 / `AGENTS.md` 等のプロジェクト固有要素を `.claude/ai-bot-pr-review.local.md` に外出ししてある。
 
 他プロジェクトで類似の bot triage を運用していたら、`bot_authors` / `branch_prefixes` / カテゴリ判定の差分を集めて、このスキルの判定マトリクスをブラッシュアップする想定。

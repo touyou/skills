@@ -61,4 +61,4 @@ issue #123 着手
 
 ## 詳細
 
-スキル本体の仕様は [SKILL.md](./SKILL.md) を参照。habee-app (Flutter + Notion 運用) で運用していた `ticket` スキルを汎用化し、Source を pluggable な構造に再設計したもの。
+スキル本体の仕様は [SKILL.md](./SKILL.md) を参照。Flutter + Notion 運用のリポジトリで使っていた `ticket` スキルを汎用化し、Source を pluggable な構造に再設計したもの。
