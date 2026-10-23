@@ -7,7 +7,8 @@
   scan     各リポジトリの origin デフォルトブランチのロックファイル（Maven / Gradle は直接書かれた依存）から、指定パッケージの
            解決済みバージョンと悪性パッケージ名の一致を出す
   runtimes 各リポジトリの origin デフォルトブランチから、Dockerfile の FROM と
-           ランタイム指定ファイル（.node-version 等）、CI の node-version を出す
+           ランタイム指定ファイル（.node-version 等）、CI の node-version、
+           GitHub Actions で使っている action（uses:）を出す
 
 出力は 1 行 1 件のタブ区切り（repo, 最終コミット日, 種別, 内容）。判定（脆弱な範囲に
 入るか）はこのスクリプトでは行わない。範囲の読み方が勧告ごとに違うので、呼び出し側が
@@ -299,8 +300,12 @@ def runtimes_repo(root: str, repo: str) -> list[str]:
             body = " ".join(show(repo, ref, f).split())[:120]
             rows.add(f"runtime-file\t{body} ({f})")
         elif WORKFLOW_RE.search(f):
-            for m in re.finditer(r"(node-version|ruby-version|python-version|go-version|bun-version|php-version):\s*(\S[^\n#]*)", show(repo, ref, f)):
+            body = show(repo, ref, f)
+            for m in re.finditer(r"(node-version|ruby-version|python-version|go-version|bun-version|php-version):\s*(\S[^\n#]*)", body):
                 rows.add(f"ci\t{m.group(1)}: {m.group(2).strip()} ({f})")
+            # 使っている action（侵害・勧告との照合用）。ローカルの action（./）と docker:// は除く
+            for m in re.finditer(r"(?m)^[\s-]*uses:\s*['\"]?([A-Za-z0-9_.-]+/[^\s'\"#@]+@[^\s'\"#]+)", body):
+                rows.add(f"action\t{m.group(1)} ({f})")
         elif f.endswith("package.json") and f.count("/") <= 2:
             try:
                 data = json.loads(show(repo, ref, f))

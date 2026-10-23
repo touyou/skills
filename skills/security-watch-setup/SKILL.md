@@ -106,6 +106,9 @@ PowerShell のコマンドで個別に確かめる。
 - 悪性パッケージは名前の一致だけでなく、既知の痕跡（ファイル・プロセス）も確かめる
 - パッケージマネージャの「公開から一定時間は入れない」設定（mise の
   `minimum_release_age` など）は上書きしない。入れられる時刻をレポートに書く
+- 修正版がまだ管理ツール（Homebrew / mise など）に来ていないものは、版と CVE を書いて次回に再確認する
+- 修正版より古いランタイムが管理ツールに残っていれば、どこからも参照されていないものだけ消す
+- 対話入力（パスワード・2FA）が要るコマンドは実行しない。秘密情報はレポートに書かない
 
 ### Step 4: 登録して、1 回動かす
 
@@ -137,7 +140,7 @@ PowerShell のコマンドで個別に確かめる。
   - `scan`（origin のデフォルトブランチのロックファイルから、指定パッケージの解決済み
     バージョンと悪性パッケージ名を出す。npm / pip / gem / pod / spm / pub / composer / go / cargo / maven。maven は直接書かれた依存だけ）
   - `runtimes`（Dockerfile の `FROM`、ランタイム指定ファイル、CI の node-version 等、
-    package.json の engines）
+    package.json の engines、GitHub Actions の `uses:`）
   - 脆弱な範囲に入るかの判定はしない。勧告の affected range と照らし合わせるのはルーチン側
 
 ルーチンからスクリプトを呼ぶときは、このスキルをインストールした場所の絶対パスで書く。
