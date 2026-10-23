@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.8.0"
+    "version": "0.9.0"
   },
   "plugins": [
     {
@@ -68,6 +68,15 @@
       "strict": false,
       "skills": [
         "./skills/store-screenshot-composer"
+      ]
+    },
+    {
+      "name": "security-pack",
+      "description": "自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、その環境（Claude Code / Codex、macOS / Linux / Windows、シェル、ランタイムの入れ方、リポジトリの置き場所、PR を出してよい範囲）に合わせて設定するスキル。毎回一次情報を開いて新しい勧告・悪性パッケージ・ランタイムのセキュリティリリースを拾い、ロックファイルと Dockerfile で影響を判定し、メンテナのリポには PR、ほかは報告と連絡文を用意する。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/security-watch-setup"
       ]
     }
   ]
