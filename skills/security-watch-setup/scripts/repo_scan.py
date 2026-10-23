@@ -42,7 +42,7 @@ LOCKFILE_RE = re.compile(
 )
 RUNTIME_FILE_RE = re.compile(
     r"(^|/)(\.node-version|\.nvmrc|\.ruby-version|\.python-version|\.tool-versions"
-    r"|mise\.toml|\.mise\.toml|\.bun-version)$"
+    r"|mise\.toml|\.mise\.toml|\.bun-version|\.java-version|\.fvmrc)$"
 )
 DOCKERFILE_RE = re.compile(r"(^|/)(Dockerfile[^/]*|[^/]*\.Dockerfile)$")
 WORKFLOW_RE = re.compile(r"(^|/)\.github/workflows/[^/]+\.ya?ml$")
@@ -106,13 +106,20 @@ def sync_one(repo: str) -> str:
     env.setdefault("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ConnectTimeout=15")
     if git(repo, "fetch", "--all", "--prune", "-q", env=env).returncode != 0:
         return "FETCHFAIL"
-    head = git(repo, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD").stdout.strip()
-    default = head.split("/", 1)[1] if "/" in head else "main"
+    # origin/HEAD が無いクローンでは main / master の推測が外れる（既定が kotlin 等のリポがある）
+    if git(repo, "rev-parse", "--verify", "-q", "origin/HEAD").returncode != 0:
+        git(repo, "remote", "set-head", "origin", "--auto", env=env)
+    ref = default_ref(repo)
+    if not ref or not ref.startswith("origin/"):
+        return "NODEFAULT"
+    # origin/HEAD は origin/main などに解決してからブランチ名を取る
+    default = git(repo, "rev-parse", "--abbrev-ref", ref).stdout.strip().split("/", 1)[-1]
     current = git(repo, "branch", "--show-current").stdout.strip()
     dirty = git(repo, "status", "--porcelain").stdout.strip()
     if current != default or dirty:
         return f"SKIP({current or 'detached'}{', dirty' if dirty else ''})"
-    if git(repo, "pull", "--ff-only", "-q", env=env).returncode != 0:
+    # 無人実行なので、取り込んだ内容由来のフック（husky の post-merge 等）は走らせない
+    if git(repo, "-c", "core.hooksPath=/dev/null", "pull", "--ff-only", "-q", env=env).returncode != 0:
         return "PULLFAIL"
     return "PULLED"
 
@@ -161,7 +168,9 @@ def _gem_versions(text: str, name: str) -> set[str]:
 
 
 def _pod_versions(text: str, name: str) -> set[str]:
-    return set(re.findall(r"(?m)^  - " + re.escape(name) + r" \(([^)]+)\)", text))
+    # DEPENDENCIES 節の「(from `path`)」「(~> 5.0)」は制約なので、数字で始まる解決済みの版だけ残す
+    found = re.findall(r"(?m)^  - " + re.escape(name) + r" \(([^)]+)\)", text)
+    return {v for v in found if re.match(r"\d", v)}
 
 
 def _spm_versions(text: str, name: str) -> set[str]:
@@ -181,7 +190,8 @@ def _spm_versions(text: str, name: str) -> set[str]:
 
 
 def _pub_versions(text: str, name: str) -> set[str]:
-    return set(re.findall(r"(?ms)^  " + re.escape(name) + r":\n(?:    .*\n)*?    version: \"([^\"]+)\"", text))
+    # DOTALL にすると後ろのパッケージの version まで読み進めるので、行単位で区切る
+    return set(re.findall(r"(?m)^  " + re.escape(name) + r":\n(?:    [^\n]*\n)*?    version: \"([^\"]+)\"", text))
 
 
 def _composer_versions(text: str, name: str) -> set[str]:
@@ -301,7 +311,7 @@ def runtimes_repo(root: str, repo: str) -> list[str]:
             rows.add(f"runtime-file\t{body} ({f})")
         elif WORKFLOW_RE.search(f):
             body = show(repo, ref, f)
-            for m in re.finditer(r"(node-version|ruby-version|python-version|go-version|bun-version|php-version):\s*(\S[^\n#]*)", body):
+            for m in re.finditer(r"(node-version|ruby-version|python-version|go-version|bun-version|php-version|java-version|flutter-version|dotnet-version):\s*(\S[^\n#]*)", body):
                 rows.add(f"ci\t{m.group(1)}: {m.group(2).strip()} ({f})")
             # 使っている action（侵害・勧告との照合用）。ローカルの action（./）と docker:// は除く
             for m in re.finditer(r"(?m)^[\s-]*uses:\s*['\"]?([A-Za-z0-9_.-]+/[^\s'\"#@]+@[^\s'\"#]+)", body):

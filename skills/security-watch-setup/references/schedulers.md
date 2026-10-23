@@ -4,7 +4,7 @@
 
 上から順に、当てはまる最初のものを使う。1・2 行目は detect-env.sh の結果（インストールの有無）だけで
 なく、**今のセッションに定期タスクを作るツールがあるか**で判定する。アプリは入っているのに
-ツールがない（CLI から呼ばれた）ときは、SKILL.md Step 2 の 6 で本人に選んでもらう。
+ツールがない（CLI から呼ばれた）ときは、SKILL.md Step 2 の 7 で本人に選んでもらう。
 
 | 条件 | 使う仕組み | 理由 |
 |---|---|---|
@@ -43,7 +43,12 @@
 - 実行時刻は負荷分散のため数分（10 分弱まで）遅れることがある。厳密な時刻が要るなら launchd などを使う
 - 1 回目は `run_scheduled_task` で今すぐ動かせる（Step 4 の確認に使う）
 - 権限モードがセッションの設定に従って保存されることがある。ツールの結果に保存された
-  モードが出るので、そのまま伝える
+  モードが出るので、そのまま伝える。別の端末やプロジェクトから作ったときなど、権限モードが
+  保存されていないと、無人の実行がツールの承認待ちで止まる。その場合はアプリの「Scheduled」から
+  タスクを開いて権限モード（`brew` / `git pull` / PR 作成まで止めずに進めるなら Auto）を選び、
+  「Run now」で 1 回動かして出てきた承認を通してもらう
+- 定期タスクの作成は、エージェントの安全判定で止められることがある。そのときは本人に
+  作成してよいかを明示的に確かめてから作り直す（ファイルを直接書いて回避しない）
 
 ## Codex の Automations（デスクトップアプリ）
 
@@ -62,7 +67,8 @@ Codex アプリの Automations 画面（またはアプリが提供する自動�
    **シェルは SKILL.md Step 1 で決めたもの（バージョン管理ツールを有効にしているシェル）**にする。
    そうしないと、定期実行で mise / nvm のランタイムが見えず、確認が抜ける。
 
-   zsh・bash の例（ログインシェルとして起動して `.zprofile` / `.zshrc` を読ませる）:
+   zsh・bash の例（ログインかつ対話シェルとして起動して `.zprofile` / `.zshrc` を読ませる。
+   `--add-dir` は `{{REPO_ROOTS}}` の数だけ並べる）:
 
    ```sh
    #!/bin/zsh -il
@@ -123,7 +129,7 @@ Codex アプリの Automations 画面（またはアプリが提供する自動�
 
 ## systemd ユーザータイマー / cron + `claude -p`（Linux・WSL）
 
-run.sh は上と同じ考え方で `~/.local/share/security-watch/run.sh` に置く（シェルは Step 1 で決めたもの。bash なら `#!/bin/bash -l`）。
+run.sh は上と同じ考え方で `~/.local/share/security-watch/run.sh` に置く（シェルは Step 1 で決めたもの。bash なら `#!/bin/bash -il`。Debian 系の `.bashrc` は非対話だと先頭で抜けるので `-i` が要る）。
 
 systemd:
 
@@ -144,11 +150,13 @@ WantedBy=timers.target
 ```sh
 systemctl --user daemon-reload
 systemctl --user enable --now security-watch.timer
-systemctl --user start security-watch.service   # 1 回動かす
+systemctl --user start --no-block security-watch.service   # 1 回動かす（終わるまで待たない）
+loginctl enable-linger "$USER"   # ログアウト中も動かす
 ```
 
 cron（systemd が使えないとき）: `crontab -e` に `0 9,17 * * 1-5 $HOME/.local/share/security-watch/run.sh`。
-cron は PATH が最小なので、run.sh をログインシェルで動かすことが特に大事。
+cron は PATH が最小なので、run.sh をログインシェルで動かすことが特に大事。cron からは `notify-send` が
+デスクトップに届かない（`DBUS_SESSION_BUS_ADDRESS` が無い）ので、通知は TODO.md だけにするか systemd を使う。
 
 ## `codex exec` を使う場合
 
