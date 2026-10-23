@@ -50,7 +50,7 @@ gh api --paginate --slurp "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments" \
   | jq --arg me "$GH_USER" --arg since "$SINCE" 'add | map(select(.user.login != $me and .created_at >= $since)) | .[] | {id, author: .user.login, path, body, created_at}'
 
 # review 本文と PR 会話のコメント (bot のサマリや行を指さない指摘はこちらに出る)
-gh pr view "$PR_NUMBER" --repo "{owner}/{repo}" --json reviews,comments \
+gh pr view "$PR_NUMBER" --repo "$OWNER/$REPO" --json reviews,comments \
   | jq --arg me "$GH_USER" --arg since "$SINCE" '[(.reviews[] | {author: .author.login, body, at: .submittedAt}), (.comments[] | {author: .author.login, body, at: .createdAt})] | map(select(.author != $me and .body != "" and .at >= $since))'
 ```
 

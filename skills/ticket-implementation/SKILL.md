@@ -106,7 +106,7 @@ rg -n --fixed-strings "<symbol>" <relevant_dirs>
 2. **起点ブランチ**:
    - 独立チケット: リモートの既定ブランチまたは指定された base を fetch し、その SHA から worktree / ブランチを作る。main 固定や既存 checkout の切り替えはしない
    - 依存チケット (バッチモード): 先行チケットのブランチを起点に
-3. **新ブランチ**: 2 で決めた起点 SHA から作る（worktree なら `git worktree add -b <ブランチ名> <path> <SHA>`）
+3. **新ブランチ**: 2 で決めた起点 SHA から作る（worktree なら `git worktree add -b <ブランチ名> <path> <SHA>`、使わないなら `git switch -c <ブランチ名> <SHA>`）
 4. **実装**: `<conventions_file>` のコーディング規約に従う
 5. **テスト**: `<testing_policy>` に従って構築
    - `仕様ベース` (推奨): チケットの仕様を正に書く。実装が間違っていたらテストが検出する
