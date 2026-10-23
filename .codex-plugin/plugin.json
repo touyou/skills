@@ -26,12 +26,14 @@
     "meta",
     "harness",
     "security",
-    "vulnerability"
+    "vulnerability",
+    "store-screenshots",
+    "app-store"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "touyou skills",
-    "shortDescription": "Japanese proofreading + code quality scoring + dev-flow automation",
+    "shortDescription": "Japanese writing + code quality + dev-flow + a11y + store images + security watch",
     "category": "Productivity"
   }
 }

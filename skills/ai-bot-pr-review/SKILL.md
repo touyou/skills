@@ -4,7 +4,7 @@ description: AI bot が作った PR を一括レビューし、マージ・ク�
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # AI bot が生成した PR の一括レビュー
@@ -67,7 +67,7 @@ bot PR は中身がいくつかのタイプに分かれ、レビュー基準が�
 | カテゴリ | 判別シグナル | レビュー基準 |
 |----------|--------------|--------------|
 | **テスト追加** | テストファイルのみ変更 (`/test/` `__tests__/` `.test.` `.spec.` `_test.`) | テスタビリティ向上のリファクタは許容、本体ロジック変更は NG |
-| **依存更新** | `package.json` / `pubspec.yaml` / `Cargo.toml` / `go.mod` などの manifest + lockfile のみ | minor/patch かつ CI 成功なら自動 OK、major bump は ユーザー確認 |
+| **依存更新** | `package.json` / `pubspec.yaml` / `Cargo.toml` / `go.mod` などの manifest + lockfile のみ | 互換を保つ bump かつ CI 成功なら自動 OK、互換を壊しうる bump (下記) は ユーザー確認 |
 | **自動修正** | lint / format / typo / 自明な bug fix の変更 | 修正範囲が PR タイトル / body の宣言と一致しているか確認 |
 | **大規模リファクタ** | 多数のファイル本体変更 | **このスキルでは扱わない**。人間レビュー必須としてスキップ |
 
@@ -89,8 +89,10 @@ gh pr diff <number>                # 差分の詳細
 
 依存更新カテゴリの場合:
 
-- **manifest + lockfile のみ** かつ **CI 成功** かつ **major bump なし** → OK
-- **major bump** → ユーザー確認 (breaking change の可能性)
+「互換を壊しうる bump」は、左端の 0 でない桁が上がるもの。`1.x` 以上なら major (`2.3.0` → `3.0.0`)、`0.x` なら minor (`0.4.2` → `0.5.0`)、`0.0.x` なら patch (`0.0.3` → `0.0.4`)。semver は `1.0.0` 未満の互換を保証しないため、`0.x` の minor も major と同じに扱う。
+
+- **manifest + lockfile のみ** かつ **CI 成功** かつ **互換を壊しうる bump なし** → OK
+- **互換を壊しうる bump** → ユーザー確認 (breaking change の可能性)
 - **manifest + lockfile 以外のファイルが変更されている** → ユーザー確認 (典型的に CI 設定の追従が混ざる)
 
 自動修正カテゴリの場合:
@@ -127,8 +129,8 @@ PR 説明に bot の実行ログが含まれる場合、テスト結果 (pass/fa
 | 判定 | アクション |
 |---|---|
 | テスト追加 + テスト妥当 + 本体安全 + CI 通過 | approve → マージ |
-| 依存更新 minor/patch + CI 通過 + `allow_dependency_only_merges=true` | approve → マージ |
-| 依存更新 major bump | ユーザー確認 (skip → report) |
+| 依存更新 (互換を保つ bump) + CI 通過 + `allow_dependency_only_merges=true` | approve → マージ |
+| 依存更新 (互換を壊しうる bump: major、`0.x` の minor など) | ユーザー確認 (skip → report) |
 | 自動修正 + 宣言と diff 一致 + CI 通過 | approve → マージ |
 | ロジックを壊している | クローズ + 具体的な理由コメント |
 | テストの質が低い | クローズ + 理由コメント |
@@ -193,7 +195,7 @@ gh pr close <number> --comment "クローズ理由: <具体的な理由>"
 | #1237 | dependabot[bot] | 依存更新 (major) | bump bar 2.x → 3.0 | — | スキップ (要確認) |
 | #1238 | github-actions[bot] | リリース PR | — | — | 対象外 |
 
-最後に**ユーザー確認待ち**の PR (major bump / カテゴリ不明 / 大規模リファクタ) をまとめて一覧する。
+最後に**ユーザー確認待ち**の PR (互換を壊しうる bump / カテゴリ不明 / 大規模リファクタ) をまとめて一覧する。
 
 ## 由来とブラッシュアップ方針
 

@@ -4,7 +4,7 @@ description: 対象プロジェクトのセッション履歴と PR 指摘から
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.1"
+  version: "0.1.2"
 ---
 
 # retrospective
@@ -48,6 +48,10 @@ gh pr list --author "$GH_USER" --state all --search "updated:>=$SINCE" \
 # 各 PR のレビューコメントを取得 (自分以外のコメントに絞る)
 gh api --paginate --slurp "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments" \
   | jq --arg me "$GH_USER" --arg since "$SINCE" 'add | map(select(.user.login != $me and .created_at >= $since)) | .[] | {id, author: .user.login, path, body, created_at}'
+
+# review 本文と PR 会話のコメント (bot のサマリや行を指さない指摘はこちらに出る)
+gh pr view "$PR_NUMBER" --repo "$OWNER/$REPO" --json reviews,comments \
+  | jq --arg me "$GH_USER" --arg since "$SINCE" '[(.reviews[] | {author: .author.login, body, at: .submittedAt}), (.comments[] | {author: .author.login, body, at: .createdAt})] | map(select(.author != $me and .body != "" and .at >= $since))'
 ```
 
 bot レビュアー (CodeRabbit 等) の指摘も含める。「AGENTS.md に書かれていないから毎回指摘される」パターンの検出が目的なので、人間/bot は区別せず同種指摘の再出現を数える。

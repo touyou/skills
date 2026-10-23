@@ -4,7 +4,7 @@ description: 実プロジェクトの AGENTS.md・スキル・hooks・自動化�
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # harness-intake
@@ -133,10 +133,9 @@ gh api repos/touyou/skills --jq '.permissions'        # push / pull 権限
 
 ## 注意事項
 
-- このスキルは `touyou/skills` リポジトリへの `gh issue create` 以外、いかなるファイルも
-  書き換えない。ハーネス側（呼び出し元のプロジェクト）のファイルも変更しない。
-  起票用の一時ファイルと、Step 6 の保留キュー（`docs/harness-intake-pending/`）で、起票できなかった
-  ドラフトの保存・再送後の削除のみ行う。
+- このスキルが書くのは `touyou/skills` への `gh issue create`、起票用の一時ファイル、Step 6 の
+  保留キュー（呼び出し元の `docs/harness-intake-pending/`）だけ。保留キューへの保存と再送後の削除を
+  除き、ハーネス側（呼び出し元のプロジェクト）の既存ファイルは変更しない。
 - 投稿の許可がない場合は、タイトル・本文を用意してから確認する。
 - 対象プロジェクトを特定のディレクトリに限定しない。ハーネスを磨いている任意のディレクトリ
   から汎用的に使えるスキルとして設計している。

@@ -51,7 +51,6 @@ Apple HIG は Accessibility を Vision / Mobility / Cognitive / Hearing / Speech
 
 - 対象 OS・deployment target・画面・支援技術を先に特定する。参照コードの API availability を対象 SDK で確認し、使えない API をそのまま追加しない。HIG の推奨と WCAG の判定基準、実プロジェクト由来の設計例は区別する。
 - 指摘には場所、影響を受ける操作、根拠、修正案、検証状態を付ける。チェックリストを見ただけで実機検証済みとしない。
-
 - **「動くはず」で終わらせない**: Xcode Accessibility Inspector か実機の VoiceOver / Voice Control / Switch Control / Dynamic Type 設定を実際に ON にして検証する。検証していない場合は「未検証」と明示する
 - **既存の共通コンポーネント化**: `AStack` や `.secondaryTextStyle()` のように、a11y対応をViewModifierや汎用コンポーネントに切り出すと、アプリ全体に一貫して展開しやすい（詳細は references 参照）
 - 個別の実装パターン・コード例は `references/implementation-patterns.md` を参照すること
