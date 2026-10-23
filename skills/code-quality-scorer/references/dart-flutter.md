@@ -39,7 +39,7 @@ repo root に `.fvmrc` または `.fvm/` (旧形式の `.fvm/fvm_config.json` �
 
 ## プロジェクト固有の generated location を除外する
 
-リポジトリによっては `lib/gen/` や `lib/api_definitions/` のように「ディレクトリごと自動生成 or ラッパー」になっている場所がある (例: habee-app の AGENTS.md は `lib/gen`, `lib/api_definitions` を「編集禁止」と明記)。これらは suffix で判別できないので、`--exclude-source-paths` で明示的に渡す:
+リポジトリによっては `lib/gen/` や `lib/api_definitions/` のように「ディレクトリごと自動生成 or ラッパー」になっている場所がある。これらは suffix で判別できないので、`--exclude-source-paths` で明示的に渡す:
 
 ```
 python scripts/run_tier1_dart_flutter.py --repo PATH \
@@ -62,7 +62,7 @@ repo 相対のカンマ区切り。LOC・lint 違反集計・dead code・duplica
 
 `flutter test --coverage` は内部で test isolate を per-test で立てるため fd を大量に開く。macOS のデフォルト fd 上限 (256) では `Too many open files` で coverage の一部レコードが欠落する。scorer は coverage コマンドを自動で `ulimit -n 10240 &&` でラップする。
 
-自前で `make coverage` 等を使うプロジェクトでも同様にラップされていることが多い (habee-app の Makefile も同様)。
+自前で `make coverage` 等を使うプロジェクトでも同様にラップされていることが多い。
 
 ## monorepo 内 path 依存の扱い (false positive 対策)
 

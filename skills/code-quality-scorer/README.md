@@ -29,7 +29,7 @@ scorecardを作って
 | profile | Tier 1 | Tier 3 | ステータス |
 |---------|:------:|:------:|------|
 | `typescript-web` | ✅ | ✅ | v0.2 で本実装 (whitebox-root/frontend で dogfood) |
-| `dart-flutter` | ✅ | ✅ | v0.3 で本実装 (habee-app 95k LOC で dogfood) |
+| `dart-flutter` | ✅ | ✅ | v0.3 で本実装 (大規模 Flutter アプリで dogfood) |
 | `swift-ios` | ✅ | ✅ | v0.3 で本実装 (IntentTodo で dogfood) |
 | `kotlin-android` | 🟡 | 🟡 | reference doc は本実装、scripts は dogfood していない skeleton |
 

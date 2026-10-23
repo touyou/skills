@@ -173,7 +173,7 @@ PR 作成までがこの依頼の完了範囲。許可されたチケット更�
 
 ## 由来とブラッシュアップ方針
 
-このスキルは habee-app (Flutter + Notion チケット運用) で運用していた `ticket` スキルを汎用化したもの。Notion API 特化だった読み取り処理を「Source 別の plugin 型」にし、reviewer ルール / branch prefix / `make codegen` / `lib/app/pages/` 等のプロジェクト固有要素を `.claude/ticket-implementation.local.md` に外出ししてある。
+このスキルは Flutter + Notion チケット運用のリポジトリで使っていた `ticket` スキルを汎用化したもの。Notion API 特化だった読み取り処理を「Source 別の plugin 型」にし、reviewer ルール / branch prefix / `make codegen` / `lib/app/pages/` 等のプロジェクト固有要素を `.claude/ticket-implementation.local.md` に外出ししてある。
 
 Notion 中心の運用は残しつつ、Linear / GitHub Issue / Plain text にも同じワークフローを適用できる構造。他プロジェクトで類似のチケット → PR ワークフローを動かしていたら、Source 別の読み取り処理と PR テンプレート連携の差分を集めてブラッシュアップする想定。
 

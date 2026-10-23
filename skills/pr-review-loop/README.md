@@ -41,4 +41,4 @@ review loop
 
 ## 詳細
 
-スキル本体の仕様は [SKILL.md](./SKILL.md) を参照。habee-app (Flutter) で運用していた `review-loop` スキルを汎用化したもの。
+スキル本体の仕様は [SKILL.md](./SKILL.md) を参照。Flutter アプリのリポジトリで運用していた `review-loop` スキルを汎用化したもの。

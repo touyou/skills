@@ -59,4 +59,4 @@ automated PR triage
 
 ## 詳細
 
-スキル本体の仕様は [SKILL.md](./SKILL.md) を参照。habee-app (Flutter) で運用していた `codex-review` スキルを複数 bot 対応に汎用化したもの。
+スキル本体の仕様は [SKILL.md](./SKILL.md) を参照。Flutter アプリのリポジトリで運用していた `codex-review` スキルを複数 bot 対応に汎用化したもの。

@@ -2,9 +2,9 @@
 
 このファイルは **コンテキストクリア後の継続開発用の引き継ぎ文書**。SKILL.md は使用者向け、ROADMAP.md は開発者向け（次の version を作る人）。
 
-## 現在の状態（v0.4 + habee-app 適応, 2026-05-11 確定）
+## 現在の状態（v0.4 + 大規模 Flutter 適応, 2026-05-11 確定）
 
-### habee-app (Flutter, 95k LOC) での dogfood で追加された対応 (2026-05-11)
+### 大規模 Flutter プロジェクトでの dogfood で追加された対応 (2026-05-11)
 
 v0.4 を Flutter 大規模プロジェクトに適用したところ、Flutter プロジェクト広範に効く改善が複数見つかり反映した:
 
@@ -24,23 +24,6 @@ v0.4 を Flutter 大規模プロジェクトに適用したところ、Flutter �
 | score_history の helper 引数透過 | score_history | tier1/tier3 helper に `--exclude-source-paths` `--skip-coverage` を流す仕組み (profile 別に振り分け) |
 | install_timeout 拡張 | score_history (dart-flutter) | 300s → 900s (古い pubspec で依存解決が長い場合の対策) |
 | bus_factor の Dart 対応 | run_bus_factor | `.dart` を SOURCE_EXTENSIONS に追加、生成 suffix を全部除外、`openapi/` を除外 prefix デフォルトに |
-
-dogfood 結果サマリ (habee-app, 1y → 6mo → HEAD):
-```
-LOC               62092 → 71714 → 94948  (+15.5% → +32.4%)
-files (gen 除外)   607 → 684 → 837
-routes              59 → 73 → 99   (TypedGoRoute 完全カウント)
-handlers           638 → 870 → 1049
-hallucinated         0 → 0 → 0      (AI 由来事故なし)
-lint/kloc         0.05 → 0.26 → 0.85 (悪化)
-dead_code            1 → 0 → 18     (悪化)
-type_errors          1 → 2 → 0      (改善)
-duplication%      8.14 → 9.43 → 8.07 (改善)
-coverage (HEAD ローカル): 57.06%
-
-Tier 2 (HEAD, N=3 全一致): cohesion 5, dry 3, bug_prone 4, test 4
-KCI 1y→HEAD: 0.91 → 0.75 (delta -0.16, 但し email 同一人物複数 alias あり)
-```
 
 ### v0.4 でやったことの要約 (2026-05-04 確定)
 
@@ -160,12 +143,12 @@ reference doc 完備、scripts は Detekt のみ実装した skeleton。実プ�
 
 ---
 
-## v0.5 候補 (habee-app dogfood 由来)
+## v0.5 候補 (大規模 Flutter dogfood 由来)
 
-これらは habee-app dogfood で「あったら助かった」が、今回は workaround で凌いだもの:
+これらは dogfood で「あったら助かった」が、今回は workaround で凌いだもの:
 
 - **per-profile prep hook in score_history.py**: worktree 作成後・install 前に走るユーザー定義スクリプト。`.env.sample → .env` のコピー、git LFS の fetch、private registry の credential 配置などに対応。`--prep-cmd "[ -f .env.sample ] && cp .env.sample .env"` のような単純な CLI 引数で導入する案
-- **author email aliasing helper**: `.mailmap` が無い repo でも CLI で `--alias 'fujiyou1121@gmail.com=touyou' --alias '465697+touyou@users.noreply.github.com=touyou'` のようにエイリアスを渡せる仕組み
+- **author email aliasing helper**: `.mailmap` が無い repo でも CLI で `--alias 'alice@example.com=alice' --alias '12345+alice@users.noreply.github.com=alice'` のようにエイリアスを渡せる仕組み
 - **coverage worktree-friendly モード**: `flutter test --coverage` の代わりに `flutter test --coverage --no-pub` 系で asset bundle 構築を回避できるか調査。あるいは `dart test` ベースの test only モードでカバレッジを取る
 - **`custom_lint` 起動失敗の自動検出 + warning**: tier1 で「`Failed to start plugins` を含む stderr」を検出したら、ヘルプメッセージ (例: `pub get で custom_lint_builder を解決してください、または custom_lint 系の依存バージョンを確認してください`) を warning に追加
 - **dart_code_metrics_presets の cyclomatic_complexity 評価**: Flutter で complexity が null のまま残っている問題への対処。v0.5 で dogfood しながら統合可否判断
@@ -366,11 +349,11 @@ python3 $SKILL/scripts/aggregate.py \
 
 advisor は会話の全文脈を見て指摘してくれるので、判断に迷ったら呼ぶ価値がある。Tier 2 の "fake N=3" 問題も、v0.3 の言語拡張優先順位も、Flutter `MaterialApp(home:)` の routes_count 漏れも advisor が捕まえた。
 
-## v0.4 habee-app dogfood で得た追加教訓 (2026-05-11)
+## v0.4 大規模 Flutter dogfood で得た追加教訓 (2026-05-11)
 
 ### 🔑 大規模 Flutter プロジェクトでは「generated location」が複数階層に散る
 
-habee-app では生成物が以下に分散していた:
+dogfood 先では生成物が以下に分散していた:
 - **suffix ベース**: `.g.dart` / `.freezed.dart` / `.gr.dart` / `.intent.dart` / `.chopper.dart` / `.gen.dart` / `.config.dart` / `.mocks.dart`
 - **ディレクトリベース**: `lib/gen/` (flutter_gen), `lib/api_definitions/` (OpenAPI wrapper), `openapi/<pkg>/lib/` (path dep)
 - **analysis_options.yaml exclude**: `openapi/**`, `**/*.g.dart` (これは dart analyze 側だけが見るので scorer 側でも同期必要)
@@ -387,7 +370,7 @@ habee-app では生成物が以下に分散していた:
 
 ### 🔑 同一人物が複数 email でコミットしている問題は git の `.mailmap` で解く
 
-GitHub no-reply (`<id>+<name>@users.noreply.github.com`) + 個人 email + 会社 email + 旧個人 email の **4 種類が 1 人物** という状況は珍しくない (今回の habee-app dogfood で touyou が 3 email)。
+GitHub no-reply (`<id>+<name>@users.noreply.github.com`) + 個人 email + 会社 email + 旧個人 email の **4 種類が 1 人物** という状況は珍しくない。
 
 `run_bus_factor.py` は **デフォルトで `git log --use-mailmap --format=%aE`** を使うように変更。`.mailmap` ファイルが repo にあれば自動正規化、無ければ通常動作と同じ (後方互換)。
 
