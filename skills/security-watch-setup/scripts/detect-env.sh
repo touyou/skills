@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 定期脆弱性チェックのセットアップ用に、この環境の事実を集めて表示する。
-# 何もインストール・変更しない（読み取りのみ）。macOS / Linux / WSL / Git Bash で動く。
+# 何もインストール・変更しない。ただし runtimes_by_shell は各シェルの設定ファイル（.zshrc など）を
+# 対話シェルとして実行するので、そこに書かれた処理は走る（20 秒で打ち切る）。macOS / Linux / WSL / Git Bash で動く。
 #
 # 使い方: bash detect-env.sh [リポジトリを探すディレクトリ ...]
 # 出力は「## 見出し」と「key: value」の行。値が取れないものは出さない。
@@ -69,8 +70,8 @@ for t in node bun deno ruby python3 go php java swift; do
   for p in $(which -a "$t" 2>/dev/null | awk '!seen[$0]++'); do
     case "$t" in
       go) v="$("$p" version 2>/dev/null)" ;;
-      # JAVA_TOOL_OPTIONS があると 1 行目が「Picked up ...」になる
-      java) v="$("$p" -version 2>&1 | grep -v '^Picked up' | head -n 1)" ;;
+      # JAVA_TOOL_OPTIONS / JDK_JAVA_OPTIONS があると「(NOTE: )Picked up ...」の行が先に出る
+      java) v="$("$p" -version 2>&1 | grep -v 'Picked up' | head -n 1)" ;;
       swift) v="$("$p" --version 2>/dev/null | head -n 1)" ;;
       *) v="$(first_line "$p" --version)" ;;
     esac
@@ -81,13 +82,14 @@ done
 echo "## runtimes_by_shell"
 # 定期実行はユーザーの対話シェルとは別の PATH で動くことが多い。各シェルの設定を読んだ状態で
 # どの実体・バージョンが選ばれるかを出す（mise / nvm の shim はここでしか見えないことがある）
-probe='for t in node bun deno ruby python3 go php; do p=$(command -v $t 2>/dev/null) || continue; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
-# zsh は mise activate などを .zshrc に書くことが多く、-l だけでは読まれないので -i も付ける。
-# 対話起動で出るプロンプト類の出力は、ランタイム名で始まる行だけ拾って除く
+# 遅延読み込み（zsh-nvm の NVM_LAZY_LOAD など）では command -v がパスでなく関数名を返すので function と出す
+probe='for t in node bun deno ruby python3 go php; do p=$(command -v $t 2>/dev/null) || continue; case $p in /*) ;; *) p=function ;; esac; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
+# mise activate / nvm は .zshrc・.bashrc に書くことが多く、-l だけでは読まれない（Debian 系の .bashrc は
+# 非対話なら即 return する）ので -i も付ける。対話起動で出る余計な出力は、ランタイム名で始まる行だけ拾って除く
+to=""; have timeout && to="timeout 20"; have gtimeout && to="gtimeout 20"
 for s in zsh bash; do
   have "$s" || continue
-  flags=-lc; [ "$s" = zsh ] && flags=-ilc
-  "$s" "$flags" "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php) /' \
+  $to "$s" -ilc "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php) (/|function)' \
     | while read -r t p v; do kv "${s}_$t" "$p $v"; done
 done
 if have fish; then

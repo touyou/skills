@@ -67,7 +67,8 @@ Codex アプリの Automations 画面（またはアプリが提供する自動�
    **シェルは SKILL.md Step 1 で決めたもの（バージョン管理ツールを有効にしているシェル）**にする。
    そうしないと、定期実行で mise / nvm のランタイムが見えず、確認が抜ける。
 
-   zsh・bash の例（ログインシェルとして起動して `.zprofile` / `.zshrc` を読ませる）:
+   zsh・bash の例（ログインかつ対話シェルとして起動して `.zprofile` / `.zshrc` を読ませる。
+   `--add-dir` は `{{REPO_ROOTS}}` の数だけ並べる）:
 
    ```sh
    #!/bin/zsh -il
@@ -128,7 +129,7 @@ Codex アプリの Automations 画面（またはアプリが提供する自動�
 
 ## systemd ユーザータイマー / cron + `claude -p`（Linux・WSL）
 
-run.sh は上と同じ考え方で `~/.local/share/security-watch/run.sh` に置く（シェルは Step 1 で決めたもの。bash なら `#!/bin/bash -l`）。
+run.sh は上と同じ考え方で `~/.local/share/security-watch/run.sh` に置く（シェルは Step 1 で決めたもの。bash なら `#!/bin/bash -il`。Debian 系の `.bashrc` は非対話だと先頭で抜けるので `-i` が要る）。
 
 systemd:
 
@@ -149,11 +150,13 @@ WantedBy=timers.target
 ```sh
 systemctl --user daemon-reload
 systemctl --user enable --now security-watch.timer
-systemctl --user start security-watch.service   # 1 回動かす
+systemctl --user start --no-block security-watch.service   # 1 回動かす（終わるまで待たない）
+loginctl enable-linger "$USER"   # ログアウト中も動かす
 ```
 
 cron（systemd が使えないとき）: `crontab -e` に `0 9,17 * * 1-5 $HOME/.local/share/security-watch/run.sh`。
-cron は PATH が最小なので、run.sh をログインシェルで動かすことが特に大事。
+cron は PATH が最小なので、run.sh をログインシェルで動かすことが特に大事。cron からは `notify-send` が
+デスクトップに届かない（`DBUS_SESSION_BUS_ADDRESS` が無い）ので、通知は TODO.md だけにするか systemd を使う。
 
 ## `codex exec` を使う場合
 
