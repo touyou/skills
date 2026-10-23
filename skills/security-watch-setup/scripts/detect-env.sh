@@ -69,7 +69,8 @@ for t in node bun deno ruby python3 go php java swift; do
   for p in $(which -a "$t" 2>/dev/null | awk '!seen[$0]++'); do
     case "$t" in
       go) v="$("$p" version 2>/dev/null)" ;;
-      java) v="$("$p" -version 2>&1 | head -n 1)" ;;
+      # JAVA_TOOL_OPTIONS があると 1 行目が「Picked up ...」になる
+      java) v="$("$p" -version 2>&1 | grep -v '^Picked up' | head -n 1)" ;;
       swift) v="$("$p" --version 2>/dev/null | head -n 1)" ;;
       *) v="$(first_line "$p" --version)" ;;
     esac
@@ -81,9 +82,13 @@ echo "## runtimes_by_shell"
 # 定期実行はユーザーの対話シェルとは別の PATH で動くことが多い。各シェルの設定を読んだ状態で
 # どの実体・バージョンが選ばれるかを出す（mise / nvm の shim はここでしか見えないことがある）
 probe='for t in node bun deno ruby python3 go php; do p=$(command -v $t 2>/dev/null) || continue; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
+# zsh は mise activate などを .zshrc に書くことが多く、-l だけでは読まれないので -i も付ける。
+# 対話起動で出るプロンプト類の出力は、ランタイム名で始まる行だけ拾って除く
 for s in zsh bash; do
   have "$s" || continue
-  "$s" -lc "$probe" 2>/dev/null </dev/null | while read -r t p v; do kv "${s}_$t" "$p $v"; done
+  flags=-lc; [ "$s" = zsh ] && flags=-ilc
+  "$s" "$flags" "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php) /' \
+    | while read -r t p v; do kv "${s}_$t" "$p $v"; done
 done
 if have fish; then
   fish -c 'for t in node bun deno ruby python3 go php
