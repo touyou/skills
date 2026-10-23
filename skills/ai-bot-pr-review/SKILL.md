@@ -4,7 +4,7 @@ description: AI bot が作った PR を一括レビューし、マージ・ク�
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # AI bot が生成した PR の一括レビュー
@@ -91,6 +91,7 @@ gh pr diff <number>                # 差分の詳細
 
 - **manifest + lockfile のみ** かつ **CI 成功** かつ **major bump なし** → OK
 - **major bump** → ユーザー確認 (breaking change の可能性)
+- **`0.x` の minor bump** (`0.4.2` → `0.5.0` など) は major と同じ扱いでユーザー確認にする。semver では `1.0.0` 未満の minor は互換を保証しない
 - **manifest + lockfile 以外のファイルが変更されている** → ユーザー確認 (典型的に CI 設定の追従が混ざる)
 
 自動修正カテゴリの場合:

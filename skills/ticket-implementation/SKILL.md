@@ -4,7 +4,7 @@ description: Notion・Linear・GitHub Issue の URL、Issue 番号、チケッ�
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # チケット → 実装 → PR
@@ -49,7 +49,7 @@ Source に合う利用可能なツールを探し、プロパティ・本文・�
 
 | Source | 操作 |
 |--------|------|
-| Notion | `mcp__notion-api__API-update-page` で `<status_property>` を `<status_in_progress>` に |
+| Notion | 利用可能な Notion コネクタ / MCP のページ更新で `<status_property>` を `<status_in_progress>` に |
 | Linear | Linear MCP で issue state を `In Progress` 相当に |
 | GitHub Issue | `gh issue edit <N> --add-label in-progress` (label がプロジェクトにあれば) |
 | Plain text | 何もしない |
@@ -106,7 +106,7 @@ rg -n --fixed-strings "<symbol>" <relevant_dirs>
 2. **起点ブランチ**:
    - 独立チケット: リモートの既定ブランチまたは指定された base を fetch し、その SHA から worktree / ブランチを作る。main 固定や既存 checkout の切り替えはしない
    - 依存チケット (バッチモード): 先行チケットのブランチを起点に
-3. **新ブランチ**: `git checkout -b <ブランチ名>`
+3. **新ブランチ**: 2 で決めた起点 SHA から作る（worktree なら `git worktree add -b <ブランチ名> <path> <SHA>`）
 4. **実装**: `<conventions_file>` のコーディング規約に従う
 5. **テスト**: `<testing_policy>` に従って構築
    - `仕様ベース` (推奨): チケットの仕様を正に書く。実装が間違っていたらテストが検出する
@@ -130,10 +130,7 @@ rg -n --fixed-strings "<symbol>" <relevant_dirs>
 
 #### コミット
 
-`<conventions_file>` のコミット規約に従う。慣例:
-
-- gitmoji + 日本語 (例: `:sparkles: 日替わりチャレンジの通知設定を追加`)
-- 既存のコミット履歴のスタイルに合わせる
+`<conventions_file>` のコミット規約に従う。規約が無ければ `git log` の既存スタイル (gitmoji、Conventional Commits、言語など) に合わせ、特定の形式を持ち込まない。
 
 #### PR
 
