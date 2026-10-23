@@ -10,7 +10,7 @@
            ランタイム指定ファイル（.node-version 等）、CI の node-version、
            GitHub Actions で使っている action（uses:）を出す
 
-出力は 1 行 1 件のタブ区切り（repo, 最終コミット日, 種別, 内容）。判定（脆弱な範囲に
+出力は 1 行 1 件のタブ区切り（repo, 見た ref, 最終コミット日, 種別, 内容）。sync は結果と repo の 2 列。判定（脆弱な範囲に
 入るか）はこのスクリプトでは行わない。範囲の読み方が勧告ごとに違うので、呼び出し側が
 勧告の affected range と照らし合わせる。
 
@@ -92,8 +92,9 @@ def show(repo: str, ref: str, path: str) -> str:
 
 
 def rel(root: str, repo: str) -> str:
+    # ROOT にリポ自体を渡したときも、どのリポの行か分かるようにフォルダ名を出す
     r = os.path.relpath(repo, root)
-    return "." if r == "." else r
+    return os.path.basename(os.path.abspath(repo)) if r == "." else r
 
 
 # ---------------------------------------------------------------- sync
