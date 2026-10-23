@@ -106,8 +106,14 @@ def sync_one(repo: str) -> str:
     env.setdefault("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ConnectTimeout=15")
     if git(repo, "fetch", "--all", "--prune", "-q", env=env).returncode != 0:
         return "FETCHFAIL"
-    head = git(repo, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD").stdout.strip()
-    default = head.split("/", 1)[1] if "/" in head else "main"
+    # origin/HEAD が無いクローンでは main / master の推測が外れる（既定が kotlin 等のリポがある）
+    if git(repo, "rev-parse", "--verify", "-q", "origin/HEAD").returncode != 0:
+        git(repo, "remote", "set-head", "origin", "--auto", env=env)
+    ref = default_ref(repo)
+    if not ref or not ref.startswith("origin/"):
+        return "NODEFAULT"
+    # origin/HEAD は origin/main などに解決してからブランチ名を取る
+    default = git(repo, "rev-parse", "--abbrev-ref", ref).stdout.strip().split("/", 1)[-1]
     current = git(repo, "branch", "--show-current").stdout.strip()
     dirty = git(repo, "status", "--porcelain").stdout.strip()
     if current != default or dirty:
@@ -161,7 +167,9 @@ def _gem_versions(text: str, name: str) -> set[str]:
 
 
 def _pod_versions(text: str, name: str) -> set[str]:
-    return set(re.findall(r"(?m)^  - " + re.escape(name) + r" \(([^)]+)\)", text))
+    # DEPENDENCIES 節の「- Name (from `path`)」はバージョンではないので除く
+    found = re.findall(r"(?m)^  - " + re.escape(name) + r" \(([^)]+)\)", text)
+    return {v for v in found if not v.startswith("from ")}
 
 
 def _spm_versions(text: str, name: str) -> set[str]:
@@ -181,7 +189,8 @@ def _spm_versions(text: str, name: str) -> set[str]:
 
 
 def _pub_versions(text: str, name: str) -> set[str]:
-    return set(re.findall(r"(?ms)^  " + re.escape(name) + r":\n(?:    .*\n)*?    version: \"([^\"]+)\"", text))
+    # DOTALL にすると後ろのパッケージの version まで読み進めるので、行単位で区切る
+    return set(re.findall(r"(?m)^  " + re.escape(name) + r":\n(?:    [^\n]*\n)*?    version: \"([^\"]+)\"", text))
 
 
 def _composer_versions(text: str, name: str) -> set[str]:
