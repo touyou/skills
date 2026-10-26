@@ -4,6 +4,7 @@
 サブコマンド:
   repos    ROOT 配下の git リポジトリを列挙する（node_modules と追加 worktree は除く）
   sync     各リポジトリで fetch し、クリーンなデフォルトブランチだけ ff-only で pull する
+           （fetch など、ネットワークを使う git は 1 回 180 秒で打ち切り、FETCHTIMEOUT を出す）
   scan     各リポジトリの origin デフォルトブランチのロックファイル（Maven / Gradle は直接書かれた依存）から、指定パッケージの
            解決済みバージョンと悪性パッケージ名の一致を出す
   runtimes 各リポジトリの origin デフォルトブランチから、Dockerfile の FROM と
@@ -28,6 +29,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -52,6 +54,41 @@ def git(repo: str, *args: str, env: dict | None = None) -> subprocess.CompletedP
     return subprocess.run(
         ["git", "-C", repo, *args], capture_output=True, text=True, env=env
     )
+
+
+NETWORK_TIMEOUT = 180
+
+
+def git_net(repo: str, *args: str, env: dict) -> subprocess.CompletedProcess | None:
+    """ネットワークを使う git。時間切れなら None。
+
+    subprocess.run の timeout は git しか殺さず、パイプを握った ssh が残ると待ち続けるので、
+    子プロセスごと止める。いきなり SIGKILL にすると git が .lock を消せずに残す。
+    """
+    proc = subprocess.Popen(
+        ["git", "-C", repo, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, env=env, start_new_session=True,
+    )
+    try:
+        out, err = proc.communicate(timeout=NETWORK_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+        else:
+            os.killpg(proc.pid, signal.SIGTERM)
+            try:
+                proc.communicate(timeout=5)
+                return None
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGKILL)
+        try:
+            proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            # グループの外に出た子（ControlPersist の ssh など）がパイプを握っていても戻る
+            for f in (proc.stdout, proc.stderr):
+                f.close()
+        return None
+    return subprocess.CompletedProcess(proc.args, proc.returncode, out, err)
 
 
 def find_repos(root: str, max_depth: int) -> list[str]:
@@ -104,12 +141,22 @@ def sync_one(repo: str) -> str:
         return "NOREMOTE"
     env = dict(os.environ)
     env["GIT_TERMINAL_PROMPT"] = "0"
-    env.setdefault("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ConnectTimeout=15")
-    if git(repo, "fetch", "--all", "--prune", "-q", env=env).returncode != 0:
+    # ConnectTimeout だけだと、つながった後に応答が止まった接続を待ち続ける
+    env.setdefault(
+        "GIT_SSH_COMMAND",
+        "ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3",
+    )
+    # HTTPS の remote には ServerAlive が効かないので、転送が止まったら打ち切らせる
+    env.setdefault("GIT_HTTP_LOW_SPEED_LIMIT", "1000")
+    env.setdefault("GIT_HTTP_LOW_SPEED_TIME", "60")
+    fetched = git_net(repo, "fetch", "--all", "--prune", "-q", env=env)
+    if fetched is None:
+        return "FETCHTIMEOUT"
+    if fetched.returncode != 0:
         return "FETCHFAIL"
     # origin/HEAD が無いクローンでは main / master の推測が外れる（既定が kotlin 等のリポがある）
     if git(repo, "rev-parse", "--verify", "-q", "origin/HEAD").returncode != 0:
-        git(repo, "remote", "set-head", "origin", "--auto", env=env)
+        git_net(repo, "remote", "set-head", "origin", "--auto", env=env)
     ref = default_ref(repo)
     if not ref or not ref.startswith("origin/"):
         return "NODEFAULT"
@@ -119,8 +166,9 @@ def sync_one(repo: str) -> str:
     dirty = git(repo, "status", "--porcelain").stdout.strip()
     if current != default or dirty:
         return f"SKIP({current or 'detached'}{', dirty' if dirty else ''})"
+    # fetch 済みなので、ネットワークを使わずに取り込む（打ち切りが merge の途中に当たらない）。
     # 無人実行なので、取り込んだ内容由来のフック（husky の post-merge 等）は走らせない
-    if git(repo, "-c", "core.hooksPath=/dev/null", "pull", "--ff-only", "-q", env=env).returncode != 0:
+    if git(repo, "-c", "core.hooksPath=/dev/null", "merge", "--ff-only", "-q", f"origin/{default}").returncode != 0:
         return "PULLFAIL"
     return "PULLED"
 
@@ -339,11 +387,14 @@ def main() -> int:
     p.add_argument("command", choices=["repos", "sync", "scan", "runtimes"])
     p.add_argument("roots", nargs="+", help="走査するディレクトリ（複数可）")
     p.add_argument("--depth", type=int, default=5, help="リポジトリを探す深さ（既定 5）")
-    p.add_argument("--jobs", type=int, default=8, help="並列数（既定 8）")
+    # GitHub は同時の SSH 接続が多いと詰まるので、sync だけ並列を絞る
+    p.add_argument("--jobs", type=int, help="並列数（既定は sync が 4、それ以外が 8）")
     for eco in ("npm", "pip", "gem", "pod", "spm", "pub", "composer", "go", "cargo", "maven"):
         p.add_argument(f"--{eco}", help=f"{eco} のパッケージ名（カンマ区切り）")
     p.add_argument("--malware", help="悪性パッケージ名・スコープ（カンマ区切り。部分一致で探す）")
     a = p.parse_args()
+    if a.jobs is None:
+        a.jobs = 4 if a.command == "sync" else 8
 
     for root in a.roots:
         root = os.path.abspath(os.path.expanduser(root))

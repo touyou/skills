@@ -7,6 +7,7 @@
 
 | 置き換え | 中身 | 例 |
 |---|---|---|
+| `{{SKILL_VERSION}}` | このスキルの `metadata.version`（SKILL.md の frontmatter） | 0.3.0 |
 | `{{USER}}` | 本人の呼び名（通知・TODO の宛先） | alice |
 | `{{SHELL}}` | バージョン管理ツールを有効にしているシェル（SKILL.md Step 1）。コマンド例の構文もこれに合わせる | fish |
 | `{{SHELL_CMD}}` | `{{SHELL}}` を設定ファイルごと読ませて 1 コマンド実行する形。mise / nvm を `.zshrc` / `.bashrc` で有効にしているなら `-i` も要る | `fish -c`、`zsh -ilc`、`bash -ilc` |
@@ -25,6 +26,8 @@
 ---
 
 ```markdown
+（security-watch-setup {{SKILL_VERSION}} の雛形から生成）
+
 {{USER}} の PC と {{REPO_ROOTS}} 配下のリポジトリについて、直近に公開された脆弱性・悪性パッケージ・
 ランタイムのセキュリティリリースの影響を確認し、必要な対応をしてください（定期実行）。
 本人はこの場にいないので、実装の細部は自分で決めて結果に書く。外に出る操作（PR 作成・push・
@@ -59,7 +62,8 @@ PATH も違う（mise / nvm のランタイムが見えないことがある）�
 追加で WebSearch する:
 - 直近 48 時間の「malicious package」「supply chain attack」「CVE」「security release」
 - **名前の付いた脆弱性**（「◯◯2Shell」「◯◯Bleed」など）がニュースに出ていたら、名前でも検索して
-  CVE・影響範囲・修正版を確かめる
+  CVE・影響範囲・修正版を確かめる。同じ CVE が言語や製品ごとに別の名前で報じられることがあるので、
+  レポートには「名前 → CVE」の対応を全部書く（本人が名前で尋ねたときに引けるようにする）
 
 GitHub Advisory API の結果は、手元のエコシステムのものだけ候補にする。100 件を超えたら次のページも見る。
 
@@ -70,7 +74,9 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
 - ランタイム: {{RUNTIME_CHECKS}} を **{{CHECK_SHELLS}} のそれぞれ**で、シェルを明示して実行し
   （例: `fish -c 'command -s node; node -v'`、`zsh -ilc 'command -v node; node -v'`、`bash -ilc '...'`）、
   修正版になっているか確かめる。シェルで実体が違うときは全部書く。古ければ、そのランタイムを入れている
-  管理ツールで上げる。OS 同梱のもの（macOS の /usr/bin/ruby など）は上げられないので、その旨だけ書く
+  管理ツールで上げる。OS 同梱のもの（macOS の /usr/bin/ruby など）は上げられないので、その旨だけ書く。
+  JDK は `/usr/libexec/java_home -V`（macOS）や管理ツールの一覧で入っているものを全部見る。既定で使われるものが
+  EOL の版なら、修正が出ても届かないので要対応として TODO に書く
 - リポのバージョン指定が実際に効いているか: `.node-version` などを持つリポで
   `{{SHELL_CMD}} 'cd <リポ> && node -v'` のように実行し、指定と一致するか確かめる。一致しないときは、
   指定の版が未インストール（入れてよい）か、管理ツールがそのファイルを読まない設定（mise の
@@ -86,12 +92,16 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
 - 共有ライブラリ（openssl / zlib / curl / libxml2 / brotli / nss / ca-certificates など）: Homebrew 等で入って
   いる版と、言語のバインディング・ランタイムやアプリに同梱された版の両方を見る。1 章の候補がこれらに
   当たるときは、二次的な影響（例: Node の脆弱性が同じライブラリを同梱する Python パッケージや
-  brew の formula にも及ぶ）まで辿る
+  brew の formula にも及ぶ）まで辿る。Node・Chromium の脆弱性は Electron 製アプリ（VS Code・Discord・
+  Notion など）にも同梱されるので、入っている Electron 製アプリと版を並べ、TODO の GUI アプリの更新に
+  「この修正を含むか（確かめたか / 未確認か）」を添える
 - パッケージマネージャの「公開から一定時間は入れない」設定（mise の `minimum_release_age` 等）で
   新版が保留されたら、設定は上書きせず、入れられる時刻をレポートと TODO に書く
 - リポジトリ: `python3 -I {{SCRIPTS}}/repo_scan.py sync {{REPO_ROOTS}}`
   （fetch は全リポ。pull はクリーンなデフォルトブランチだけ ff-only。作業中のリポは触らない）。
-  `FETCHFAIL` は権限切れ・削除済みのことが多いので、前回と同じなら一行で済ませる
+  `FETCHFAIL` は権限切れ・削除済みのことが多いので、前回と同じなら一行で済ませる。
+  `FETCHTIMEOUT`（fetch 1 回 180 秒で打ち切り）が出たら、その回のうちに該当リポのパスだけを渡して
+  `--jobs 2` で再実行する。それでも続くなら、ルーチンの `--jobs` を下げることを TODO に書く
 
 ## 3. 影響を確認する
 候補ごとに、各リポの **origin のデフォルトブランチ**で判定する（ローカルの作業ブランチは見ない）。
@@ -111,6 +121,27 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   `ecosystem=actions` の勧告と、侵害が報じられた action と照らし合わせる。侵害された action を
   タグ（`@v4` など）で参照していたら影響ありとして、修正版のコミット SHA への固定を推奨対応に書く
 - 悪性パッケージは、名前の一致に加えて既知の痕跡（勧告にあるファイル・プロセス・接続先）も確かめる
+- **CA の不信任・失効**（1 章の「証明書・CA」の告知）は、ベンダーの更新を待つだけで終えない。手元の信頼ストアごとに
+  該当の CA が残っているかを確かめる。照合は**別名ではなく SHA-256 の指紋で**行う（JDK の配布元ごとに別名が違う）。
+  - macOS: `security find-certificate -a -c "<CA 名>" -Z` を `/System/Library/Keychains/SystemRootCertificates.keychain`・
+    `/Library/Keychains/System.keychain`・`~/Library/Keychains/login.keychain-db` のそれぞれに対して実行し、
+    `security dump-trust-settings -d` と `security dump-trust-settings`（ユーザーの設定）で不信任の設定があるか見る
+  - JDK: 2 章で見つけた JDK ごとに `"<JDK のホーム>/bin/keytool" -list -v -cacerts -storepass changeit` を実行し、
+    `SHA256:` の行で照合する（`-storepass` を付けないとパスワードを聞かれて止まる。PATH の keytool は既定の JDK しか見ない）
+  - Homebrew の ca-certificates、Python の certifi、Ruby・Node が別に持つ CA ファイル、CA を同梱するアプリ（Docker Desktop など）
+  
+  自分で外してよいのは、次をすべて満たすときだけ:
+  - 告知（OpenJDK・Mozilla などの一覧）に載っている CA で、**ルートの削除・全面の不信任**で、発効日を過ぎている。
+    「ある日付以降に発行された証明書だけ不信任」の形は、まだ信頼されている証明書まで切れるので外さず、レポートに書く。
+    載っていない近縁の CA も残して、レポートに書く
+  - ユーザー領域に入れた JDK の cacerts（sudo が要らず、keytool で操作できるもの）。バックアップを `{{REPORT_DIR}}/` に取ってから
+    `"<JDK のホーム>/bin/keytool" -delete -alias <別名> -cacerts -storepass changeit` で外す。外した後、よく使う接続先
+    （Maven Central など）に TLS でつながるか確かめ、つながらなければバックアップから戻して TODO に書く
+  
+  それ以外は外さない。PEM の束（certifi・Homebrew の ca-certificates）とアプリ同梱の CA は、パッケージの更新を待つか報告だけにする
+  （直接書き換えても再インストールで戻る）。管理者権限が要るもの（macOS のシステムキーチェーンなど）は、証明書ファイルを
+  `{{REPORT_DIR}}/` に書き出し、貼ればそのまま動くコマンド（例: `sudo security add-trusted-cert -d -r deny -k
+  /Library/Keychains/System.keychain <ファイル>`）を、「ターミナルで実行し、出てきたダイアログで承認する」と添えて TODO に書く
 - 最終コミットが 1 年以上前の休眠リポは、影響が大きいときだけ詳しく見る
 
 ## 4. 対応する前に既存の作業を確かめる（重複防止）
