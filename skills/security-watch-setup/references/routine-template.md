@@ -7,7 +7,7 @@
 
 | 置き換え | 中身 | 例 |
 |---|---|---|
-| `{{SKILL_VERSION}}` | このスキルの `metadata.version`（SKILL.md の frontmatter） | 0.3.0 |
+| `{{SKILL_VERSION}}` | このスキルの `metadata.version`（SKILL.md の frontmatter） | 0.4.0 |
 | `{{USER}}` | 本人の呼び名（通知・TODO の宛先） | alice |
 | `{{SHELL}}` | バージョン管理ツールを有効にしているシェル（SKILL.md Step 1）。コマンド例の構文もこれに合わせる | fish |
 | `{{SHELL_CMD}}` | `{{SHELL}}` を設定ファイルごと読ませて 1 コマンド実行する形。mise / nvm を `.zshrc` / `.bashrc` で有効にしているなら `-i` も要る | `fish -c`、`zsh -ilc`、`bash -ilc` |
@@ -45,7 +45,11 @@ PATH も違う（mise / nvm のランタイムが見えないことがある）�
 - {{REPORT_DIR}} の最新レポートと TODO.md を読み、対応済み・報告済み・保留中の項目を把握する。
   状況が変わったものだけを書き、同じ内容を繰り返さない
 - 前回のチェック時刻を控える（1 章の検索範囲に使う）。レポートのファイル名はローカル時刻なので、
-  API に渡すときは UTC に直す。初回（レポートがない）は直近 7 日を範囲にする
+  API に渡すときは UTC に直す。検索の起点は前回のチェック時刻の **24 時間前**にする（勧告は公開日時より
+  遅れて一覧・検索に載ることがあり、ちょうど前回の時刻からだと境目のものを取りこぼす。重なった分は
+  前回のレポートと突き合わせて、新しいものだけ書く）。初回（レポートがない）は直近 7 日を範囲にする
+- 前回のレポートが予定の間隔より古い（上限・エラー・PC のスリープで回が抜けた）ときは、抜けた期間を
+  レポートの冒頭に書く。検索範囲は前回のレポートの時刻から取るので、抜けた分もこの回で拾う
 - **前回レポートに書いてあることを「今回も確認済み」とみなさない**。1 章は毎回やり直す
 - TODO.md の「保留」（修正版がまだ無い・誤検知と判定したもの）は、書いてある再確認の条件
   （修正版の公開・勧告の更新）が満たされたときだけ報告に出す。条件の確認は毎回やる。
@@ -66,6 +70,7 @@ PATH も違う（mise / nvm のランタイムが見えないことがある）�
   レポートには「名前 → CVE」の対応を全部書く（本人が名前で尋ねたときに引けるようにする）
 
 GitHub Advisory API の結果は、手元のエコシステムのものだけ候補にする。100 件を超えたら次のページも見る。
+`type=reviewed` が 0 件だったときは、範囲を数日広げて件数が出るかを見て、API の不調・クエリの誤りでないことを確かめる。
 
 ## 2. ローカルを最新化する
 - ツール: {{UPDATE_POLICY}}。起動中のアプリを落とすもの・再起動が要るものは上げず、手順をレポートに書く。
@@ -89,6 +94,11 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   `.python-version` / mise 等の設定からも、グローバル設定（`~/.tool-versions`、`~/.config/mise/config.toml`）
   からも参照されておらず、Homebrew なら `brew uses --installed <formula>` が空のときだけ削除する（`mise uninstall <tool>@<version>`、
   `brew cleanup <formula>`）。参照されているものは消さず、参照元と一緒にレポートに書く
+- **管理ツールの外にあるもの**: 公式インストーラで入れたランタイム（macOS の `/Library/Frameworks/Python.framework`、
+  `/usr/local/bin` の Node の .pkg など）と、Homebrew の Cask 以外で入れたアプリも見る。`which -a` で
+  シェルごとに先に来ていないか確かめ、古い版なら TODO に書く。最終起動が古く、サポートの終わった Electron・
+  ランタイムを同梱しているアプリは「使っていなければ削除」を候補に挙げる。どちらも消すのに管理者権限が要ることが
+  多いので、自分では消さず、貼ればそのまま動くコマンドを TODO に書く
 - 共有ライブラリ（openssl / zlib / curl / libxml2 / brotli / nss / ca-certificates など）: Homebrew 等で入って
   いる版と、言語のバインディング・ランタイムやアプリに同梱された版の両方を見る。1 章の候補がこれらに
   当たるときは、二次的な影響（例: Node の脆弱性が同じライブラリを同梱する Python パッケージや
@@ -120,7 +130,9 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
 - GitHub Actions: `runtimes` の出力の `action` 行（ワークフローの `uses:`）を、GitHub Advisory API の
   `ecosystem=actions` の勧告と、侵害が報じられた action と照らし合わせる。侵害された action を
   タグ（`@v4` など）で参照していたら影響ありとして、修正版のコミット SHA への固定を推奨対応に書く
-- 悪性パッケージは、名前の一致に加えて既知の痕跡（勧告にあるファイル・プロセス・接続先）も確かめる
+- 悪性パッケージは、名前の一致に加えて既知の痕跡（勧告にあるファイル・プロセス・接続先）も確かめる。
+  `MALWARE?` の行は名前の区切りで一致したものだが、短い名前は別のパッケージ名の一部やハッシュ値に当たることが
+  あるので、ロックファイルの該当箇所を開いてパッケージ名として載っているかを確かめてから判定する
 - **CA の不信任・失効**（1 章の「証明書・CA」の告知）は、ベンダーの更新を待つだけで終えない。手元の信頼ストアごとに
   該当の CA が残っているかを確かめる。照合は**別名ではなく SHA-256 の指紋で**行う（JDK の配布元ごとに別名が違う）。
   - macOS: `security find-certificate -a -c "<CA 名>" -Z` を `/System/Library/Keychains/SystemRootCertificates.keychain`・
@@ -128,6 +140,11 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
     `security dump-trust-settings -d` と `security dump-trust-settings`（ユーザーの設定）で不信任の設定があるか見る
   - JDK: 2 章で見つけた JDK ごとに `"<JDK のホーム>/bin/keytool" -list -v -cacerts -storepass changeit` を実行し、
     `SHA256:` の行で照合する（`-storepass` を付けないとパスワードを聞かれて止まる。PATH の keytool は既定の JDK しか見ない）
+  - macOS の `/etc/ssl/cert.pem`: キーチェーンとは別の PEM の束で、`/usr/bin/curl`・`/usr/bin/git`・`/usr/bin/python3` や、
+    mise などで入れた Python の一部が使う。キーチェーンで不信任にしても、ここに残っていれば信頼される。
+    一時ディレクトリで `BEGIN CERTIFICATE` ごとに 1 枚ずつのファイルへ分け（awk など）、各ファイルに
+    `openssl x509 -noout -fingerprint -sha256 -subject -in <ファイル>` を実行して、告知の SHA-256 の指紋で照合する。
+    `### ` の見出しや CA 名の grep だけで判断しない（見出しは手で書かれたもので、証明書の中身と一致する保証がない）
   - Homebrew の ca-certificates、Python の certifi、Ruby・Node が別に持つ CA ファイル、CA を同梱するアプリ（Docker Desktop など）
   
   自分で外してよいのは、次をすべて満たすときだけ:
@@ -141,7 +158,10 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   それ以外は外さない。PEM の束（certifi・Homebrew の ca-certificates）とアプリ同梱の CA は、パッケージの更新を待つか報告だけにする
   （直接書き換えても再インストールで戻る）。管理者権限が要るもの（macOS のシステムキーチェーンなど）は、証明書ファイルを
   `{{REPORT_DIR}}/` に書き出し、貼ればそのまま動くコマンド（例: `sudo security add-trusted-cert -d -r deny -k
-  /Library/Keychains/System.keychain <ファイル>`）を、「ターミナルで実行し、出てきたダイアログで承認する」と添えて TODO に書く
+  /Library/Keychains/System.keychain <ファイル>`）を、「ターミナルで実行し、出てきたダイアログで承認する」と添えて TODO に書く。
+  `/etc/ssl/cert.pem` は、バックアップ（`sudo cp -p /etc/ssl/cert.pem /etc/ssl/cert.pem.bak-<日付>`）→ 該当ブロックを除いた
+  ファイルを作る → 証明書の数が外した分だけ減り、告知の指紋が 0 件になったことの確認（上と同じ指紋の照合で） → `sudo install -m 644 -o root -g wheel <新ファイル> /etc/ssl/cert.pem`
+  → `curl -sI https://github.com -o /dev/null -w '%{http_code}'` の順のコマンドと戻し方を TODO に書き、macOS の更新で元に戻ることがあると添える
 - 最終コミットが 1 年以上前の休眠リポは、影響が大きいときだけ詳しく見る
 
 ## 4. 対応する前に既存の作業を確かめる（重複防止）
@@ -150,6 +170,7 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   `gh pr list --repo <owner/repo> --state open` で同じ修正の PR（Dependabot / Renovate / 他メンバー / 過去の自分）がないか
 - `gh pr list --repo <owner/repo> --state merged --search "<パッケージ名>" --limit 5` で既に直っていないか
 - `git branch -r` に同じ目的のブランチがないか
+- `gh repo view <owner/repo> --json viewerPermission` で push できるか（`WRITE`・`MAINTAIN`・`ADMIN` のときだけ PR に進む。`READ`・`TRIAGE` は push できないので、報告側に回す）
 当たれば新しく作らず、そのリンクをレポートに書く。
 
 ## 5. 対応する
@@ -157,10 +178,12 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
 <!-- 「なし」のときは、この節を「PR は出さない。全リポとも報告と連絡文だけ」に置き換える -->
 
 これらは: デフォルトブランチの最新から `security/<パッケージ>-<修正版>` ブランチを切る → 修正
-（バージョン更新・ロックファイル再生成。ロックファイルの取得元 URL が社内ミラー等に変わったら
-公式レジストリに戻し、integrity が一致することを確かめる）→ ビルド・テストを実行 → コミット・push →
+（バージョン更新・ロックファイル再生成。再生成の前後で `resolved` などの取得元のホストを比べ、**元のロックファイルと
+同じホストに揃える**。手元の `.npmrc` の設定で社内ミラーに変わったら戻し、元から社内レジストリを使っているリポでは
+公式レジストリに書き換えない。integrity が一致することも確かめる）→ ビルド・テストを実行 → コミット・push →
 `gh pr create`（本文に CVE・深刻度・修正版・実害の見立て・確認結果）。自分で作った PR は
-**マージしない**。作業は追加の worktree で行い、PR が開いている間は残す。
+**マージしない**。作業は追加の worktree で行い、PR が開いている間は残す。マージ・クローズされた PR の
+worktree は次の回で消す（ブランチは残す）。
 
 これらのリポにある Dependabot / Renovate の PR: {{BOT_PR_POLICY}}
 マージしてよいとされていても、マージが本番へのデプロイ・リリースを起動するリポ（デフォルトブランチへの

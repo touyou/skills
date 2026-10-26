@@ -299,6 +299,25 @@ def _maven_versions(text: str, path: str, coord: str) -> set[str]:
     return vs
 
 
+# npm / pnpm / bun の integrity（sha512-<base64>）、pip の --hash=sha256:<hex> など
+HASH_RE = re.compile(r"\bsha(?:1|224|256|384|512)[-:][A-Za-z0-9+/=]+", re.IGNORECASE)
+
+
+def _malware_hit(text: str, name: str) -> bool:
+    """名前の区切りで一致するか。
+
+    単純な部分一致だと、integrity の base64 など、ハッシュ値の中の文字列に当たって誤検知する。
+    前後が英数字（と base64 の +）のときは別の語の一部とみなす。後ろの - . / = は許して、
+    `name-utils` のような派生名や `name==1.0` は拾う。`@scope/` のように記号で始まる・終わる指定は、
+    その側の区切りを見ない。
+    """
+    # integrity などのハッシュ値は `/` を含むので、区切りの判定より先に取り除く
+    text = HASH_RE.sub("", text)
+    head = r"(?<![A-Za-z0-9+])" if name[:1].isalnum() else ""
+    tail = r"(?![A-Za-z0-9+])" if name[-1:].isalnum() else ""
+    return re.search(head + re.escape(name) + tail, text, re.IGNORECASE) is not None
+
+
 def scan_repo(root: str, repo: str, wants: dict[str, list[str]], malware: list[str]) -> list[str]:
     ref = default_ref(repo)
     if not ref:
@@ -309,9 +328,8 @@ def scan_repo(root: str, repo: str, wants: dict[str, list[str]], malware: list[s
         if not LOCKFILE_RE.search(f):
             continue
         text = show(repo, ref, f)
-        low = text.lower()
         for m in malware:
-            if m.lower() in low:
+            if _malware_hit(text, m):
                 rows.add(f"MALWARE?\t{m} in {f}")
         base = f.rsplit("/", 1)[-1]
         found: list[tuple[str, str, set[str]]] = []
@@ -391,7 +409,7 @@ def main() -> int:
     p.add_argument("--jobs", type=int, help="並列数（既定は sync が 4、それ以外が 8）")
     for eco in ("npm", "pip", "gem", "pod", "spm", "pub", "composer", "go", "cargo", "maven"):
         p.add_argument(f"--{eco}", help=f"{eco} のパッケージ名（カンマ区切り）")
-    p.add_argument("--malware", help="悪性パッケージ名・スコープ（カンマ区切り。部分一致で探す）")
+    p.add_argument("--malware", help="悪性パッケージ名・スコープ（カンマ区切り。名前の区切りで一致を探す。ハッシュ値の中は拾わない）")
     a = p.parse_args()
     if a.jobs is None:
         a.jobs = 4 if a.command == "sync" else 8
