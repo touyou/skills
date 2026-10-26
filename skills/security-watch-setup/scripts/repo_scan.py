@@ -4,7 +4,7 @@
 サブコマンド:
   repos    ROOT 配下の git リポジトリを列挙する（node_modules と追加 worktree は除く）
   sync     各リポジトリで fetch し、クリーンなデフォルトブランチだけ ff-only で pull する
-           （ネットワークを使う git は 1 リポ 180 秒で打ち切り、FETCHTIMEOUT / PULLTIMEOUT を出す）
+           （fetch など、ネットワークを使う git は 1 回 180 秒で打ち切り、FETCHTIMEOUT を出す）
   scan     各リポジトリの origin デフォルトブランチのロックファイル（Maven / Gradle は直接書かれた依存）から、指定パッケージの
            解決済みバージョンと悪性パッケージ名の一致を出す
   runtimes 各リポジトリの origin デフォルトブランチから、Dockerfile の FROM と
@@ -63,7 +63,7 @@ def git_net(repo: str, *args: str, env: dict) -> subprocess.CompletedProcess | N
     """ネットワークを使う git。時間切れなら None。
 
     subprocess.run の timeout は git しか殺さず、パイプを握った ssh が残ると待ち続けるので、
-    プロセスグループごと止める。
+    子プロセスごと止める。いきなり SIGKILL にすると git が .lock を消せずに残す。
     """
     proc = subprocess.Popen(
         ["git", "-C", repo, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -72,11 +72,21 @@ def git_net(repo: str, *args: str, env: dict) -> subprocess.CompletedProcess | N
     try:
         out, err = proc.communicate(timeout=NETWORK_TIMEOUT)
     except subprocess.TimeoutExpired:
-        if hasattr(os, "killpg"):
-            os.killpg(proc.pid, signal.SIGKILL)
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
         else:
-            proc.kill()
-        proc.communicate()
+            os.killpg(proc.pid, signal.SIGTERM)
+            try:
+                proc.communicate(timeout=5)
+                return None
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGKILL)
+        try:
+            proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            # グループの外に出た子（ControlPersist の ssh など）がパイプを握っていても戻る
+            for f in (proc.stdout, proc.stderr):
+                f.close()
         return None
     return subprocess.CompletedProcess(proc.args, proc.returncode, out, err)
 
@@ -136,6 +146,9 @@ def sync_one(repo: str) -> str:
         "GIT_SSH_COMMAND",
         "ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3",
     )
+    # HTTPS の remote には ServerAlive が効かないので、転送が止まったら打ち切らせる
+    env.setdefault("GIT_HTTP_LOW_SPEED_LIMIT", "1000")
+    env.setdefault("GIT_HTTP_LOW_SPEED_TIME", "60")
     fetched = git_net(repo, "fetch", "--all", "--prune", "-q", env=env)
     if fetched is None:
         return "FETCHTIMEOUT"
@@ -153,11 +166,9 @@ def sync_one(repo: str) -> str:
     dirty = git(repo, "status", "--porcelain").stdout.strip()
     if current != default or dirty:
         return f"SKIP({current or 'detached'}{', dirty' if dirty else ''})"
+    # fetch 済みなので、ネットワークを使わずに取り込む（打ち切りが merge の途中に当たらない）。
     # 無人実行なので、取り込んだ内容由来のフック（husky の post-merge 等）は走らせない
-    pulled = git_net(repo, "-c", "core.hooksPath=/dev/null", "pull", "--ff-only", "-q", env=env)
-    if pulled is None:
-        return "PULLTIMEOUT"
-    if pulled.returncode != 0:
+    if git(repo, "-c", "core.hooksPath=/dev/null", "merge", "--ff-only", "-q", f"origin/{default}").returncode != 0:
         return "PULLFAIL"
     return "PULLED"
 
