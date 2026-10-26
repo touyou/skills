@@ -142,7 +142,9 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
     `SHA256:` の行で照合する（`-storepass` を付けないとパスワードを聞かれて止まる。PATH の keytool は既定の JDK しか見ない）
   - macOS の `/etc/ssl/cert.pem`: キーチェーンとは別の PEM の束で、`/usr/bin/curl`・`/usr/bin/git`・`/usr/bin/python3` や、
     mise などで入れた Python の一部が使う。キーチェーンで不信任にしても、ここに残っていれば信頼される。
-    `grep -ci '<CA 名の一部>' /etc/ssl/cert.pem` で残っているか見る
+    一時ディレクトリで `BEGIN CERTIFICATE` ごとに 1 枚ずつのファイルへ分け（awk など）、各ファイルに
+    `openssl x509 -noout -fingerprint -sha256 -subject -in <ファイル>` を実行して、告知の SHA-256 の指紋で照合する。
+    `### ` の見出しや CA 名の grep だけで判断しない（見出しは手で書かれたもので、証明書の中身と一致する保証がない）
   - Homebrew の ca-certificates、Python の certifi、Ruby・Node が別に持つ CA ファイル、CA を同梱するアプリ（Docker Desktop など）
   
   自分で外してよいのは、次をすべて満たすときだけ:
@@ -158,7 +160,7 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   `{{REPORT_DIR}}/` に書き出し、貼ればそのまま動くコマンド（例: `sudo security add-trusted-cert -d -r deny -k
   /Library/Keychains/System.keychain <ファイル>`）を、「ターミナルで実行し、出てきたダイアログで承認する」と添えて TODO に書く。
   `/etc/ssl/cert.pem` は、バックアップ（`sudo cp -p /etc/ssl/cert.pem /etc/ssl/cert.pem.bak-<日付>`）→ 該当ブロックを除いた
-  ファイルを作る → 証明書の数と CA 名が 0 件になったことの確認 → `sudo install -m 644 -o root -g wheel <新ファイル> /etc/ssl/cert.pem`
+  ファイルを作る → 証明書の数が外した分だけ減り、告知の指紋が 0 件になったことの確認（上と同じ指紋の照合で） → `sudo install -m 644 -o root -g wheel <新ファイル> /etc/ssl/cert.pem`
   → `curl -sI https://github.com -o /dev/null -w '%{http_code}'` の順のコマンドと戻し方を TODO に書き、macOS の更新で元に戻ることがあると添える
 - 最終コミットが 1 年以上前の休眠リポは、影響が大きいときだけ詳しく見る
 
@@ -168,7 +170,7 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   `gh pr list --repo <owner/repo> --state open` で同じ修正の PR（Dependabot / Renovate / 他メンバー / 過去の自分）がないか
 - `gh pr list --repo <owner/repo> --state merged --search "<パッケージ名>" --limit 5` で既に直っていないか
 - `git branch -r` に同じ目的のブランチがないか
-- `gh repo view <owner/repo> --json viewerPermission` で push できるか（`READ` なら PR は出せないので、報告側に回す）
+- `gh repo view <owner/repo> --json viewerPermission` で push できるか（`WRITE`・`MAINTAIN`・`ADMIN` のときだけ PR に進む。`READ`・`TRIAGE` は push できないので、報告側に回す）
 当たれば新しく作らず、そのリンクをレポートに書く。
 
 ## 5. 対応する

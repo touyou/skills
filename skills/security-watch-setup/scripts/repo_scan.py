@@ -299,6 +299,10 @@ def _maven_versions(text: str, path: str, coord: str) -> set[str]:
     return vs
 
 
+# npm / pnpm / bun の integrity（sha512-<base64>）、pip の --hash=sha256:<hex> など
+HASH_RE = re.compile(r"\bsha(?:1|224|256|384|512)[-:][A-Za-z0-9+/=]+", re.IGNORECASE)
+
+
 def _malware_hit(text: str, name: str) -> bool:
     """名前の区切りで一致するか。
 
@@ -307,6 +311,8 @@ def _malware_hit(text: str, name: str) -> bool:
     `name-utils` のような派生名や `name==1.0` は拾う。`@scope/` のように記号で始まる・終わる指定は、
     その側の区切りを見ない。
     """
+    # integrity などのハッシュ値は `/` を含むので、区切りの判定より先に取り除く
+    text = HASH_RE.sub("", text)
     head = r"(?<![A-Za-z0-9+])" if name[:1].isalnum() else ""
     tail = r"(?![A-Za-z0-9+])" if name[-1:].isalnum() else ""
     return re.search(head + re.escape(name) + tail, text, re.IGNORECASE) is not None
