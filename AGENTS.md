@@ -159,3 +159,8 @@ Codex 側は `.codex-plugin/plugin.json` が「1 リポジトリ = 1 plugin」�
 - スキル個別の仕様: `skills/<name>/SKILL.md` (常に entry point)
 - スキル開発者引き継ぎ: 各 skill の `ROADMAP.md` (存在する場合)
 - 公開向け: `README.md`
+
+## 共通の運用ルール（全リポジトリ共通）
+
+- **ブランチ名は役割で付ける**: `feature/` `fix/` `chore/` `docs/` `refactor/` `style/` `release/x.y.z` などの接頭辞 + 短い英語の説明（例: `fix/widget-crash`）。`claude/...` や自動生成の名前は使わない。このリポジトリに別の命名ルールが書いてあればそちらに従う
+- **使い終わったものは消す**: マージ済み・不要になった作業ブランチ（リモートも）、一時ファイル、ビルド成果物、書き出した画像などは作業の最後に削除して容量を空ける。`main` / `production` / 既定ブランチ / 開いている PR のブランチは消さない
