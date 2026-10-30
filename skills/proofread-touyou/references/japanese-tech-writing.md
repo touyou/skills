@@ -46,10 +46,10 @@
 - 例: コードは `SubTask`、地の文は「サブタスク」と「Subtask」が混在。
 - 実害がなければ無理に統一しない。明らかな不一致だけ指摘。
 
-### A6. 英語の用語は公式の表記に合わせる
-Apple などのプラットフォーム用語を地の文で書くときは、公式ドキュメントの表記（大文字小文字・スペース）に合わせる。touyou さんはこれを望んでいる（2026-10、Duo 対応記事で「safe area」→「Safe Area」）。
-- 例: Safe Area、Split View、Dynamic Type、App Store、Size Class、Book Posture、Progressive Blur。
-- 一度大文字で書いた用語は、記事の中で小文字書きに戻さない（「Size Class」と「size class」が混ざる）。
+### A6. 英語の機能名は大文字始まりの好みに合わせる
+touyou さんは Apple などのプラットフォームの機能名を、地の文でも大文字始まりで書く好み（2026-10、Duo 対応記事で「safe area」「size class」を「Safe Area」「Size Class」に直した）。小文字書きが混ざっていたら「Size Class と書いては？」と指摘するだけで、勝手に寄せない。
+- 本人が使った例: Safe Area、Size Class、Book Posture、Progressive Blur、Split View、Dynamic Type。
+- 一度大文字で書いた用語が、同じ記事で小文字書きに戻っていたら表記ゆれとして指摘する（SKILL.md 指摘6）。
 - コード識別子（`safeAreaInsets` など）はコードの綴りのまま。地の文と混同しない（A5）。
 
 ---

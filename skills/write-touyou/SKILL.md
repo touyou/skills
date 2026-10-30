@@ -4,7 +4,7 @@ description: touyouさん（藤井さん）名義の日本語記事・ブログ�
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # touyouさん名義で文章を書く（AI臭を出さずに）
