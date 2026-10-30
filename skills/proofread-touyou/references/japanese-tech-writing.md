@@ -48,7 +48,8 @@
 
 ### A6. 英語の用語は公式の表記に合わせる
 Apple などのプラットフォーム用語を地の文で書くときは、公式ドキュメントの表記（大文字小文字・スペース）に合わせる。touyou さんはこれを望んでいる（2026-10、Duo 対応記事で「safe area」→「Safe Area」）。
-- 例: Safe Area、Split View、Dynamic Type、App Store。
+- 例: Safe Area、Split View、Dynamic Type、App Store、Size Class、Book Posture、Progressive Blur。
+- 一度大文字で書いた用語は、記事の中で小文字書きに戻さない（「Size Class」と「size class」が混ざる）。
 - コード識別子（`safeAreaInsets` など）はコードの綴りのまま。地の文と混同しない（A5）。
 
 ---
