@@ -21,7 +21,7 @@ import sys
 
 MIN_RUNS = 3
 # 小さいほど良い指標。名前の末尾で判定し、それ以外は大きいほど良いとみなす。
-LOWER_IS_BETTER = ("_ms", "_per_req", "p50", "p95", "p99", "errors", "_kb", "_bytes", "cls", "_count")
+LOWER_IS_BETTER = ("_ms", "_per_req", "p50", "p90", "p95", "p99", "errors", "_kb", "_bytes", "cls", "_count")
 IGNORE = {"concurrency", "requests", "n"}
 
 
@@ -95,6 +95,8 @@ def main():
     ap.add_argument("--base", nargs="*", default=[])
     ap.add_argument("--cand", nargs="+", required=True)
     ap.add_argument("--touched", nargs="*", default=[], help="変更が効くはずのシナリオ名（scenarios のキー）")
+    ap.add_argument("--noise-floor", type=float, default=0.0,
+                    help="ぶれの下限（%%）。GPU 時間のように同じビルドでもほぼぶれない計測で、わずかな差を改善・悪化と判定しないため")
     a = ap.parse_args()
 
     cand_runs, cand_problems = load(a.cand, "cand")
@@ -121,7 +123,7 @@ def main():
         if d is None:
             print(f"  {k:>28}: {bmed[k]:>10.2f} -> {cmed[k]:>10.2f}  (基準が 0 で比べられない)")
             continue
-        noise = max(bspread[k], cspread[k])
+        noise = max(bspread[k], cspread[k], a.noise_floor)
         gain = -d if lower_is_better(k) else d
         mark = ""
         if gain > noise:
@@ -145,7 +147,7 @@ def main():
             )
 
     d = pct(bmed["score"], cmed["score"])
-    noise = max(bspread["score"], cspread["score"])
+    noise = max(bspread["score"], cspread["score"], a.noise_floor)
     if worse:
         print(f"悪化した指標: {', '.join(worse)}（採用するなら理由を台帳と PR に書く）")
     if d > noise:
