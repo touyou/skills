@@ -4,6 +4,7 @@
 使い方:
   compare.py --base b1.json b2.json b3.json --cand c1.json c2.json c3.json
   compare.py --cand c1.json c2.json c3.json   # 1 組だけ確かめる
+  compare.py --base ... --cand ... --touched page:user   # 変更したシナリオを渡すと、効果の帰属も見る
 
 各 JSON は score（数値）/ valid（true か false）/ failures（文字列の配列）を持つ。
 ほかの数値（入れ子の scenarios.*.p50 なども）は中央値を並べる。
@@ -93,6 +94,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", nargs="*", default=[])
     ap.add_argument("--cand", nargs="+", required=True)
+    ap.add_argument("--touched", nargs="*", default=[], help="変更が効くはずのシナリオ名（scenarios のキー）")
     a = ap.parse_args()
 
     cand_runs, cand_problems = load(a.cand, "cand")
@@ -129,6 +131,18 @@ def main():
             mark = "悪化"
             worse.append(k)
         print(f"  {k:>28}: {bmed[k]:>10.2f} -> {cmed[k]:>10.2f}  ({d:+.1f}%, ぶれ ±{noise:.1f}%) {mark}")
+
+    if a.touched:
+        untouched_better = sorted(
+            k for k in better
+            if k.startswith("scenarios.") and k.split(".")[1] not in a.touched
+        )
+        if untouched_better:
+            print(
+                "帰属の注意: 変更していないシナリオも速くなっている（"
+                + ", ".join(untouched_better)
+                + "）。点数の伸びの一部はぶれの可能性が高い。採用の根拠は、変更したシナリオの指標で書く"
+            )
 
     d = pct(bmed["score"], cmed["score"])
     noise = max(bspread["score"], cspread["score"])
