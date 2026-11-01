@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.9.1"
+    "version": "0.10.0"
   },
   "plugins": [
     {
@@ -77,6 +77,15 @@
       "strict": false,
       "skills": [
         "./skills/security-watch-setup"
+      ]
+    },
+    {
+      "name": "perf-pack",
+      "description": "Web サービス・API の性能改善を、点数を決めて「計測 → 仮説 → 1 つだけ変える → 計測 → 採用か差し戻し」のループでエージェントに長時間まわさせるスキル。ごまかせない点数（整合性チェックに落ちたら 0 点）、本番以外での計測、採用前のセキュリティだけのレビューを組み込む。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/autonomous-perf-loop"
       ]
     }
   ]
