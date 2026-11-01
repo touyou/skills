@@ -15,6 +15,7 @@ touyou 個人の Agent Skills 集。**Claude Code** と **OpenAI Codex** の両�
 /plugin install meta-pack@touyou-skills       # このリポジトリ自体の運用・拡充支援
 /plugin install store-pack@touyou-skills      # ストア画像（スクショに見出し・背景・枠）
 /plugin install security-pack@touyou-skills   # 定期の脆弱性チェックを環境に合わせて設定
+/plugin install perf-pack@touyou-skills       # 計測にもとづく性能改善のループ
 ```
 
 プラグインは目的別に分かれているので、必要なものだけ入れて OK。
@@ -46,6 +47,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `meta-pack` | `touyou-skills` | [`retrospective`](./skills/retrospective/) | セッション失敗と PR 指摘の「繰り返し」を掘り起こし、AGENTS.md / スキル / memory への恒久ルール候補として提示する |
 | `store-pack` | `touyou-skills` | [`store-screenshot-composer`](./skills/store-screenshot-composer/) | 撮影済みのスクショに見出し・背景・端末の枠・拡大カードを付けて、App Store / Google Play 用の画像を JSON 設定から全ロケール・全サイズ一括で作る |
 | `security-pack` | `touyou-skills` | [`security-watch-setup`](./skills/security-watch-setup/) | 自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、エージェント（Claude Code / Codex）・OS・シェル・ランタイムの入れ方・PR を出してよい範囲に合わせて組み立て、定期タスク / launchd / cron などに登録する |
+| `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/) | 性能改善を「点数 → 1 つだけ変える → 3 回計測 → 採用か差し戻し」のループでまわす。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
 
