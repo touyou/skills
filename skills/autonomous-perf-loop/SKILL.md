@@ -4,7 +4,7 @@ description: Web サービス・API の性能を「点数を決める → 計測
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # autonomous-perf-loop

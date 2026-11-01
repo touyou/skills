@@ -21,7 +21,7 @@ import sys
 
 MIN_RUNS = 3
 # 小さいほど良い指標。名前の末尾で判定し、それ以外は大きいほど良いとみなす。
-LOWER_IS_BETTER = ("_ms", "_per_req", "p50", "p95", "p99", "errors")
+LOWER_IS_BETTER = ("_ms", "_per_req", "p50", "p95", "p99", "errors", "_kb", "_bytes", "cls", "_count")
 IGNORE = {"concurrency", "requests", "n"}
 
 
