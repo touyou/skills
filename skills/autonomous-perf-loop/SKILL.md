@@ -112,7 +112,8 @@ ISUCON の上位チームがやっている「点数を 1 つ決めて、AI に�
 
 周の終わりに `scripts/plateau.py timeline.jsonl --noise <ぶれの下限%>` を回す。
 停滞（終了コード 3）と出たら、止める前に別のエージェントに 1 回だけ監査させる
-（[references/plateau-audit.md](references/plateau-audit.md) の 2 節）。最初の大きな伸びの後は横ばいが続くのがふつうで、
+（[references/plateau-audit.md](references/plateau-audit.md) の 2 節）。監査したときの「最後の更新の時刻」を状態に書き、
+同じ時刻のまま停滞が続く間は監査をやり直さない（次に点数が伸びてから停滞したときに、もう一度監査してよい）。最初の大きな伸びの後は横ばいが続くのがふつうで、
 そこで手を止めるか、視点を変えて次の伸びを探すかが、長時間まわす意味を決める。
 
 Step 1 に戻る。次のどれかで止めて、人に返す:
