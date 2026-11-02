@@ -83,6 +83,9 @@ Rules the change must satisfy:
 
 Things to check specifically: <呼び出し元をすべて見る / 確認の順序 / 共有メモに人ごとの値が入らないか /
 新しいスクリプトがバンドルに入らないか、など>
+<画面側のキャッシュ・取り直しの条件を変えたとき: a list stuck loading (an answer dropped while nothing asks again),
+a periodic refresh or retry swallowed, stale data shown after a local change / permission change / deletion,
+module-level caches surviving sign-out or a workspace switch>
 
 Report each finding with file:line, a concrete failure scenario, and a confidence label
 (high/medium/low). Include low-confidence ones too. If you find nothing, say so plainly and list
@@ -97,6 +100,10 @@ what you checked. Keep the report concise.
 | low | 直せるなら直す。直さないものは、PR の説明の「要確認」に指摘の全文と、直さなかった理由を載せて人に見せる |
 
 指摘の件数と扱いは台帳にも残す。
+
+画面側のキャッシュ（取り直すかどうかの判定）を変える周では、漏れに加えて「止まる・古いまま残る」を必ず確かめさせる。
+gp-space の 4 周目では、捨てられる要求を待ち続けて読み込み中のまま止まる経路と、定期の読み直しが飛ぶ経路がこのレビューで見つかった。
+判定は純粋関数に切り出してテストする（「足しただけでは送らない」「定期の読み直しでは送る」「失敗後は再試行する」）。
 
 ## 計測のコードを製品に残さない
 
