@@ -40,6 +40,23 @@ npx wrangler d1 execute <db> --local --command "EXPLAIN QUERY PLAN <SQL>"
 - ローカル DB が「読んだ行数」を返さない実装（ローカル D1 など）では、実行計画と、計測用データの
   件数から見積もる
 
+### PostgreSQL の行単位のセキュリティ（RLS）
+
+RLS の policy が関数（`auth.uid()` や「所属している組織の ID」を返す関数など）を素のまま呼んでいると、
+**行ごとに評価される**。1 リクエストで数十回同じ関数が走り、DB の時間の大半を占めることがある
+（実行計画には出にくい。`pg_stat_statements` を `track = all` にすると、関数の中の文が回数つきで見える）。
+
+- 引数の無い `STABLE` の関数なら、`(select f())` で包むと planner が initPlan として **1 文 1 回**だけ評価する。
+  意味は変わらない（[Supabase の RLS 性能の推奨](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select)）
+- 配列を返す関数は型を付ける: `col = any ((select f())::uuid[])`。付けないと `any (副問い合わせ)` と解釈され、
+  `uuid = uuid[]` で落ちる
+- policy が多いときは手で書き換えない。**生きている DB の `pg_policies` を `search_path = ''` で逆解析した式**から
+  `ALTER POLICY` を機械的に作る（宣言のスキーマにない policy も拾える）。作ったら、包みを外した式が元の式と一致すること、
+  roles・cmd・PERMISSIVE が変わらないことを全件で突き合わせる
+- 宣言のスキーマとマイグレーションを両方持つリポジトリでは、それぞれから作った DB の `pg_policies` が一致することも確かめる
+- 関数が GUC（`request.jwt.claims` など）を読むなら、その値を同じ文の中で書き換えていないか確かめる。
+  別の文で立てているなら、1 文 1 回にしても読む値は変わらない
+
 ## 3. DB: 要らないクエリを探す
 
 - 汎用の関数を使い回して、**使っていない列のためにクエリを打っていないか**（いいね済みかだけ要るのに、
@@ -56,6 +73,11 @@ npx wrangler d1 execute <db> --local --command "EXPLAIN QUERY PLAN <SQL>"
 - 実行計画の時間で小さな変更を比べない。`EXPLAIN ANALYZE` は計測自体の負荷が乗り、1 回ごとのぶれも大きい。
   比べるときは、同じクエリを直接 15 回ほど流した中央値を、変更前・変更後で交互に取る。結果の行のハッシュも比べて、
   答えが変わっていないことを同時に確かめる
+- **同じ認可の判定を 2 回していないか**。ルーターのミドルウェアを `/:id` と `/:id/*` の両方に掛けると、
+  フレームワークによっては `/:id/*` が `/:id` そのものにも当たり、詳細の API だけ判定が 2 回走る（Hono など）。
+  1 リクエストの文を `pg_stat_statements` で並べ、同じ文が同じ回数ずつ重なっていたら疑う。
+  まとめるなら、リクエストのオブジェクトをキーにしたメモ（`WeakMap<Request, …>`）に**通った判定だけ**を、
+  呼び出した人と対象の ID の組で覚える。落ちた判定は覚えない
 
 ## 4. CPU: プロファイルを取る
 
