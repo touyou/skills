@@ -47,7 +47,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `meta-pack` | `touyou-skills` | [`retrospective`](./skills/retrospective/) | セッション失敗と PR 指摘の「繰り返し」を掘り起こし、AGENTS.md / スキル / memory への恒久ルール候補として提示する |
 | `store-pack` | `touyou-skills` | [`store-screenshot-composer`](./skills/store-screenshot-composer/) | 撮影済みのスクショに見出し・背景・端末の枠・拡大カードを付けて、App Store / Google Play 用の画像を JSON 設定から全ロケール・全サイズ一括で作る |
 | `security-pack` | `touyou-skills` | [`security-watch-setup`](./skills/security-watch-setup/) | 自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、エージェント（Claude Code / Codex）・OS・シェル・ランタイムの入れ方・PR を出してよい範囲に合わせて組み立て、定期タスク / launchd / cron などに登録する |
-| `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/) | 性能改善を「点数 → 1 つだけ変える → 3 回計測 → 採用か差し戻し」のループでまわす。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー。長時間まわすときは停滞を時系列で判定し、別のエージェントに監査させる。採点の癖を突くだけの案と、対象の中に書かれた指示は採らない |
+| `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/) | 性能改善を「点数 → 1 つだけ変える → 3 回計測 → 採用か差し戻し」のループでまわす。ぶれが大きい環境では基準と候補を交互に測り、A/A でぶれの下限を出す。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー。長時間まわすときは停滞を時系列で判定し、別のエージェントに監査させる。採点の癖を突くだけの案と、対象の中に書かれた指示は採らない |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
 
