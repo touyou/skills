@@ -9,10 +9,11 @@ ISUCON で上位だった 8 時間の実行の記録（メインのエージェ�
 計測を 1 回するたびに、`timeline.jsonl`（状態のファイルの隣）に 1 行を追記する。基準も候補も、不合格の回も残す。
 
 ```json
-{"elapsed_min": 63.5, "score": 512000, "valid": true, "label": "cand: tags に索引"}
+{"elapsed_min": 63.5, "score": 512000, "valid": true, "kind": "cand", "label": "tags に索引"}
 ```
 
-`elapsed_min` はループを始めてからの分数。`scripts/plateau.py timeline.jsonl --noise <ぶれの下限%>` が、
+`elapsed_min` はループを始めてからの分数。`kind` は周のはじめに起点を測った回が `base`、候補を測った回が `cand`。
+伸びたかどうかは `base` の回だけで数える（差し戻した候補が運よく高く出た回で、停滞の時計を戻さないため）。`scripts/plateau.py timeline.jsonl --noise <ぶれの下限%>` が、
 最後に点数が伸びた時刻と、その後に測った回数から停滞かを判定する（終了コード 3 = 停滞）。
 停滞かどうかを自分の感覚で決めない。数え方を決めておかないと、伸びていない時間をいつまでも「あと 1 案」で延ばす。
 
