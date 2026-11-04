@@ -4,7 +4,7 @@ description: SwiftUI・UIKit アプリのアクセシビリティ実装・レビ
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # Apple プラットフォームのアクセシビリティ対応

@@ -2,6 +2,13 @@
 
 `writing-pack`（**proofread-touyou** / **write-touyou**）共有のリファレンス。nanaism 氏の [yomiyasu](https://github.com/nanaism/yomiyasu)（MIT）から、**touyou さんの文体と矛盾しない部分だけ**を取り入れて再構成したもの。
 
+## 目次
+
+- 使い方（最重要）
+- A 節：取り入れる（A1. 意味保持の 4 点 / A2. 比喩動詞 / A3. 非生物主語 / A4. 質感・認知を装う語 / A5. 英語直訳の構文 / A6. 後置ラベリング）
+- B 節：取り入れない（touyou さんの文体と衝突する）
+- 出典
+
 ## 使い方（最重要）
 
 - yomiyasu は「AIが書いた文を、誰が読んでも引っかからない平易な文へ書き直す」スキル。touyou の writing-pack は「touyou さんの肉声を守る／肉声で書く」スキル。目的が違うので、**丸ごとは適用しない**。

@@ -4,6 +4,17 @@ Kotlin Android (Jetpack Compose 主体) プロジェクト向けのツール選�
 
 **v0.4 ステータス**: reference doc は本実装、`scripts/run_tier1_kotlin_android.py` と `scripts/run_tier3_compose_ui.py` は **dogfood していないスケルトン**。実プロジェクトで使う時に必ず動作確認すること。サンプルプロジェクトが手元にないため v0.4 では「構造を揃えて、ツール出力フォーマットを文書化する」までで止める判断。
 
+## 目次
+
+- 検出シグナル
+- monorepo / multi-module 内 path 依存の扱い
+- ツール選定
+- 実行順序
+- サンプリング (Tier 2 用)
+- tooling_used に記録する内容
+- Tier 3: Jetpack Compose UI ロジックの量
+- 不在時挙動まとめ
+
 ## 検出シグナル
 
 以下のいずれか:

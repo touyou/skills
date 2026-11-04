@@ -4,7 +4,7 @@ description: 自分の PC と手元のリポジトリに対して、新しく公
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # security-watch-setup

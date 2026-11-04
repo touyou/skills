@@ -6,6 +6,19 @@ SKILL.md の Step 0 の正本。実例は touyou/graphica の `scripts/bench/`
 描画（Metal などの GPU）の実例は touyou/Tsukibyobu の `docs/perf/` と
 `Packages/ByobuRenderer/Sources/byobu-render/BenchSuite.swift`。描画に固有の扱いは 8 節。
 
+## 目次
+
+- 0. 本番に向かないようにする（最初に作る）
+- 1. 計測用データ
+- 2. 点数
+- 3. 整合性チェック
+- 4. 補助の指標
+- 5. 出力の形
+- 6. 環境づくりで詰まりやすいところ
+- 7. 整合性チェックをだませないかのレビュー
+- 8. 描画（GPU）の計測
+- 9. アプリの中で測る（iOS など）
+
 ## 0. 本番に向かないようにする（最初に作る）
 
 計測用の削除・投入・負荷は、向け先を間違えると本番のデータを消し、無料枠や課金を削る。

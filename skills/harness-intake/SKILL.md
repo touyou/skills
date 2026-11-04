@@ -4,7 +4,7 @@ description: 実プロジェクトの AGENTS.md・スキル・hooks・自動化�
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.2"
+  version: "0.2.3"
 ---
 
 # harness-intake
@@ -62,7 +62,7 @@ metadata:
   （ローカルに `touyou/skills` のクローンがあり直接読めるならそちらでもよい）
 - 判定結果は次のどれかになる:
   - **既存スキルの拡張**: 該当スキル名を明記する（例: `apple-accessibility` の
-    `references/implementation-patterns.md` に追加パターンとして積む、`pr-review-loop` の
+    `apple-accessibility/references/implementation-patterns.md` に追加パターンとして積む、`pr-review-loop` の
     鉄則に1項目足す、等）
   - **新規スキル候補**: 既存のどのプラグインにも属さない場合。新規スキル名の案と、どの
     プラグインに乗せるべきか（既存 pack か新規 pack か）の見立てを添える

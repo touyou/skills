@@ -1,5 +1,16 @@
 # 定期実行の登録手順
 
+## 目次
+
+- どれを使うか
+- Claude Code の定期タスク（デスクトップアプリ）
+- Codex の Automations（デスクトップアプリ）
+- launchd + `claude -p`（macOS）
+- systemd ユーザータイマー / cron + `claude -p`（Linux・WSL）
+- `codex exec` を使う場合
+- タスクスケジューラ（Windows ネイティブ）
+- 共通の確認
+
 ## どれを使うか
 
 上から順に、当てはまる最初のものを使う。1・2 行目は detect-env.sh の結果（インストールの有無）だけで

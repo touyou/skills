@@ -4,7 +4,7 @@ description: Web サービス・API・描画（Metal などの GPU）・アプ�
 license: MIT
 metadata:
   author: touyou
-  version: "0.11.0"
+  version: "0.11.1"
 ---
 
 # autonomous-perf-loop

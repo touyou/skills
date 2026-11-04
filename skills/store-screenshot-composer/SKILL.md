@@ -4,7 +4,7 @@ description: App Store / Google Play 用のスクリーンショット画像を�
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # store-screenshot-composer
@@ -28,12 +28,12 @@ touyou のアプリで紹介ページ（touyou.dev）があるものは Web の�
 2. ページはアニメーションと遷移を止め、開発サーバーのインジケータを隠す。本番では開けないようにする（`notFound()`）
 3. **撮って切る**: `python3 <このスキルのフォルダ>/scripts/capture_web.py <URL> --frame 440x956 --count 6 --scale 3 --out <出力先>`。Chrome（無ければ Chromium）を headless で動かし、RGB の PNG を `01.png` から書き出す。`_overview.png` は切る前の 1 枚絵
 4. 境目に部品の切れ端が数ピクセルだけ残っていないか、1 枚ずつ並べて見る。またがせるなら半分くらい大きく、またがせないなら境目から離す
-5. 実例は touyou.github.io の `src/app/store/intento/`（`scripts/store-screenshots.sh` で撮る）
+5. 実例は touyou.github.io の `src/app/store/intento/`（`touyou.github.io/scripts/store-screenshots.sh` で撮る）
 
 ## 素のスクショに枠と見出しを付ける
 
-1. **素のスクショの置き場を確かめる**。撮影スクリプトがあるリポジトリ（例: `scripts/capture_screenshots.sh` の出力 `Screenshots/<platform>/<locale>/`）はそれを使う。無ければ先に撮影を用意する（このスキルの範囲外）
-2. **設定ファイルを書く**。リポジトリの `scripts/store_frames.json` などに置き、パスはその設定ファイルからの相対で書く。雛形は [examples/store_frames.json](examples/store_frames.json)、全項目は [references/config.md](references/config.md)
+1. **素のスクショの置き場を確かめる**。撮影スクリプトがあるリポジトリ（例: `<アプリのリポ>/scripts/capture_screenshots.sh` の出力 `Screenshots/<platform>/<locale>/`）はそれを使う。無ければ先に撮影を用意する（このスキルの範囲外）
+2. **設定ファイルを書く**。アプリのリポジトリの `<アプリのリポ>/scripts/store_frames.json` などに置き、パスはその設定ファイルからの相対で書く。雛形は [examples/store_frames.json](examples/store_frames.json)、全項目は [references/config.md](references/config.md)
 3. **見出しを決める**。1 枚 1 メッセージ。画面の説明（「一覧画面」）ではなく、使う人が得るもの（「話しかけるだけで片づく」）を書く。ストアの説明文・プロモーションテキストから拾うと文言がぶれない。ja は 14 字前後、en は 5 語前後に収まると 2 行に入る
 4. **レイアウトだけ先に確認する**: `python3 <このスキルのフォルダ>/scripts/compose.py <config> --placeholder --sheet`。素のスクショが無くても枠と文字の収まりが見られる。スクリプトはアプリのリポジトリにコピーせず、このスキルの中のものを呼ぶ
 5. **本番を作る**: `python3 <このスキルのフォルダ>/scripts/compose.py <config> --sheet`。各出力フォルダの `_overview.png` で並びを確認し、ユーザーに見せる
@@ -69,7 +69,7 @@ touyou の個人アプリは、ポートフォリオの紹介ページと OG 画
 | 飛び出すカード | `callout` + `callout.tilt` | 画面の一部を拡大して、端末から浮かせる。端末と逆向きに傾けると立体感が出る |
 | 左右にずらす | `device_x: 0.56` など | 見出しが左揃えのとき、端末を少し右へ寄せると対角線ができる |
 
-1 枚目（表紙）と最後の 1 枚は落ち着かせ、間で動かすとまとまる。アプリのアイコンとアプリ名は 1 枚目だけに出る（`eyebrow_scope`）。実例は IntentTodo の `scripts/store_frames.json`。
+1 枚目（表紙）と最後の 1 枚は落ち着かせ、間で動かすとまとまる。アプリのアイコンとアプリ名は 1 枚目だけに出る（`eyebrow_scope`）。実例は `IntentTodo/scripts/store_frames.json`。
 
 ## 落とし穴
 

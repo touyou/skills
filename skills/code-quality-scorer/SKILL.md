@@ -4,7 +4,7 @@ description: コード品質の採点、2 ref の比較、コミット履歴の�
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.3"
+  version: "0.4.4"
 ---
 
 # コード品質スコアラー
@@ -25,10 +25,10 @@ metadata:
 
 | シグナル | profile / 言語ガイド | Tier 1 / Tier 3 スクリプト |
 |---|---|---|
-| package.json に Web/TypeScript の依存 | [typescript-web](references/typescript-web.md) | run_tier1_typescript_web.py / run_tier3_ui_logic.py |
-| pubspec.yaml に Flutter の依存 | [dart-flutter](references/dart-flutter.md) | run_tier1_dart_flutter.py / run_tier3_flutter_ui.py |
-| Package.swift、xcodeproj、xcworkspace | [swift-ios](references/swift-ios.md) | run_tier1_swift_ios.py / run_tier3_swift_ui.py |
-| Gradle に Android plugin | [kotlin-android](references/kotlin-android.md) | run_tier1_kotlin_android.py / run_tier3_compose_ui.py（skeleton） |
+| package.json に Web/TypeScript の依存 | [typescript-web](references/typescript-web.md) | `scripts/run_tier1_typescript_web.py` / `scripts/run_tier3_ui_logic.py` |
+| pubspec.yaml に Flutter の依存 | [dart-flutter](references/dart-flutter.md) | `scripts/run_tier1_dart_flutter.py` / `scripts/run_tier3_flutter_ui.py` |
+| Package.swift、xcodeproj、xcworkspace | [swift-ios](references/swift-ios.md) | `scripts/run_tier1_swift_ios.py` / `scripts/run_tier3_swift_ui.py` |
+| Gradle に Android plugin | [kotlin-android](references/kotlin-android.md) | `scripts/run_tier1_kotlin_android.py` / `scripts/run_tier3_compose_ui.py`（skeleton） |
 
 依頼のディレクトリに合うガイドだけを読む。モノレポは対象パッケージを明示して個別採点する。複数候補があり対象を決められない場合だけ確認する。対応外の言語を別 profile として採点しない。Kotlin は未実証・未実装の指標を明記する。
 
@@ -47,8 +47,10 @@ metadata:
 1. 採点対象・profile・期間・Tier 2 の有無を短く示す。
 2. [references/execution.md](references/execution.md) の該当モードを実行する。履歴採点は既存の worktree ベースのスクリプトを使い、ユーザーの checkout を切り替えない。
 3. Tier 2 を使う場合は `scripts/judge.py` を使う。既定は 4 観点 × 3 判定 = 12 CLI 呼び出し。モデルと呼び出し数を明示し、利用可能な予算・認証・権限内で行う。外部 CLI が使えなければ Tier 2 を未実施として残す。同一会話で 3 回考えた結果を独立判定と称しない。
-4. [references/normalization.md](references/normalization.md) の定義に従って `aggregate.py` の出力を読む。出力の意味と報告形式は [references/output.md](references/output.md) を参照する。
+4. [references/normalization.md](references/normalization.md) の定義に従って `scripts/aggregate.py` の出力を読む。出力の意味と報告形式は [references/output.md](references/output.md) を参照する。
 
 ツールのインストール失敗は取れる指標と欠測理由を残す。認証・usage limit などで実行できなかった判定を成功扱いしない。終了時は、この実行が作った worktree の残留を `git worktree list` で確認し、残っていれば成果物を保全してからその worktree だけを片付ける。
+
+使うスクリプトは上の表の Tier 1 / Tier 3 のほか、`scripts/aggregate.py`（合成）・`scripts/judge.py`（Tier 2）・`scripts/score_history.py` と `scripts/generate_trend.py`（履歴とトレンド）・`scripts/run_tier3_delta.py`（Tier 3 の差分）・`scripts/run_bus_factor.py`（著者分布）。呼び方は execution.md にある。
 
 実装の拡張を行う場合は [ROADMAP.md](ROADMAP.md) を先に読む。採点だけの依頼で未実装プロファイルやツール設定を追加しない。
