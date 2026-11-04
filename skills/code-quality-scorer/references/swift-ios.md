@@ -2,6 +2,18 @@
 
 Swift / SwiftUI iOS プロジェクト向けのツール選定と実行手順。`scripts/run_tier1_swift_ios.py` と `scripts/run_tier3_swift_ui.py` がこの doc に基づいて動く。
 
+## 目次
+
+- 検出シグナル
+- monorepo / SPM パッケージ参照の扱い
+- ツール選定
+- 実行順序
+- サンプリング (Tier 2 用)
+- Tier 3: SwiftUI UI ロジックの量
+- tooling_used に記録する内容
+- 不在時挙動まとめ
+- 付録: Apple フレームワーク allowlist (SDK 26 時点)
+
 ## 検出シグナル
 
 以下のいずれか:

@@ -2,6 +2,21 @@
 
 Flutter / Dart プロジェクト向けのツール選定と実行手順。`scripts/run_tier1_dart_flutter.py` と `scripts/run_tier3_flutter_ui.py` がこの doc に基づいて動く。
 
+## 目次
+
+- 検出シグナル
+- FVM の自動検出 (v0.4 追加)
+- 生成ファイルの除外 suffix
+- プロジェクト固有の generated location を除外する
+- coverage 実行時の ulimit
+- monorepo 内 path 依存の扱い (false positive 対策)
+- ツール選定
+- 実行順序
+- サンプリング (Tier 2 用)
+- Tier 3: Flutter UI ロジックの量
+- tooling_used に記録する内容
+- 不在時挙動まとめ
+
 ## 検出シグナル
 
 `pubspec.yaml` が存在し、以下のいずれかを満たす:

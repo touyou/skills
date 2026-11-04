@@ -4,6 +4,18 @@
 
 正規化は線形ではなく、**「健全な閾値」に近いほど100に近づく**設計にする（プロジェクトが目指すべき水準で頭打ちにする）。
 
+## 目次
+
+- test_coverage_lines / test_coverage_branches
+- lint_violations_per_kloc
+- dead_code_count
+- avg_cyclomatic_complexity
+- avg_cognitive_complexity (v0.3 追加)
+- type_errors
+- security_vulnerabilities
+- composite_score 計算
+- なぜこの形なのか
+
 ## test_coverage_lines / test_coverage_branches
 
 | 生値 | 正規化値 |

@@ -2,6 +2,24 @@
 
 良質なアクセシビリティ実装の実例からパターンを抽出して蓄積する。新しい良質な実例が見つかったら、下記「情報源」に追記した上で該当パターンを本文に追加していく（単一ソースに固定しない）。SKILL.md のチェックリストと対応させて使う。
 
+## 目次
+
+- 情報源
+- Vision — Dynamic Type
+- Vision — カラーコントラスト
+- Vision — 色以外の手がかりを併記する
+- Vision / Speech — VoiceOver・Switch Control で複雑なUIを畳む
+- Vision — 要素のグルーピングと読み上げ順序
+- Vision — 非同期処理の状態遷移を能動的にアナウンスする
+- Mobility — Voice Control のエイリアス
+- Mobility — Full Keyboard Access / ショートカット
+- Mobility — ジェスチャーに代替操作を用意する
+- Cognitive — Reduce Motion 対応
+- Hearing — ハプティクスの併用
+- Cognitive — plural variation
+- Cognitive — 空状態の明示
+- 横展開の視点（レビュー時に確認すること）
+
 ## 情報源
 
 - [iosdevuk-accessibility-challenge PR #4](https://github.com/robinkanatzar/iosdevuk-accessibility-challenge/pull/4)（MythConf アプリへの包括的アクセシビリティパス。iOSDevUK 2026 Accessibility Challenge 優勝PR） — 「Vision — 色以外の手がかりを併記する」節までの大半のパターンの一次情報源（2026-07時点）
