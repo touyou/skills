@@ -13,19 +13,17 @@ Graphica Playground（ソース言語 en、ja を後から追加）、2026-07〜
 - これらの変更はプロジェクトファイルの変更なので Xcode で行う（外から書き換えない）
 - カタログがターゲットごとに要ること（[project-skeleton.md](project-skeleton.md) の表）は、ビルドもテストも何も言わないので、
   ビルド後の `.appex` に `en.lproj/Localizable.strings` があるかを `plutil -p` で見る `[measured]`
-- **ソース言語の文言は、ソース言語で書く**。ja のカタログで `TypeDisplayRepresentation(name: "Work")` と英語で書くと、
-  ja の訳が無いまま日本語の端末に英語が出る（逆向きの漏れ）。検査も「日本語でない」リテラルを素通りする `[measured]`
-- `TypeDisplayRepresentation(numericFormat: "\(placeholder: .int) 件の作品")` のキーは、メタデータ上
-  `${int} 件の作品` になる。ビルドして `extract.actionsdata` の綴りを見てからカタログに足す `[measured]`
+- **ソース言語の文言は、ソース言語で書く**。ソース言語のカタログに別の言語のリテラルを書くと、その言語の訳が無いまま
+  端末に出る（逆向きの漏れ）。検査も「ソース言語でない」リテラルを素通りする `[measured]`。Intent の文言での実例と、
+  綴りが推測できない Intent のキーは IntentTodo の `app-intents-localization`（`intent-copy`）
 
 ## カタログの運用
 
 - **`xcodebuild build` はカタログを書き戻さない**。`-exportLocalizations` も、別のアーキテクチャでビルドされる CLI のターゲットが
   プロジェクトにあると `Processed-Info.plist` が見つからずに落ちた（Xcode 26.6 と 27.0 で同じ）。型を直した PR で、キーを足して訳を入れるところまでやる `[measured]`
 - 抽出の結果は `xcodebuild build` の `.stringsdata`（`SWIFT_EMIT_LOC_STRINGS`）で読める。これとカタログを突き合わせると漏れが 0 にできる。
-  ただし App Shortcut のフレーズは各ショートカットの先頭しか出なかったので、残りはメタデータから拾う `[measured]`
+  App Shortcut のフレーズの扱いは `app-intents-localization`（`siri-phrases`）
 - Xcode が自動で書き出したカタログの差分は、**中身を比べてから取り込む** `[measured]`:
-  - App Shortcut のフレーズを抽出すると、確認済みの訳まで `needs_review` に落とす。訳を確かめたなら `translated` のまま残す
   - DEBUG 専用の画面や他の OS 専用の画面の文言に付く `stale` は、その構成でビルドしていないだけの誤判定
 - Xcode のエディタで訳を入力して消すと `"value" : ""` が残る。**英語の端末でラベルが空欄**になる（ソース言語が出るより悪い）`[measured]`
 - 同じ語が別の意味で既にキーになっているとき（メニューの動詞「生成」と設定のタブ名「生成」）は、
@@ -48,9 +46,9 @@ Graphica Playground（ソース言語 en、ja を後から追加）、2026-07〜
 - 訳にソース言語の文字が残っている（日本語なら、かな・漢字に加えて約物「、。」と半角カナも）
 - **書式指定子の綴り**が原文と訳で違う。個数だけ比べると `%lld` → `%@` の取り違え（整数がポインタとして読まれる）が通り、
   `%.2f` のような幅つきの指定子は数えられていなかった
-- ソースのリテラル（パッケージの `String(localized:)`、ウィジェットのソース、Intent と Entity のソース）がカタログに無い。
-  Intent と Entity の文言はアプリと拡張の**両方**のカタログと突き合わせる
-- パッケージの UI 文言の `bundle: .module` の書き忘れ（Intent の文言はアプリ側のカタログで引くので対象外。パッケージの文言を `LocalizedStringResource` で持ち、`locale` を変えて引くと落とせる）
+- ソースのリテラル（パッケージの `String(localized:)`、ウィジェットのソース）がカタログに無い。
+  Intent と Entity の文言の突き合わせは `app-intents-localization` の検査スクリプト
+- パッケージの UI 文言の `bundle: .module` の書き忘れ（パッケージの文言を `LocalizedStringResource` で持ち、`locale` を変えて引くと落とせる）
 
 検査そのものの作り方:
 

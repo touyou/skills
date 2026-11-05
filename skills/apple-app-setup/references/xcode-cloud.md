@@ -14,12 +14,11 @@
 | 暗号の申告・プライバシーマニフェストで保留 | `ITSAppUsesNonExemptEncryption` と `PrivacyInfo.xcprivacy` が無い |
 | ITMS-90296 | macOS の拡張に `ENABLE_APP_SANDBOX` が無い |
 | ITMS-90970 | visionOS のアイコンが無い（`.icon` は visionOS 非対応。[macos-visionos.md](macos-visionos.md)） |
-| ITMS-90626 | App Intent の description に Apple の商標（"iPhone" など）が入っていた |
+| ITMS-90626 | App Intent の文言に Apple の商標が入っていた（書き方は IntentTodo の `app-intents-localization`） |
 
 - **本体と拡張で揃えるもの**: 版番号・ビルド番号・サンドボックスの設定。プロジェクトファイルはターゲット × 構成で
   同じ値を重複して持つので、「本体だけ直して拡張を忘れる」が構造的に起きる。版を上げる手順に、全ターゲットを
   同じ値にする確認を入れる `[measured]`
-- Intent の `title` / `description` に端末名を書かない（"iPhone で開く" など）。Siri の文言にもなる
 
 ## workflow をリポジトリで持つ
 
