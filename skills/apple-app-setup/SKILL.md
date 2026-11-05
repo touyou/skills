@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.6.4"
+  version: "0.6.5"
 ---
 
 # apple-app-setup
@@ -68,6 +68,10 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
 実装も Intent が先: Service と Intent / Entity / Query をテスト付きで最初の機能 PR にし、次に小さい面
 （ウィジェット・コントロール・App Shortcut）、アプリの画面は最後。「画面を作ってから Intent を足す」順にすると、
 ロジックが View に入り込み、Intent がその写しになる。進捗の一覧やチェックリストでも App Intents を最後の行に置かない。
+
+**終わった印**: `docs/PLAN.md` に IntentTodo の `app-intents-design-session` の 4 表（ユースケース → Intent と Entity → 面 → 名前）が
+入るまで、AppUI に手を付けない。ひな形の AppUI（下の 4）はビルドを通すための仮の画面で、最初の機能 PR では
+置き換えない（最初の PR は Domain・Service・Intent とそのテストだけ）。サンプルを全部置き換える作業から入ると、画面にも同時に手が伸びる。
 
 ### 3. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）
 
