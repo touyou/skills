@@ -64,7 +64,8 @@ Keychain について補足（GRAPHICA、2026-06 に実機で数時間溶かし�
 
 - コードの access group は Team ID の接頭辞付き（`<TeamID>.group.…`）で書く。entitlement の展開後の値と一致しないと黙って失敗する
 - プロファイルの `keychain-access-groups` の `<TeamID>.*` は app 固有の group（`<TeamID>.<bundle id>`）しか覆わず、
-  `group.` 形式は覆わなかった。拡張から読まないトークンは app 固有の group に置けば、プロファイルの反映に頼らずに済む
+  `group.` 形式は覆わなかった。拡張から読まないトークンは app 固有の group に置くとプロファイルの反映に頼らずに済むが、
+  それだけでは直らず、最終的に access group 指定ありと無しの両方へ書く形でやっと実機で安定した
 - 書いた直後の読み出しは内部のキャッシュで成功して見えることがある。保存の検証は 1 回の読み直しで終わらせない
 
 bundle id・App Group・OAuth の client id のような識別子は、大文字小文字まで全箇所で突き合わせる。サーバ側の設定が

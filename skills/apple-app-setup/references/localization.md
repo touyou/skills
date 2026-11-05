@@ -11,8 +11,7 @@ Graphica Playground（ソース言語 en、ja を後から追加）、2026-07〜
   プロジェクトが `en` / `(en, Base)` のままで、`CFBundleDevelopmentRegion` が en になり、日本語の端末でアプリが英語で開いた。
   コードは何も触っていなかった。ビルド後の `Info.plist` の `CFBundleDevelopmentRegion` と `CFBundleLocalizations` を見て確かめる `[measured]`
 - これらの変更はプロジェクトファイルの変更なので Xcode で行う（外から書き換えない）
-- カタログは**それを持つターゲットのバンドルにしか入らない**。ウィジェットにカタログが 1 つも無いと、`.appex` は
-  `.lproj` を持たず、どのロケールでもキー（ソース言語）がそのまま出る。ビルドもテストも何も言わないので、
+- カタログがターゲットごとに要ること（[project-skeleton.md](project-skeleton.md) の表）は、ビルドもテストも何も言わないので、
   ビルド後の `.appex` に `en.lproj/Localizable.strings` があるかを `plutil -p` で見る `[measured]`
 - **ソース言語の文言は、ソース言語で書く**。ja のカタログで `TypeDisplayRepresentation(name: "Work")` と英語で書くと、
   ja の訳が無いまま日本語の端末に英語が出る（逆向きの漏れ）。検査も「日本語でない」リテラルを素通りする `[measured]`
@@ -21,8 +20,8 @@ Graphica Playground（ソース言語 en、ja を後から追加）、2026-07〜
 
 ## カタログの運用
 
-- **`xcodebuild build` はカタログを書き戻さない**。`-exportLocalizations` も、別のアーキテクチャのターゲット（CLI など）が
-  あると `Processed-Info.plist` が見つからずに落ちた（Xcode 26.6 と 27.0 で同じ）。型を直した PR で、キーを足して訳を入れるところまでやる `[measured]`
+- **`xcodebuild build` はカタログを書き戻さない**。`-exportLocalizations` も、別のアーキテクチャでビルドされる CLI のターゲットが
+  プロジェクトにあると `Processed-Info.plist` が見つからずに落ちた（Xcode 26.6 と 27.0 で同じ）。型を直した PR で、キーを足して訳を入れるところまでやる `[measured]`
 - 抽出の結果は `xcodebuild build` の `.stringsdata`（`SWIFT_EMIT_LOC_STRINGS`）で読める。これとカタログを突き合わせると漏れが 0 にできる。
   ただし App Shortcut のフレーズは各ショートカットの先頭しか出なかったので、残りはメタデータから拾う `[measured]`
 - Xcode が自動で書き出したカタログの差分は、**中身を比べてから取り込む** `[measured]`:
@@ -51,7 +50,7 @@ Graphica Playground（ソース言語 en、ja を後から追加）、2026-07〜
   `%.2f` のような幅つきの指定子は数えられていなかった
 - ソースのリテラル（パッケージの `String(localized:)`、ウィジェットのソース、Intent と Entity のソース）がカタログに無い。
   Intent と Entity の文言はアプリと拡張の**両方**のカタログと突き合わせる
-- `bundle: .module` の書き忘れ（パッケージの文言を `LocalizedStringResource` で持ち、`locale` を変えて引くと落とせる）
+- パッケージの UI 文言の `bundle: .module` の書き忘れ（Intent の文言はアプリ側のカタログで引くので対象外。パッケージの文言を `LocalizedStringResource` で持ち、`locale` を変えて引くと落とせる）
 
 検査そのものの作り方:
 
