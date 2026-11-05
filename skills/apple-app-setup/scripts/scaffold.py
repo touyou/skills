@@ -3,6 +3,8 @@
 
 assets/template/ を複製してプレースホルダを置き換え、platform に依存する
 project.yml と Package.swift はここで組み立てる。標準ライブラリだけで動く。
+project.yml は一度だけ使う下書きで、XcodeGen で .xcodeproj を作ったあと Xcode 27.2+ の
+`-convert-project "Xcode Project"` で JSON 形式の project.xcproj にし、project.yml は消す。
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -156,9 +159,10 @@ def project_yml(args: argparse.Namespace) -> str:
         "    type: application",
         f"    supportedDestinations: {dest_list}",
         "    sources:",
-        "      - App",
+        "      - path: App",
+        "        type: syncedFolder",
         "    entitlements:",
-        f"      path: App/{n}.entitlements",
+        f"      path: Config/{n}.entitlements",
         "      properties:",
         *entitlements(args, "        ", icloud=args.icloud),
         "    dependencies:",
@@ -175,14 +179,15 @@ def project_yml(args: argparse.Namespace) -> str:
             "    type: app-extension",
             f"    supportedDestinations: {dest_list}",
             "    sources:",
-            "      - Widget",
+            "      - path: Widget",
+            "        type: syncedFolder",
             "    info:",
-            "      path: Widget/Info.plist",
+            "      path: Config/Widget-Info.plist",
             "      properties:",
             "        NSExtension:",
             "          NSExtensionPointIdentifier: com.apple.widgetkit-extension",
             "    entitlements:",
-            f"      path: Widget/{n}Widget.entitlements",
+            f"      path: Config/{n}Widget.entitlements",
             "      properties:",
             *entitlements(args, "        ", icloud=False),
             "    dependencies:",
@@ -205,7 +210,8 @@ def project_yml(args: argparse.Namespace) -> str:
         "    type: bundle.ui-testing",
         f"    supportedDestinations: {dest_list}",
         "    sources:",
-        "      - AppUITests",
+        "      - path: AppUITests",
+        "        type: syncedFolder",
         "    dependencies:",
         f"      - target: {n}",
         "    settings:",
@@ -356,6 +362,26 @@ def copy_template(args: argparse.Namespace, out: Path, table: dict[str, str]) ->
     return written
 
 
+def convert_to_xcproj(out: Path, name: str) -> str | None:
+    """project.yml → .xcodeproj → project.xcproj。できなかったら理由を返す。"""
+    for tool in ("xcodegen", "xcodebuild"):
+        if shutil.which(tool) is None:
+            return f"{tool} が見つからない"
+    steps = [
+        ["xcodegen", "generate", "--quiet"],
+        ["xcodebuild", "-project", f"{name}.xcodeproj", "-convert-project", "Xcode Project"],
+    ]
+    for cmd in steps:
+        result = subprocess.run(cmd, cwd=out, capture_output=True, text=True)
+        if result.returncode != 0:
+            return f"`{' '.join(cmd)}` が失敗した: {(result.stderr or result.stdout).strip()[-500:]}"
+    proj = out / f"{name}.xcodeproj"
+    if not (proj / "project.xcproj").exists():
+        return "project.xcproj ができていない（Xcode 27.2 以降の xcodebuild か確かめる）"
+    (out / "project.yml").unlink()
+    return None
+
+
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     out = Path(os.path.expanduser(args.out)).resolve()
@@ -375,17 +401,25 @@ def main(argv: list[str]) -> int:
     pkg = out / "Packages" / f"{args.name}Kit" / "Package.swift"
     pkg.write_text(package_swift(args), encoding="utf-8")
     (out / "CLAUDE.md").symlink_to("AGENTS.md")
-    written += [out / "project.yml", pkg, out / "CLAUDE.md"]
+    written += [pkg, out / "CLAUDE.md"]
 
-    print(f"{len(written)} ファイルを {out} に書き出した。次にやること:")
-    print("  1. cd して `xcodegen generate`（.xcodeproj もコミットする）")
+    failure = convert_to_xcproj(out, args.name)
+    print(f"{len(written)} ファイルを {out} に書き出した。")
+    if failure:
+        print(f"  ※ project.xcproj への変換はまだ: {failure}")
+        print("    Mac で cd して `xcodegen generate` → "
+              f"`xcodebuild -project {args.name}.xcodeproj -convert-project \"Xcode Project\"` → `rm project.yml`")
+    else:
+        print(f"  {args.name}.xcodeproj/project.xcproj（JSON 形式）を作り、下書きの project.yml は消した")
+    print("次にやること:")
+    print("  1. .xcodeproj ごとコミットする（Xcode Cloud が読む）")
     print("  2. AGENTS.md の「コミット前に回すもの」を全部通す（Debug / Release / build-for-testing / swift test）")
     print("  3. git init → 最初のコミット → GitHub に作ったら `gh repo edit --delete-branch-on-merge`")
     print("  4. Item / AddItemIntent などのサンプルを、app-intents-design-session で決めた Intent に置き換える")
     if "visionos" in args.platforms:
         print("  ※ visionOS の組み合わせはまだビルドで確かめていない。アイコン（solidimagestack）とシーンの設定を見直す")
     if not args.team:
-        print("  ※ --team が空。AppIntentsTesting など署名が要るテストは動かないので project.yml に入れる")
+        print("  ※ --team が空。AppIntentsTesting など署名が要るテストは動かないので Xcode の Signing で入れる")
     return 0
 
 

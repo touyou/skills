@@ -8,8 +8,8 @@
 - `production` への反映は本人の OK を取ってから。main は自由にマージしてよい運用にしておくと、エージェントが止まらない
 - Xcode Cloud のワークフローは App Store Connect 側で管理する。Xcode と macOS のバージョンは「Latest Release」にしておき、
   新しい SDK の API を使う変更は Xcode Cloud が追いついてからマージする（beta の API はブランチで待つ）
-- ビルド番号は Xcode Cloud に任せるか、`CURRENT_PROJECT_VERSION` を `project.yml` で上げる。どちらかに決めて AGENTS.md に書く
-- `ci_scripts/` は要るときだけ（XcodeGen の `.xcodeproj` をコミットしていれば生成は要らない）
+- ビルド番号は Xcode Cloud に任せるか、`CURRENT_PROJECT_VERSION` を `project.xcproj` で上げる。どちらかに決めて AGENTS.md に書く
+- `ci_scripts/` は要るときだけ（`.xcodeproj` をコミットしているので生成の手順は要らない）
 
 ## 提出前に埋めるもの
 
