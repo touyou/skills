@@ -21,8 +21,8 @@
 | 表示名 | `INFOPLIST_KEY_CFBundleDisplayName` と `InfoPlist.xcstrings` | ホーム画面の名前が英名のまま |
 | カテゴリ | `INFOPLIST_KEY_LSApplicationCategoryType` | Mac 版で必須 |
 | 使用目的の文言 | `INFOPLIST_KEY_NS…UsageDescription` と `InfoPlist.xcstrings` | 権限を求めた瞬間にクラッシュ |
-| アプリアイコン | `AppIcon.appiconset`（ライト / ダーク / tinted） | Xcode Cloud の Archive と書き出しは成功するのに、App Store Connect への取り込みで失敗する（気づきにくい）`[measured]` |
-| 写真への保存 | `INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription` | 画像を共有シートに渡しても「画像を保存」が出ない `[measured]` |
+| アプリアイコン | `AppIcon.appiconset`（ライト / ダーク / tinted） | Xcode Cloud の Archive と書き出しは成功するのに、App Store Connect への取り込みで失敗する（気づきにくい）`[measured]`（2026-10） |
+| 写真への保存 | `INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription` | 画像を共有シートに渡しても「画像を保存」が出ない `[measured]`（2026-11） |
 
 ## 掲載物
 
