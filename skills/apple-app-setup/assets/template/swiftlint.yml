@@ -1,0 +1,13 @@
+included:
+  - App
+  - Widget
+  - Packages/__NAME__Kit/Sources
+  - Packages/__NAME__Kit/Tests
+  - AppUITests
+excluded:
+  - Packages/__NAME__Kit/.build
+line_length:
+  warning: 140
+  error: 200
+identifier_name:
+  excluded: [id, l, r]

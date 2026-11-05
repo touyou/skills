@@ -1,0 +1,69 @@
+# 検証
+
+`pnpm test` のような 1 本のコマンドでは足りない。Apple のアプリは、壊れ方ごとに見る場所が違う。
+最初のコミットで全部を通し、その手順を AGENTS.md の「コミット前に回すもの」に書く。
+
+## ビルド（3 種類）
+
+```bash
+# 1. Debug を対象 OS の全 scheme で
+xcodebuild build -scheme <Name> -destination 'generic/platform=iOS'
+xcodebuild build -scheme <Name> -destination 'generic/platform=macOS'
+
+# 2. Release（Archive と同じ最適化。Debug では出ないエラーがある）
+xcodebuild build -scheme <Name> -configuration Release -destination 'generic/platform=iOS'
+
+# 3. テストのビルド（configuration は指定しない）
+xcodebuild build-for-testing -scheme <Name> -destination 'generic/platform=iOS Simulator'
+```
+
+- **Debug が緑でも Release だけ落ちることがある**。Release だけ `SWIFT_COMPILATION_MODE = wholemodule` なので、
+  同期版と非同期版を両方持つ API の解決が変わり、`await` が無いエラーが Archive で初めて出た `[measured]`。
+  Xcode の ⌘B と MCP の `BuildProject` は既定で Debug
+- `build-for-testing -configuration Release` は必ず落ちる（`@testable import` は Release で使えない）。設定を変えて通さない
+- enum の case 追加、protocol の要件変更、exhaustive switch、`Sendable` / actor の制約、ビルド設定の変更は特にビルドで確かめる
+- `xcodebuild ... test` に `CODE_SIGNING_ALLOWED=NO` を付けない。UI テストランナーの再署名が飛び、
+  AppIntentsTesting が `Unable to run internal tests on a Customer build` で全部失敗する。`build` に付けるのはよい `[measured]`
+
+## テスト（3 層）
+
+| 層 | 場所 | 見るもの |
+|---|---|---|
+| パッケージ | `Packages/<Name>Kit/Tests`（`swift test`） | Domain・Service のロジック、Intent の静的な宣言（`title` / `supportedModes` / `allowedExecutionTargets`） |
+| AppIntentsTesting | UI テストのバンドル | Intent の実経路（`makeIntent().run()`）、Entity の解決、Spotlight |
+| XCUITest | UI テストのバンドル | UI 経路でだけ壊れるもの |
+
+- Swift Testing は suite を並列に回す。`URLProtocol` のモックなど static な状態は suite ごとに分ける
+- 条件付き assert（`if el.waitForExistence { XCTAssert… }`）と固定秒の待ちを書かない。緑のまま何も確かめなくなる
+- `XCTSkip` は緑に見える。前提が満たせないなら失敗させる
+- UI テストのアプリは言語を固定する（`-AppleLanguages (en)`）。accessibility label で引く箇所が外れる
+- テストターゲットを足したら scheme の Test action に足す。足さないと、コンパイルできなくなっても赤くならない
+- 詳しくは `app-intents-testing`、XCTest からの移行は Apple の `modernize-tests`
+
+## ビルドでは分からないもの
+
+```bash
+# App Intents の静的監査（24 ルール）と、どの面に届いているか
+python3 <IntentTodo>/skills/app-intents-centric-design/scripts/audit_intents.py . --fail-on error
+# 実際に出荷されるメタデータ（App Shortcut 0 件、プロパティ 0 件の Entity など）。クリーンビルドの後で
+python3 <IntentTodo>/skills/app-intents-testing/scripts/inspect_appintents_metadata.py --find <Name>
+# Intent の文言がカタログから漏れていないか
+python3 <IntentTodo>/skills/app-intents-localization/scripts/check_intent_copy_localization.py
+```
+
+- 判定はクリーンビルドで。インクリメンタルではパッケージ側のメタデータが再生成されず、古い値が混ざる
+- 「生成物が正しい」は「配布物が読まれる」を意味しない。システムの面に関わる変更は TestFlight まで通して確かめる
+- String Catalog は、ソース言語でないキーに訳が無い・訳にソース言語の文字が残る・書式指定子が違う、を
+  パッケージのテストで落とす（graphica の `LocalizableCatalogTests` の形）
+
+## 画面
+
+- レイアウトに触ったら: iPhone 縦 / 横、iPad 縦 / 横、iPad の Split View 1/2、Duo の開いた状態。
+  Duo の閉じた状態と半開きは DeviceHub で手で（→ [iphone-duo.md](iphone-duo.md)）
+- 実機・シミュレータの操作は Apple の `device-interaction`
+- 再現しにくいバグは推測より先にログ（`os_log`）で証拠を取る。「これで直るはず」が 1 回外れたら、2 回目の前にログを仕込む
+
+## PR に書くこと
+
+回したビルドとテストを、コマンドと結果で書く。回せなかったもの（Mac が無い、実機が要る）は回せなかったと書き、
+誰がどこで確かめるかを issue に残す。

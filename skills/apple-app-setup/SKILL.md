@@ -1,0 +1,137 @@
+---
+name: apple-app-setup
+description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple 公式の Xcode スキル・HIG に沿った形で立ち上げる。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。構想の聞き取り → 対象 OS と構成の決定 → XcodeGen とローカル SPM のひな形の書き出し → エージェント向けの規約（AGENTS.md・devlog）→ 検証と配信の段取りまでを行う。既存アプリへの後付けの App Intents 設計だけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
+license: MIT
+metadata:
+  author: touyou
+  version: "0.1.0"
+---
+
+# apple-app-setup
+
+新しい Apple プラットフォームのアプリを、最初の 1 コミットから「あとで作り直さなくて済む形」で立ち上げるスキル。
+ひな形を書き出すだけでなく、**どこで無音の失敗が起きるか**を最初から構成に織り込むのが目的。
+
+Apple の開発は、ビルドが緑でも機能が存在しない失敗が多い（App Shortcut が消える、訳が引かれない、
+Release だけ落ちる、閉じた Duo でボタンが消える）。どれも後から気づくと直す場所が散らばるので、
+**置き場所と検査を最初に決める**。
+
+## このスキルが使う情報源
+
+内容を複製せず、場面ごとに正本へ振り分ける。対応表と入手方法は [references/sources.md](references/sources.md)。
+
+| 場面 | 正本 |
+|---|---|
+| アクション・エンティティの設計 | `app-intents-centric-design` ほか 9 本（touyou/IntentTodo の skills） |
+| App Intents の API の罠と新 API | Apple の `app-intents-specialist` / `app-intents-whats-new-27` / `siri-app-integration` / `siri-evaluations`（Xcode 同梱） |
+| SwiftUI の書き方 | Apple の `swiftui-specialist` / `swiftui-whats-new-27`（Xcode 同梱）＋ [references/swiftui-rules.md](references/swiftui-rules.md) |
+| 画面サイズの変化・Duo | Apple の `app-resizability`（UIKit の置き換え中心）＋ [references/iphone-duo.md](references/iphone-duo.md)（SwiftUI と実地の落とし穴） |
+| アクセシビリティ | `apple-accessibility`（このリポジトリの a11y-pack） |
+| ストア画像 | `store-screenshot-composer`（store-pack） |
+| ビルド設定のセキュリティ | Apple の `audit-xcode-security-settings` |
+| 性能の計測 | Apple の `xctrace` ＋ `autonomous-perf-loop`（perf-pack） |
+| デザインの原則 | [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) |
+
+Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」として扱い、自分の記憶と食い違ったら
+そちらを採る。ただし宣言（SDK）と実行時の挙動は別物なので、**このスキルの references にある
+`[measured]` の記述は実際に動かして確かめたもの**として、Apple の文書に書かれていない落とし穴の補足に使う。
+
+## 進め方
+
+各ステップの要点だけをここに置き、完全版は references にある。
+
+### 1. 構想を聞き取る（[references/interview.md](references/interview.md)）
+
+コードを書く前に、次の 6 つを決める。決まっていないものは推奨を添えて聞く。軽微な判断
+（ターゲット名、フォルダ名、既定の色など）は自分で決めて、決めたことを書き残す。
+
+1. **誰が・どの場面で・何をするアプリか**（1 文で）。この文の動詞がそのまま最初の App Intent 候補になる
+2. **対象 OS と最低バージョン**。新規なら最新メジャー（例: iOS 27.0）を推奨。新 API はそのまま使えて、
+   ポイントリリースの API（例: Duo のヒンジは 27.1）だけを `#available` で囲めば済む
+3. **データの置き場所**（端末内 / iCloud / 自前サーバ）と、ウィジェットなど拡張から読むか
+4. **システムの面**（Siri・ショートカット・ウィジェット・コントロール・Spotlight・Live Activity）のどれに届けるか
+5. **Duo・iPad・Mac で画面の形が変わるときの方針**（1 カラム／左右分割／Duo 専用の体験）
+6. **配信**（App Store / TestFlight 内部のみ / 社内配布）と課金の有無
+
+### 2. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）
+
+- プロジェクトは **XcodeGen の `project.yml` を正本**にし、生成した `.xcodeproj` もコミットする
+  （Xcode Cloud はリポジトリの `.xcodeproj` を読む。`project.pbxproj` を手やエージェントで直接いじらない）
+- ロジックは **ローカル SPM パッケージ**に置き、アプリと拡張のターゲットは `@main` などのひな形だけにする。
+  層は `Domain ← Persistence ← AppIntentsKit ← AppUI / WidgetUI` の一方向
+- `AppShortcutsProvider` と `@Dependency` の登録は**アプリ（と各拡張）のターゲット**に置く。
+  パッケージに置くと App Shortcut がビルドエラー無しで消える
+- Swift 6 言語モード、String Catalog、生成 Info.plist、アセットのシンボル生成を最初から有効にする
+
+### 3. ひな形を書き出す
+
+```bash
+python3 scripts/scaffold.py --name CsirtCalendar --display-name "期限暦" \
+  --bundle-id dev.touyou.csirtcalendar --team XXXXXXXXXX \
+  --platforms ios,macos --widget --source-language ja --out ~/Developer/Private/CsirtCalendar
+```
+
+書き出すもの: `project.yml`、ローカル SPM（4〜5 層＋テスト）、アプリ・ウィジェットのひな形、
+最初の Intent / Entity / Query、ターゲットごとの String Catalog、`PrivacyInfo.xcprivacy`、
+`AGENTS.md`（`CLAUDE.md` はその symlink）、`docs/devlog/`、`.gitignore`、`.swiftlint.yml`。
+書き出したら `xcodegen generate` を実行し、**3 種類のビルド**（下の 6）が緑になるまでを最初のコミットにする。
+
+スクリプトは Python 標準ライブラリだけで動く。オプションの全量は `--help`。
+
+### 4. App Intents を先に設計する（[references/app-intents-first.md](references/app-intents-first.md)）
+
+画面より先に「このアプリでできること」を Intent の一覧にする。`app-intents-design-session` で
+ユースケースから Intent を導き、`app-intents-centric-design` の 11 ルールで置き場所を決める。
+UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新しいモデル連携（`@AppIntent(.tool)`、
+27.3 以降）は、最低 OS より新しい API なので後から段階的に足す前提で、名前と説明文だけ最初から整えておく。
+
+### 5. 画面を作る（[references/swiftui-rules.md](references/swiftui-rules.md) / [references/iphone-duo.md](references/iphone-duo.md)）
+
+守ることの要点:
+
+- サブビューは computed property ではなく独立した `View` struct で切る
+- 構成（左右分割か 1 カラムか）は `horizontalSizeClass` ＋縦横で 1 か所で決め、子には結果だけを渡す。
+  ピクセル幅の閾値で構成を変えない
+- UI の文言は `String` 型のプロパティや引数で運ばない（`LocalizedStringKey` / `LocalizedStringResource`）
+- ツールバー項目には必ずタイトルと role（`.close` / `.cancel` / `.confirm` / `.destructive`）を付け、
+  あふれる順を `visibilityPriority` で決める（閉じた Duo では縦のバーへ移り、アイコンだけだと意味が伝わらない）
+- 外周の余白は `contentMargins` に寄せる（Duo は safe area が左右で違う）
+- Duo の折り目は「見る側」と「触る側」を分ける好機。ヒンジ角度を体験にするのは Duo 専用アプリのときだけ
+
+### 6. 検証の仕組みを入れる（[references/verification.md](references/verification.md)）
+
+最初のコミットの時点で、次がすべて通る状態にする。
+
+1. `xcodebuild build`（Debug）を対象 OS の全 scheme で
+2. `xcodebuild build -configuration Release`（Release だけで出るエラーがある）
+3. `xcodebuild build-for-testing`（configuration は指定しない）と `swift test`（パッケージ）
+
+App Intents のメタデータ（App Shortcut が 0 件になっていないか）と、String Catalog の訳漏れは
+ビルドでは分からないので、IntentTodo の skills にある検査スクリプトを回す。
+Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるしかない（DeviceHub）。自動の確認は
+開いた状態と回転だけになる前提で、閉じた状態の確認は手順に入れておく。
+
+### 7. エージェント向けの規約を置く（[references/repo-harness.md](references/repo-harness.md)）
+
+`AGENTS.md` には「目次」と「知らずに触ると壊すが、壊れたことに気づけないルール」だけを置く。
+説明・経緯は `docs/` と `docs/devlog/` に分け、同じことを 2 か所に書かない。残タスクは issue にする。
+コードコメントは why / 制約 / 落とし穴だけ、3 行以内。
+
+### 8. 配信の段取りを決める（[references/release.md](references/release.md)）
+
+- `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight
+- What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
+- 起動画面のキー（iOS 27 では無いと提出で弾かれる）、`ITSAppUsesNonExemptEncryption`、
+  プライバシーマニフェスト、アプリ名の表示名をこの時点で埋める
+
+## 終わったときに報告すること
+
+- 決めたこと（対象 OS・層・データの置き場所・届ける面・Duo の方針）と、自分で決めた軽微な判断
+- 3 種類のビルドと `swift test` の結果（実際に回したかどうかを区別して書く。回せなかったものは回せなかったと書く）
+- 未確認のもの（Duo の閉じた状態、実機でしか見えない Siri の挙動など）と、それをどこに記録したか
+
+## やらないこと
+
+- 既存プロジェクトの `project.pbxproj` を書き換える移行（このスキルは新規の立ち上げ用）
+- Apple のスキルの中身の複製。振り分け先の名前と、補足だけを書く
+- 1 アプリでしか通用しない判断（絵の方針、課金の値付けなど）を規約に入れること。それはアプリ側の docs に置く

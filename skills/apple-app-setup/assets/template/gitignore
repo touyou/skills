@@ -1,0 +1,19 @@
+# Xcode
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# App Store Connect の CLI の作業ファイル
+.asc/
+
+# ストア画像の書き出し（スクリプトで作り直せる）
+docs/app-store/renders/
+docs/app-store/screenshots/
