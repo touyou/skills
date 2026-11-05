@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # apple-app-setup
@@ -27,13 +27,16 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | SwiftUI の書き方 | Apple の `swiftui-specialist` / `swiftui-whats-new-27`（Xcode 同梱）＋ [references/swiftui-rules.md](references/swiftui-rules.md) |
 | 画面サイズの変化・Duo | Apple の `app-resizability`（UIKit の置き換え中心）＋ [references/iphone-duo.md](references/iphone-duo.md)（SwiftUI と実地の落とし穴） |
 | 音の再生・録音 | [references/audio.md](references/audio.md)（セッションのカテゴリ、Intent からの再生、押した瞬間の遅れ、録音、AVAudioEngine の形式） |
+| macOS / visionOS へ広げる | [references/macos-visionos.md](references/macos-visionos.md)（シーン・メニュー・サンドボックス・アイコン） |
+| ローカライズの設定と検査 | IntentTodo の `app-intents-localization` ＋ [references/localization.md](references/localization.md) |
+| Xcode Cloud・提出の検証 | [references/xcode-cloud.md](references/xcode-cloud.md) |
 | アクセシビリティ | `apple-accessibility`（このリポジトリの a11y-pack） |
 | ストア画像 | `store-screenshot-composer`（store-pack） |
 | ビルド設定のセキュリティ | Apple の `audit-xcode-security-settings` |
 | 性能の計測 | Apple の `xctrace` ＋ `autonomous-perf-loop`（perf-pack） |
 | デザインの原則 | [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) |
 | 自前の Metal 描画・書き出し用の CLI | [references/metal-rendering.md](references/metal-rendering.md) |
-| アプリ内課金 | [references/storekit.md](references/storekit.md) |
+| アプリ内課金 | [references/storekit.md](references/storekit.md)（StoreKit 2 のコード）＋ [references/in-app-purchase.md](references/in-app-purchase.md)（ASC・RevenueCat の設定） |
 
 Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」として扱い、自分の記憶と食い違ったら
 そちらを採る。ただし宣言（SDK）と実行時の挙動は別物なので、**このスキルの references にある
@@ -66,6 +69,8 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
 - `AppShortcutsProvider` は**アプリのターゲット**に、`@Dependency` の登録は**アプリと各拡張のターゲット**に置く。
   パッケージに置くと App Shortcut がビルドエラー無しで消える
 - Swift 6 言語モード、String Catalog、生成 Info.plist、アセットのシンボル生成を最初から有効にする
+- `developmentRegion` / `knownRegions` をカタログのソース言語と揃える（ずれると日本語の端末で英語で開く。[references/localization.md](references/localization.md)）
+- macOS / visionOS も出すなら、パッケージの `platforms` に全部書き、OS ごとの分岐は互換層を作らずその場の `#if` で始める（[references/macos-visionos.md](references/macos-visionos.md)）
 
 ### 3. ひな形を書き出す
 
@@ -139,6 +144,10 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 ### 8. 配信の段取りを決める（[references/release.md](references/release.md)）
 
 - `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight
+- 動くものができたら機能が揃う前に一度 TestFlight まで通す。提出の検証（拡張の版番号のずれ、サンドボックス、visionOS のアイコン、
+  Intent の説明文の商標）はローカルでは出ない。Xcode Cloud の Xcode は beta を選ばない（審査に出せないビルドになる）。
+  Archive の成功は秘密の値が入った証明にならないので、成果物を見る（[references/xcode-cloud.md](references/xcode-cloud.md)）
+- 課金を入れるなら Paid Applications Agreement を最初に有効にする（無いと商品が 1 つも返らない。[references/in-app-purchase.md](references/in-app-purchase.md)）
 - What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
 - 動的フレームワークは Embed & Sign（Do Not Embed は Debug で動き、配布版だけ起動直後に落ちる）
 - 起動画面のキー（iOS 27 では無いと提出で弾かれる）、`ITSAppUsesNonExemptEncryption`、

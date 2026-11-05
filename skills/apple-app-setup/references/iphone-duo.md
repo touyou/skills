@@ -48,6 +48,22 @@ UIKit の置き換え（`UIScreen.main` / `interfaceOrientation` / `userInterfac
 Apple の助言（ワークショップで確認）: 比率より「折り目にかぶせない」を優先する／特定の posture に
 最適化しすぎない／横スクロールは避けなくてよい。折り目回避のネイティブな指定は無い。
 
+## 折り目に沿って組む実装（GRAPHICA / Playground、2026-10）
+
+- `ArrangementView` と `reservedRegions` は **iOS 27.1 SDK にしか無い**。27.0 の SDK では `cannot find 'ArrangementView' in scope`、
+  Xcode の DocumentationSearch にも出なかった。SDK の swiftinterface を grep して確かめる `[measured]`
+- `LazyVGrid` / `GridItem` に reserved region を避ける指定は無い `[Apple SDK]`。格子を折り目で分けるなら自前の `Layout` にし、
+  **列の分かれ目を幅に対する割合で持って `animatableData` で補間する**。折り目の値は `onGeometryChange` 経由で 1 フレーム遅れて届くので、
+  絶対値の幅を `@State` で持つと開閉のたびに片方の列だけガタついた `[measured]`
+- `ArrangementView` の上下の分割は、両方のペインが別々にスクロールする中身と相性が悪い（縦持ちの開いた Duo で上下に分かれ、
+  どちらを動かしているか分からなくなった）。上の「縦では上下」を使うのは、片側（絵など）が固定でスクロールしない画面だけにする。
+  両側がスクロールする画面は、縦長では分割せず 1 本のスクロールにする `[measured]`
+- 構成を切り替えても入力欄の状態を残したいなら `AnyLayout`。`ArrangementView` との行き来は入れ物ごと作り直すので、入力中ならフォーカスを戻す
+- Liquid Glass の幅を `withAnimation` で動かしているところに開閉のリサイズが重なると、アプリが落ちた（backtrace にアプリのフレーム無し）。
+  ガラスの幅はアニメーションさせない。ガラスに `.blur` や `layerEffect` をかけるとガラスが描かれなくなる `[measured]`
+- 横スクロールの列を右端の縦のバーの下まで流すと、`.scrollView` 座標の幅は safe area と `contentMargins` を除いた範囲になる。
+  端からの距離はグローバル座標で測る。`scrollEdgeEffectStyle(.soft)` はこの端には効かなかった `[measured]`
+
 ## ヒンジ角度を体験にする（Duo 専用アプリのとき）
 
 ```swift
@@ -76,6 +92,7 @@ Apple の助言（ワークショップで確認）: 比率より「折り目に
   `simctl` でも DeviceInteraction でもできない `[measured]`。自動の確認は開いた状態と回転だけ
 - `simctl io screenshot` は真っ黒になる。XCUITest の `XCUIScreen.main.screenshot()` なら撮れる
 - 画像に付く EXIF の回転情報は消す
+- 横向きで撮った `XCUIScreen` の画像は、開いた Duo と iPad で回る向きが逆だった（Duo は時計回りに 90°、iPad は 270° で正しい向き）`[measured]`
 - 並列テストは閉じた複製で走るので、撮影のテストは並列を切る
 - 開いた Duo でも `XCUIScreen.main` は外側の画面のまま。画素数がいちばん多い画面（内側）を選んで撮る。
   その画像は縦長の向きで返るので 90° 回して 2853×2007 にそろえる（`XCUIScreen` の画像は 1px 足りず 2006×2852）`[measured]`（2026-10、iOS 27.1）
