@@ -64,7 +64,7 @@ macOS で `NavigationSplitView` を使うときの導線 `[measured]`:
 - 既定のサイドバー切替はサイドバーの右端に付くので、畳むとウィンドウの左端へ飛ぶ。`.toolbar(removing: .sidebarToggle)` で外し、
   自前の切替を `placement: .automatic` で最初に宣言すると信号機の右隣に固定される（`.navigation` は詳細側に出て、やはり動く）
 - Delete キーは `List` の `.onDeleteCommand`。`keyboardShortcut(.delete, modifiers: [])` はメニューのキー等価が入力欄より先に評価されるので、検索欄で backspace が効かなくなる（試さずに捨てた）。
-  クロージャで Service を直接呼ばず、確認ダイアログを開くだけにして、実行はダイアログの `Button(role: .destructive, intent:)` に寄せる
+  クロージャの中で削除をどう実行するか（確認ダイアログの Intent に寄せる形）は IntentTodo の `app-intents-ui-and-feedback`（`references/ui-integration.md`）
 
 ## 4. 余白
 
@@ -105,13 +105,8 @@ grep -rnE '\?\? "[^"]*[ぁ-んァ-ヶ一-龠]|Announcement\("' --include='*.swif
 
 ## 7. ウィジェット
 
-インタラクティブなウィジェットを TestFlight の実機で確かめたときに踏んだもの `[measured]`（Intento 1.1.7、iOS 27.0）:
-
-- `Link` の中身に `invalidatableContent()` を付けると、その `Link` が URL を渡さず、ウィジェット全体のタップ（アプリを開くだけ）になるので付けない
-- 完了のチェックのように押した瞬間に見た目を変えたいものは `Button(intent:)` ではなく `Toggle(isOn:intent:)` ＋ 自前の `ToggleStyle`。
-  システムがタップと同時に `isOn` を反転する（書き込みとタイムラインの再読込が届くまでの空白が消える）
-- 未確認: 拡張のプロセスが同じ `mainContext` を使い続けると、別プロセス（アプリ）が書いた変更が反映されなかったので、
-  拡張の読み取りをタイムライン・値の取得ごとに `ModelContext` を作る形にした。これが効いたのか、たまたま再読込が早く届いたのかは切り分けていない（書き込む側は `mainContext` のまま）
+ウィジェットの操作は Intent なので、IntentTodo の `app-intents-system-surfaces` が正本
+（行のチェックは `Toggle(isOn:intent:)`、`Link` に `invalidatableContent()` を付けない、拡張の読み取りの `ModelContext`）。
 
 ## 8. アクセシビリティ
 

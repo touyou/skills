@@ -74,7 +74,5 @@ asc review submit --app <APP_ID> --version-id=<VERSION_ID> --build-id=<BUILD_ID>
 
 ## 6. 公開する前に Intent の形を確定させる
 
-公開済みの Intent のパラメータ名と型は変えられない（保存済みのショートカットが外れる）。審査を通って
-公開待ちの段階なら利用者はまだいないので、**承認を捨てて取り下げ、作り直してから出すのが一番安い**。
-Intento は 1.0.0 の承認を捨て、App Schema に合わせて作り直した形を 1.1.0 として最初に公開した。
-公開後は別 Intent + `isAssistantOnly = true` で移行する（IntentTodo の AGENTS.md のルール 7）。
+公開済みの Intent の形は変えられないので、承認を捨ててでも最初の公開前に確定させる。判断と移行の仕方
+（`isAssistantOnly`）は IntentTodo の `app-intents-parameters-and-prompts` が正本。取り下げの手順はこのファイルの 2。
