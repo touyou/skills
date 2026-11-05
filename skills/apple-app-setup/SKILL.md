@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.6.2"
+  version: "0.6.3"
 ---
 
 # apple-app-setup
@@ -62,14 +62,11 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
 ### 2. できることを App Intents で設計する（[references/app-intents-first.md](references/app-intents-first.md)）
 
 **構成やひな形より先に**、「このアプリでできること」を Intent と Entity の一覧にし、`docs/PLAN.md` の
-中心に置く（画面の一覧ではなく、この一覧が仕様）。`app-intents-design-session` で
-ユースケースから Intent を導き、`app-intents-centric-design` の 11 ルールで置き場所を決める。
-UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新しいモデル連携（`@AppIntent(.tool)`、
-27.3 以降）は、最低 OS より新しい API なので後から段階的に足す前提で、名前と説明文だけ最初から整えておく。
+中心に置く（画面の一覧ではなく、この一覧が仕様）。設計と実装の中身は **IntentTodo の skills が正本**で、
+このスキルは複製しない。どの順にどれを読むかだけを references に置いた。
 
-実装もこの順で進める: Domain と Service、Intent / Entity / Query をテスト付きで最初の機能 PR にし、
-次に小さい面（ウィジェット・コントロール・App Shortcut）、アプリの画面は最後に、どれも同じ Intent と Service の上に載せる
-（`app-intents-centric-design` の「小さい面から外へ、アプリの UI は最後」と同じ順）。「画面を作ってから Intent を足す」順にすると、
+実装も Intent が先: Service と Intent / Entity / Query をテスト付きで最初の機能 PR にし、次に小さい面
+（ウィジェット・コントロール・App Shortcut）、アプリの画面は最後。「画面を作ってから Intent を足す」順にすると、
 ロジックが View に入り込み、Intent がその写しになる。進捗の一覧やチェックリストでも App Intents を最後の行に置かない。
 
 ### 3. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）

@@ -23,6 +23,8 @@ docs/                   PLAN.md（要件）/ adr/（設計判断）/ devlog/（�
 
 ## 触る前に知っておくルール
 
+App Intents まわりの詳しい理由と実装形は IntentTodo の skills（入口は `app-intents-centric-design`）が正本。
+
 1. **アクションは App Intent として定義し、UI からも `Button(intent:)` で呼ぶ**。業務ロジックは `ItemService`、
    データ変更の後処理は `dataDidChange()` の 1 か所
 2. **`AppShortcutsProvider` はアプリのターゲットに置く**（パッケージに置くと App Shortcut が 0 件になる）
