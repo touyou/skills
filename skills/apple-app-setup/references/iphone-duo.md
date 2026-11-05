@@ -34,11 +34,11 @@ UIKit の置き換え（`UIScreen.main` / `interfaceOrientation` / `userInterfac
 - 折り目が問題になるのは半開きのとき。平らに開いたらふつうに並べてよい（Apple に確認）
 - 折り目を避ける位置は `GeometryProxy.reservedRegions(kind: .division)` で取る。Duo 以外では空、
   不要なときは幅 0 なので、分岐せずに常に挟めばよい（27.1+）`[Apple SDK]`
-- 折り目の frame の外側に `margins` があり、避けるのは frame を margins 分だけ広げた範囲。開いた Duo の内側
-  （951×669pt @3x）では、折り目は x 455.5・幅 40pt・左右の margins 20pt だった（シミュレータ）`[measured]`。
-  ストア画像を CLI で書き出すときもこの値を渡す
+- region には `frame` と `margins` がある。開いた Duo の内側（951×669pt @3x）のシミュレータでは、frame は x 455.5・幅 40pt、
+  左右の margins は 20pt だった `[measured]`（2026-10、iOS 27.1）。margins の意味は文書で確かめられておらず、
+  月屏風は frame を margins 分だけ外へ広げた範囲を避けている（実機では未確認）。ストア画像を CLI で書き出すときもこの値を渡す
 - 角度に合わせて折り目の扱いを変えるなら、`options: .includeInactive` で使われていない region も含めて取り、角度の側で詰め方を決める。
-  月屏風は 120°→180° で margins を 2 割まで詰め、二扇の間を狭めた。詰め方はアプリと書き出しの CLI で同じ関数を使う
+  月屏風は 120°→180° で margins を 2 割まで詰め、二扇の間を狭めた。詰め方はアプリと書き出しの CLI で同じ関数を使う（→ [metal-rendering.md](metal-rendering.md)）
 - iOS 27.1 の `ArrangementView`（split）で、表示部と操作部をシステムが折り目に合わせて置ける。
   横長では左右、縦では上下、半開きでは折り目の両側。27.1 未満は従来の `VStack` にフォールバックする
 - 分けたとき、片側を中身の高さに保ち残りをもう片側へ。押すと高さが変わる部品（次へボタンなど）は場所を常に確保する
@@ -61,7 +61,7 @@ Apple の助言（ワークショップで確認）: 比率より「折り目に
 
 - 更新はコールバックだけ（Observation / Combine / AsyncSequence の口は無い）`[Apple SDK]`
 - Duo かどうかは `reservedRegions(kind: .division)` の有無で判定する
-- シミュレータでは起動時にヒンジ角 0°（closed）が届き、division は報告されないことがある。「division が無い = スライダー」と
+- シミュレータでは起動時にヒンジ角 0°（closed）が届き、division は報告されないことがある（2026-10、iOS 27.1）。「division が無い = スライダー」と
   決め打ちせず、ヒンジの値が一度でも動いたらヒンジに従う、とするとシミュレータでもヒンジ操作を試せる `[measured]`
 - 27.1 は Duo にしか無い（シミュレータの 27.1 ランタイムも Duo しか選べない）。27.0 の通常の iPhone で
   スライダーだけで動くことを別に確かめる
