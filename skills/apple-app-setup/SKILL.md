@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # apple-app-setup
@@ -27,7 +27,7 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | SwiftUI の書き方 | Apple の `swiftui-specialist` / `swiftui-whats-new-27`（Xcode 同梱）＋ [references/swiftui-rules.md](references/swiftui-rules.md) |
 | 画面サイズの変化・Duo | Apple の `app-resizability`（UIKit の置き換え中心）＋ [references/iphone-duo.md](references/iphone-duo.md)（SwiftUI と実地の落とし穴） |
 | アクセシビリティ | `apple-accessibility`（このリポジトリの a11y-pack） |
-| ストア画像 | `store-screenshot-composer`（store-pack） |
+| ストア画像 | 素のスクショの撮影は [references/screenshot-capture.md](references/screenshot-capture.md)、仕上げは `store-screenshot-composer`（store-pack） |
 | ビルド設定のセキュリティ | Apple の `audit-xcode-security-settings` |
 | 性能の計測 | Apple の `xctrace` ＋ `autonomous-perf-loop`（perf-pack） |
 | デザインの原則 | [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) |
@@ -132,12 +132,15 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 説明・経緯は `docs/` と `docs/devlog/` に分け、同じことを 2 か所に書かない。残タスクは issue にする。
 コードコメントは why / 制約 / 落とし穴だけ、3 行以内。
 
-### 8. 配信の段取りを決める（[references/release.md](references/release.md)）
+### 8. 配信の段取りを決める（[references/release.md](references/release.md) / [references/app-store-submission.md](references/app-store-submission.md)）
 
 - `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight
 - What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
 - 起動画面のキー（iOS 27 では無いと提出で弾かれる）、`ITSAppUsesNonExemptEncryption`、
-  プライバシーマニフェスト、アプリ名の表示名をこの時点で埋める
+  プライバシーマニフェスト（必須理由 API を使う拡張のバンドルにも）、アプリ名の表示名をこの時点で埋める
+- 最初の提出の前に、全プラットフォームの Release ビルドと実署名の archive を通して中身を見る
+- `asc validate` が緑でも提出で弾かれる項目がある（App プライバシーの公開、visionOS のモーション申告、beta の Xcode）。
+  公開前なら Intent の形はまだ変えられるので、承認を捨ててでも確定させてから最初の版を出す
 
 ## 終わったときに報告すること
 
