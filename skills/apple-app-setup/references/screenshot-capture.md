@@ -35,7 +35,7 @@ Vision Pro / Mac × ja / en）を作ったときに踏んだもの `[measured]`�
 | iPhone / iPad | XCUITest の `XCUIScreen.main.screenshot()` | 6.9" と 13" の寸法がそのまま出る。通知許可のダイアログはフィクスチャ実行時は要求ごと飛ばす |
 | iPhone Duo | XCUITest（`simctl io screenshot` は真っ黒） | → [iphone-duo.md](iphone-duo.md) |
 | Apple Watch | XCUITest | 行の中のボタンを index で取ると、ナビゲーションではなく完了のチェックを押していた。identifier で選ぶ |
-| Vision Pro | **`xcrun simctl io <device> screenshot`** | XCUITest は 1x1 か 1280x720 の切り抜きしか返さない。simctl なら部屋ごと 3840x2160（ASC の寸法）。タップできないので画面は起動引数で選ぶ。`simctl openurl` は「開きますか?」の確認が写るので使わない。前の実行のウィンドウが空間に残るので、撮る前にデバイスを erase する |
+| Vision Pro | **`xcrun simctl io <device> screenshot`** | XCUITest は 1x1 か 1280x720 の切り抜きしか返さない。simctl なら部屋ごと 3840x2160（ASC の寸法）。タップできないので画面は起動引数で選ぶ。`simctl openurl` は「開きますか?」の確認が写るので使わない。前の実行のウィンドウが空間に残るので、撮影専用のシミュレータを用意し、撮る前に erase する（アプリもデータも消える） |
 | Mac | XCUITest の `app.windows.firstMatch.screenshot()` | `app.screenshot()` と `XCUIScreen.main` はディスプレイ全体を返す。前回の状態が復元されてウィンドウ 0 枚で起動するので `-ApplePersistenceIgnoreState YES`。ウィンドウを `.frame` で 1440x900pt に固定し、`sips` で ASC の寸法に合わせる（`sips -Z` は長辺しか見ないので、両辺の縮小率の min を取ってからパディングする） |
 
 macOS の UI テストは 2 つ準備が要る:

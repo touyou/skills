@@ -27,7 +27,7 @@ xcodebuild build-for-testing -scheme <Name> -destination 'generic/platform=iOS S
   Xcode Cloud と archive は実機の SDK なので、`generic/platform=<OS>` で確かめる（直し方は `app-intents-execution-and-processes`）
 - Xcode を複数入れているとき、`xcodebuild` と `xcrun swift` が別の Xcode を掴むことがある（PATH と `xcode-select` がずれている）。
   `swift test` が `using Swift tools version 6.4.0 but the installed version is 6.3.3` で落ちたら、
-  `DEVELOPER_DIR=/Applications/Xcode-<版>.app/Contents/Developer` を付けて揃える `[measured]`
+  `DEVELOPER_DIR=/Applications/Xcode-<版>.app/Contents/Developer xcrun swift test` で揃える（PATH の `swift` が特定の Xcode の中を直接指していると `DEVELOPER_DIR` だけでは変わらない）`[measured]`
 - `xcodebuild ... test` に `CODE_SIGNING_ALLOWED=NO` を付けない。UI テストランナーの再署名が飛び、
   AppIntentsTesting が `Unable to run internal tests on a Customer build` で全部失敗する。`build` に付けるのはよい `[measured]`
 
@@ -106,7 +106,7 @@ python3 <IntentTodo>/skills/app-intents-localization/scripts/check_intent_copy_l
 - レイアウトに触ったら: iPhone 縦 / 横、iPad 縦 / 横、iPad の Split View 1/2、Duo の開いた状態。
   Duo の閉じた状態と半開きは DeviceHub で手で（→ [iphone-duo.md](iphone-duo.md)）
 - 実機・シミュレータの操作は Apple の `device-interaction`
-- シミュレータが固まっていても、`#Preview` を Xcode の MCP の `RenderPreview` で My Mac 宛に描けば見た目は確かめられる `[measured]`
+- シミュレータが固まっていても、Mac を対象に含むプロジェクトなら、`#Preview` を Xcode の MCP の `RenderPreview` で My Mac 宛に描いて見た目を確かめられる `[measured]`
 - 再現しにくいバグは推測より先にログ（`os_log`）で証拠を取る。「これで直るはず」が 1 回外れたら、2 回目の前にログを仕込む
 
 ## PR に書くこと

@@ -29,6 +29,7 @@ Intento（touyou/IntentTodo、iOS / macOS / visionOS の 3 プラットフォー
 
 ```bash
 asc submit cancel --version-id=<VERSION_ID> --app <APP_ID> --confirm   # state は DEVELOPER_REJECTED に（1 分ほどかかる）
+# ↑ DEVELOPER_REJECTED になったのを asc versions list で見てから次へ
 asc versions update --version-id=<VERSION_ID> --version 1.1.0
 asc versions attach-build --version-id=<VERSION_ID> --build-id=<BUILD_ID>
 asc review submit --app <APP_ID> --version-id=<VERSION_ID> --build-id=<BUILD_ID> --confirm
@@ -55,14 +56,15 @@ asc review submit --app <APP_ID> --version-id=<VERSION_ID> --build-id=<BUILD_ID>
 - app info の id は提出が終わる・取り下げると入れ替わる。毎回 `asc apps info list` で引き直す
 - `asc screenshots list` の戻りは `.data[]` ではなく `.sets[].screenshots[]`。`.data[]` で読むと「1 枚も無い」と誤読する
 - `--skip-existing` の判定は `sourceFileChecksum`（ファイルの md5）。撮り直すとファイル名が同じでも別物として上がる。
-  入れ替えは `--replace --confirm`、上げたあとで `sourceFileChecksum` をローカルの `md5 -q` と照合する
+  入れ替えは `--replace --confirm`。対象のセット（ロケール × 端末の種類）の既存の画像を全部消してから上げるので、1 枚だけ撮り直したときも
+  そのセットの全枚数を揃えて渡す。上げたあとで `sourceFileChecksum` をローカルの `md5 -q` と照合する
 - `screenshots upload` が途中の枚数で止まることがある（出力も JSON として読めない）。流し直すと通る。照合で気づける `[measured]`
 - 設定画面などにバージョン番号が写るなら、版番号を上げたあとで撮り直す
 
 ## 4. 価格と配信地域（初回）
 
 - `availability` がレコードごと無いことがある（`app availability not found`）。`asc pricing availability create` には
-  `--all-territories` が無いので、`asc pricing territories list` の全件（175）を明示して渡す `[measured]`
+  `--all-territories` が無いので、`asc pricing territories list` から配信する地域を明示して渡す（全地域なら全件の 175）`[measured]`
 - 価格スケジュールの開始日を「今日」にすると、UTC では未来になって弾かれる（`The first interval has a start date ... in the future`）。前日を渡す `[measured]`
 
 ## 5. 消えないドラフト

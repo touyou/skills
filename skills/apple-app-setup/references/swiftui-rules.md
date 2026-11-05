@@ -50,7 +50,8 @@ grep -rnE -A1 '@ViewBuilder' --include='*.swift' Packages App | grep -E '(func|v
 - 320pt のリスト列のバーに置けるのは、システムのサイドバー切替を含めて 2〜3 個。4 個置くとタイトルまで押し出される
 - `visibilityPriority` は同じ領域の中での順番でしかない。trailing はサイドバー切替が 1 席使うので、2 個置くと優先度に関係なく両方畳まれた。項目を減らすのが先
 - `NavigationSplitView` のリスト列に置いた `.bottomBar` の項目は描画されない（`toolbarVisibility(.visible, for: .bottomBar)` でも同じ）。
-  詳細列の `.bottomBar` なら出る（iPad で確認。開いた Duo では未確認）。主要な操作は列の出方に左右されない詳細列の下に置く
+  詳細列の `.bottomBar` なら出る（iPad で確認。開いた Duo では未確認）。regular 幅では主要な操作を詳細列の下に置き、
+  compact 幅（iPhone、閉じた Duo）では一覧のバーに置く（compact では詳細列が最初の画面に出ない）
 - `ToolbarOverflowMenu` の中の `Picker` / 入れ子の `Menu` / `Divider` はそのまま出る。
   メニュー内の項目の `accessibilityIdentifier` は UI 階層に出ないので、UI テストはタイトルか記号名で探す
 - 記号にするのが基本だが、HIG は *edit* を例外に挙げている（編集は文字のまま）。macOS のシートの確定・取消は文字のボタンにする

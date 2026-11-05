@@ -38,7 +38,7 @@ Xcode Cloud で踏んだもの `[measured]`（Intento、2026-09〜10）:
   `UserDefaults(suiteName: "group.…")` は `1C8F.1`（同じ App Group のアプリと拡張だけが読む）。両方使うなら両方書く
 - 置き場は「必須理由 API を使う実行ファイルを含むバンドル」ごと（Apple の文書）。アプリ本体・ウィジェット・Live Activity・
   Watch アプリの 4 つに置いた。同期フォルダに置けばプロジェクトファイルの変更は 0 行。
-  **プロジェクトファイルに差分が出たら、同期フォルダの外に置いてしまっている**（ターゲットに入っていない）
+  **プロジェクトファイルに差分が出たら、同期フォルダの外に置いていないかを疑う**（Intento ではそれでターゲットに入っていなかった）
 
 最初の提出の前に、全プラットフォームの Release ビルドと実署名の `xcodebuild archive`（`-allowProvisioningUpdates`）を通し、
 archive の中身を見る: マニフェストが全バンドルにあるか、版番号、`ITSAppUsesNonExemptEncryption`、拡張が埋め込まれて
