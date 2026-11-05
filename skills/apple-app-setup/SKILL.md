@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.6.1"
+  version: "0.6.2"
 ---
 
 # apple-app-setup
@@ -68,7 +68,8 @@ UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新し
 27.3 以降）は、最低 OS より新しい API なので後から段階的に足す前提で、名前と説明文だけ最初から整えておく。
 
 実装もこの順で進める: Domain と Service、Intent / Entity / Query をテスト付きで最初の機能 PR にし、
-画面とウィジェットはそのあとで Intent と Service の上に載せる。「画面を作ってから Intent を足す」順にすると、
+次に小さい面（ウィジェット・コントロール・App Shortcut）、アプリの画面は最後に、どれも同じ Intent と Service の上に載せる
+（`app-intents-centric-design` の「小さい面から外へ、アプリの UI は最後」と同じ順）。「画面を作ってから Intent を足す」順にすると、
 ロジックが View に入り込み、Intent がその写しになる。進捗の一覧やチェックリストでも App Intents を最後の行に置かない。
 
 ### 3. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）
