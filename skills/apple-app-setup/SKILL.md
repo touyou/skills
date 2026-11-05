@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # apple-app-setup
