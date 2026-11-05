@@ -56,8 +56,19 @@ Domain ← Persistence ← AppIntentsKit ← AppUI
 | `AppIntentsPackage` の宣言 | **書かない**（パッケージが静的リンクの間） | TestFlight / App Store 版だけ App Intents がバンドルごと読まれなくなる。Xcode から入れた版では再現しない `[measured]` |
 | String Catalog | **ターゲットごと**（アプリ・ウィジェット・UI 文言を持つパッケージ） | カタログの無いバンドルはどのロケールでもキー（ソース言語）がそのまま出る |
 | Intent の文言 | アプリと、その Intent を使う拡張の**両方の**カタログ | 片方のプロセスでだけソース言語が出る |
+| Keychain の共有 | App Group とは**別に** `keychain-access-groups` の entitlement | App Group だけでは Keychain は共有されない。`SecItemAdd` が成功を返すのに次の読み出しで消えている、の形で失敗する `[measured]` |
 
 詳しくは `app-intents-execution-and-processes` と `app-intents-localization`。
+
+Keychain について補足（GRAPHICA、2026-06 に実機で数時間溶かした）`[measured]`:
+
+- コードの access group は Team ID の接頭辞付き（`<TeamID>.group.…`）で書く。entitlement の展開後の値と一致しないと黙って失敗する
+- プロファイルの `keychain-access-groups` の `<TeamID>.*` は app 固有の group（`<TeamID>.<bundle id>`）しか覆わず、
+  `group.` 形式は覆わなかった。拡張から読まないトークンは app 固有の group に置けば、プロファイルの反映に頼らずに済む
+- 書いた直後の読み出しは内部のキャッシュで成功して見えることがある。保存の検証は 1 回の読み直しで終わらせない
+
+bundle id・App Group・OAuth の client id のような識別子は、大文字小文字まで全箇所で突き合わせる。サーバ側の設定が
+`dev.touyou.graphica`、Xcode が `dev.touyou.Graphica` で、Sign in with Apple の audience が本番でだけ合わなかった `[measured]`。
 
 ## ビルド設定の既定
 

@@ -10,6 +10,7 @@
   新しい SDK の API を使う変更は Xcode Cloud が追いついてからマージする（beta の API はブランチで待つ）
 - ビルド番号は Xcode Cloud に任せるか、`CURRENT_PROJECT_VERSION` を `project.xcproj` で上げる。どちらかに決めて AGENTS.md に書く
 - `ci_scripts/` は要るときだけ（`.xcodeproj` をコミットしているので生成の手順は要らない）
+- 実地の落とし穴（提出でしか出ないエラー、beta の Xcode、秘密の値の注入の確かめ方、push の取りこぼし）は [xcode-cloud.md](xcode-cloud.md)。課金は [in-app-purchase.md](in-app-purchase.md)
 
 ## 提出前に埋めるもの
 
@@ -55,6 +56,8 @@
 - アプリの画面のスクリーンショットは、起動引数で状態を固定して撮る（`-place 2 -season 3 -debugDegrees 150` など）。
   起動引数は `UserDefaults` の引数ドメインに入るので、保存した設定と同じ読み方で上書きできる
 - 絵をコードで描くアプリは、元絵とアイコンを Mac の CLI で書き出す（→ [metal-rendering.md](metal-rendering.md)）
+- `asc release stage --copy-metadata-from <前の版>` で版を作ると What's New も前の版のものが写る。必ず書き直す。
+  Marketing URL は版ごとの項目で、配信中の版は変えられないので、提出前に新しい版のローカライズで確かめる `[measured]`
 
 ## What's New
 
