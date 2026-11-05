@@ -73,8 +73,7 @@ xcodebuild build-for-testing -scheme <Name> -destination 'generic/platform=iOS S
 - 選んだ 2 点に同時に指を置く API は無い。`tap(withNumberOfTaps: 1, numberOfTouches: 2)` は要素の中心の左右に、
   要素の幅の約 0.9 倍の間隔で指を置く。2 つのボタンの同時押しは、境目に置いた見えない要素（テストのときだけ）を叩く `[measured]`
 - UIKit は `UITouch` を使い回す。タッチを記録して down と up を ID だけで結ぶと、前の押下と混ざる `[measured]`
-- `@Dependency` を持つ Intent の `perform()` をアプリやテストから直接呼ぶと、ランタイムの外でアサートして落ちる `[measured]`。
-  中身の Service を呼んで確かめ、Intent の経路は AppIntentsTesting で通す
+- Intent の `perform()` をテストから直接呼ばない（`app-intents-centric-design` の `manual-perform`）。中身の Service を呼び、Intent の経路は AppIntentsTesting で通す
 - テスト用の状態は起動引数で切り替える（`-uitest-screenshot-fixture` など）。そのときは SwiftData をメモリだけにし、
   初回のシードやデータ移行を飛ばし、権限のアラートが出る画面は固定の中身で代える。判定は `#if DEBUG` の中で、Release では常に `false`
 
