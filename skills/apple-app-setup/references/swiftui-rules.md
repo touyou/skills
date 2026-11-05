@@ -53,6 +53,8 @@ grep -rnE -A1 '@ViewBuilder' --include='*.swift' Packages App | grep -E '(func|v
 - 記号にするのが基本だが、HIG は *edit* を例外に挙げている（編集は文字のまま）。macOS のシートの確定・取消は文字のボタンにする
   （ウィンドウのツールバーに並び、タイトル付きのボタンが期待される面）
 
+ほかに: 行の `.contextMenu` は中身が空でも空のメニューを開く（iOS の長押しが空振りした）。出し分けは中身の `if` ではなく、modifier を当てるかどうかで決める。
+
 macOS で `NavigationSplitView` を使うときの導線 `[measured]`:
 
 - 既定のサイドバー切替はサイドバーの右端に付くので、畳むとウィンドウの左端へ飛ぶ。`.toolbar(removing: .sidebarToggle)` で外し、
@@ -77,11 +79,11 @@ macOS で `NavigationSplitView` を使うときの導線 `[measured]`:
 - パッケージの UI 文言は `Bundle.module` から引く。`Text("…")` の素のリテラルは実行時に `Bundle.main` を引くので、
   パッケージ側のカタログに載っていても引けない。パッケージごとに `LocalizedStringResource` を作るヘルパーを置く
 - 文言を足したら、そのターゲットのカタログの全言語を同じ PR で埋める
-- 行の `.contextMenu` は中身が空でも空のメニューを開く（iOS の長押しが空振りした）。出し分けは中身の `if` ではなく、modifier を当てるかどうかで決める
 - **パッケージのバンドルにはソース言語の `.lproj` が作られないことがある**。ソース言語の値を持つキーが 1 つも無いと
   Xcode は `en.lproj` を作らず、英語では `.copy("…")` がキーそのものに落ちる。素の文ならキー＝英語で気づかないが、
   `^[%lld todo](inflect: true)` のようなマークアップを入れた瞬間に生で表示された `[measured]`。**パッケージのカタログでは**
-  マークアップを使わず、キーを `%lld todos` にしてカタログの `plural` を埋める（アプリのターゲットでは inflect が動く。Intent の文言は `app-intents-localization` のとおり inflect でよい）（`<Bundle>.bundle/en.lproj/Localizable.stringsdict` が出ることをビルド生成物で見る）
+  マークアップを使わず、キーを `%lld todos` にしてカタログの `plural` を埋める（`<Bundle>.bundle/en.lproj/Localizable.stringsdict` が出ることをビルド生成物で見る）。
+  アプリのターゲットでは inflect が動くので、Intent の文言は `app-intents-localization` のとおり inflect でよい
 
 レビューでの検出（第 1 引数が変数・メンバーアクセスになっている箇所を見て、型を確かめる）:
 
