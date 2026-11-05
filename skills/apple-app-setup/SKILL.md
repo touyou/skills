@@ -85,7 +85,7 @@ Siri のフレーズはソース言語で書かないとその言語の Siri に
 
 Xcode 27.2 で、書き出した直後の状態が `swift test`・iOS / macOS の Debug・iOS の Release・`build-for-testing` の
 すべてで警告なしに通り、出荷されるメタデータに App Shortcut が 2 件載ることを確かめている `[measured]`
-（iOS + macOS、ウィジェットありの組み合わせ）。visionOS、iOS だけ、`--no-widget` の組み合わせはまだ
+（iOS + macOS、ウィジェットありの組み合わせ。JSON 形式への変換後も同じ）。visionOS、iOS だけ、`--no-widget` の組み合わせはまだ
 ビルドで確かめていないので、使ったら 3 種類のビルドを回して結果を報告する。
 
 パッケージに置いた Intent の文言は Xcode の抽出にかからない。キーはアプリとウィジェットのカタログに手で足し、
@@ -115,6 +115,8 @@ UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新し
 
 最初のコミットの時点で、次がすべて通る状態にする。
 
+0. 最初だけ、App ID・App Group・iCloud コンテナを Developer アカウントに登録する（Xcode の Signing & Capabilities か、
+   `-allowProvisioningUpdates` を付けた build を 1 回）。登録前は App Group などが無いと言われて署名で落ちる `[measured]`
 1. `xcodebuild build`（Debug）を対象 OS の全 scheme で
 2. `xcodebuild build -configuration Release`（Release だけで出るエラーがある）
 3. `xcodebuild build-for-testing`（configuration は指定しない）と `swift test`（パッケージ）

@@ -42,6 +42,8 @@ __BUILD_COMMANDS__
 (cd Packages/__NAME__Kit && swift test)
 ```
 
+- 最初の 1 回は App ID・App Group・iCloud コンテナが Developer アカウントに無いので、署名で落ちる。
+  Xcode の Signing & Capabilities を一度開くか、build に `-allowProvisioningUpdates` を付けて 1 回だけ回して登録する
 - Debug が緑でも Release だけ落ちることがある。Release は必ず回す
 - `xcodebuild test` に `CODE_SIGNING_ALLOWED=NO` を付けない（AppIntentsTesting が全部落ちる）
 - 回せなかったものは PR に「回せなかった」と書く
