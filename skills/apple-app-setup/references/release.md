@@ -13,9 +13,9 @@
 
 Xcode Cloud で踏んだもの `[measured]`（Intento、2026-09〜10）:
 
-- 書き出しが全プラットフォームで `Communication with Apple failed`（ポータルへの `listTeams` が 502）で落ちた。
+- Xcode Cloud の書き出しが全プラットフォームで `Communication with Apple failed`（ポータルへの `listTeams` が 502）で落ちた。
   同じ日に他のアプリでも出ていて、数時間後に同じコミットを再実行したら通った。コードを疑う前に時間をおく。
-  CLI からの手元アーカイブは Xcode のアカウントが使えず（`missing Xcode-Token`）書き出しの署名で止まる
+  手元で代わりに上げようとすると、`xcodebuild archive` 自体は通るが、CLI からの書き出し（export / upload）は Xcode のアカウントが使えず（`missing Xcode-Token`）署名で止まる
 - `production` への push で自動起動しないことがあった。`asc xcode-cloud run --workflow <名前> --branch production` で手で起動できる
 - ワークフローを beta の Xcode に向けたままにすると、ビルドは通っても提出で弾かれる（[app-store-submission.md](app-store-submission.md) の 1）
 
@@ -30,13 +30,13 @@ Xcode Cloud で踏んだもの `[measured]`（Intento、2026-09〜10）:
 | カテゴリ | `INFOPLIST_KEY_LSApplicationCategoryType` | Mac 版で必須 |
 | 使用目的の文言 | `INFOPLIST_KEY_NS…UsageDescription` と `InfoPlist.xcstrings` | 権限を求めた瞬間にクラッシュ |
 
-プライバシーマニフェストの注 `[measured]`（Intento 1.0）:
+プライバシーマニフェストの注（理由コードと置き場所の規則は `[Apple]`、置いた結果は `[measured]`、Intento 1.0）:
 
 - `UserDefaults` は理由コードを使い方ごとに選ぶ。`standard` は `CA92.1`（アプリ自身だけが読む）、
   `UserDefaults(suiteName: "group.…")` は `1C8F.1`（同じ App Group のアプリと拡張だけが読む）。両方使うなら両方書く
 - 置き場は「必須理由 API を使う実行ファイルを含むバンドル」ごと（Apple の文書）。アプリ本体・ウィジェット・Live Activity・
   Watch アプリの 4 つに置いた。同期フォルダに置けばプロジェクトファイルの変更は 0 行。
-  **プロジェクトファイルに差分が出たら、同期フォルダの外に置いている**（ターゲットに入っていない）
+  **プロジェクトファイルに差分が出たら、同期フォルダの外に置いてしまっている**（ターゲットに入っていない）
 
 最初の提出の前に、全プラットフォームの Release ビルドと実署名の `xcodebuild archive`（`-allowProvisioningUpdates`）を通し、
 archive の中身を見る: マニフェストが全バンドルにあるか、版番号、`ITSAppUsesNonExemptEncryption`、拡張が埋め込まれて

@@ -16,7 +16,7 @@ Intento（touyou/IntentTodo、iOS / macOS / visionOS の 3 プラットフォー
 | `Build SDK build is not yet supported. / Build Xcode build is not yet supported.` | Xcode Cloud のワークフローが beta の Xcode を指していた。`asc` はワークフローの `xcodeVersion` を返さない | ASC の Web でワークフローの Xcode を正式版に戻して再ビルド |
 
 - **提出でしか出てこない必須項目はプラットフォームごとに違う**。iOS / macOS が通っても visionOS が通るとは限らないので、別々に出して確かめる
-- 上の 2 つの申告は一度答えると次の版でも効いている（毎回は要らない）`[measured]`
+- 表の上 2 行（App プライバシーの公開と `hasHighMotionLabel`）の申告は一度答えると次の版でも効いている（毎回は要らない）`[measured]`
 - RC の Xcode で作ったビルドは受け付けられる（27.0 RC の build が `VALID` で通り審査も通過）。
   「正式版の Xcode で出し直したい」と思ったら、先に正式版が本当に出ているかを `asc xcode-cloud xcode-versions` と
   developer.apple.com の RSS で確かめる。`Latest Release` に切り替えると新 SDK が無く、最低 OS を新しくしたアプリはビルドできない `[measured]`
@@ -24,13 +24,13 @@ Intento（touyou/IntentTodo、iOS / macOS / visionOS の 3 プラットフォー
 ## 2. 版レコードの作り方
 
 - **審査中・承認済みで公開待ち（`PENDING_APPLE_RELEASE`）の版があると、次の版は作れない**
-  （`You cannot create a new version of the App in the current state.`）。in-flight の扱い `[measured]`
+  （`You cannot create a new version of the App in the current state.`）。承認済み・公開待ちも in-flight 扱い `[measured]`
 - 差し替えたいときは、取り下げてから**同じレコードを改名**するのが速い。掲載文・キーワード・スクショが残る
 
 ```bash
-asc submit cancel --version-id <VERSION_ID> --app <APP_ID> --confirm   # state は DEVELOPER_REJECTED に（1 分ほどかかる）
-asc versions update --version-id <VERSION_ID> --version 1.1.0
-asc versions attach-build --version-id <VERSION_ID> --build-id <BUILD_ID>
+asc submit cancel --version-id=<VERSION_ID> --app <APP_ID> --confirm   # state は DEVELOPER_REJECTED に（1 分ほどかかる）
+asc versions update --version-id=<VERSION_ID> --version 1.1.0
+asc versions attach-build --version-id=<VERSION_ID> --build-id=<BUILD_ID>
 asc review submit --app <APP_ID> --version-id=<VERSION_ID> --build-id=<BUILD_ID> --confirm
 ```
 
@@ -68,11 +68,11 @@ asc review submit --app <APP_ID> --version-id=<VERSION_ID> --build-id=<BUILD_ID>
 ## 5. 消えないドラフト
 
 失敗した提出がドラフトの submission を残し、`asc submit cancel` で `Resource is not in cancellable state` になることがある。
-ASC の Web UI には出ず、次からの提出も「stale なのでスキップ」で迂回される。放っておいてよい `[measured]`（Intento で 1.1.4〜1.1.9 の間ずっと残った）
+次からの提出は「stale なのでスキップ」で迂回され、放置しても以後の提出は通った `[measured]`（Intento で 1.1.4〜1.1.9 の間ずっと残った）
 
 ## 6. 公開する前に Intent の形を確定させる
 
 公開済みの Intent のパラメータ名と型は変えられない（保存済みのショートカットが外れる）。審査を通って
 公開待ちの段階なら利用者はまだいないので、**承認を捨てて取り下げ、作り直してから出すのが一番安い**。
 Intento は 1.0.0 の承認を捨て、App Schema に合わせて作り直した形を 1.1.0 として最初に公開した。
-公開後は別 Intent + `isAssistantOnly = true` で移行する（`app-intents-parameters-and-prompts`）。
+公開後は別 Intent + `isAssistantOnly = true` で移行する（IntentTodo の AGENTS.md のルール 7）。

@@ -25,7 +25,7 @@ Vision Pro / Mac × ja / en）を作ったときに踏んだもの `[measured]`�
 - `App.init()` で流し込まない。`ModelContainer.init` はストアの読み込みが終わる前に返り、インストール直後の初回起動
   （UI テストでは毎回）に `mainContext` を触ると `No eligible connection available` で落ちる。シーンの `.task` で行う。
   手で `simctl launch` すると再現しない `[measured]`
-- まとめて消す `delete(model:)` も同じ例外で落ちた。fetch して 1 件ずつ消す。macOS では `ModelContainer.init` 直後の fetch が
+- まとめて消す `delete(model:)` も（`NSBatchDeleteRequest` を通り）Objective-C の例外で落ちた。fetch して 1 件ずつ消す。macOS では `ModelContainer.init` 直後の fetch が
   空で返り、消し損ねて毎回 6 件ずつ増えた。少し待ってから fetch → delete にした（`deleteAllData()` は直後に `mainContext` を触ると落ちる）
 
 ## プラットフォームごとの撮り方
@@ -36,13 +36,13 @@ Vision Pro / Mac × ja / en）を作ったときに踏んだもの `[measured]`�
 | iPhone Duo | XCUITest（`simctl io screenshot` は真っ黒） | → [iphone-duo.md](iphone-duo.md) |
 | Apple Watch | XCUITest | 行の中のボタンを index で取ると、ナビゲーションではなく完了のチェックを押していた。identifier で選ぶ |
 | Vision Pro | **`xcrun simctl io <device> screenshot`** | XCUITest は 1x1 か 1280x720 の切り抜きしか返さない。simctl なら部屋ごと 3840x2160（ASC の寸法）。タップできないので画面は起動引数で選ぶ。`simctl openurl` は「開きますか?」の確認が写るので使わない。前の実行のウィンドウが空間に残るので、撮る前にデバイスを erase する |
-| Mac | XCUITest の `app.windows.firstMatch.screenshot()` | `app.screenshot()` もディスプレイ全体を返す。前回の状態が復元されてウィンドウ 0 枚で起動するので `-ApplePersistenceIgnoreState YES`。ウィンドウを `.frame` で 1440x900pt に固定し、`sips` で ASC の寸法に合わせる（`sips -Z` は長辺しか見ないので、両辺の縮小率の min を取ってからパディングする） |
+| Mac | XCUITest の `app.windows.firstMatch.screenshot()` | `app.screenshot()` と `XCUIScreen.main` はディスプレイ全体を返す。前回の状態が復元されてウィンドウ 0 枚で起動するので `-ApplePersistenceIgnoreState YES`。ウィンドウを `.frame` で 1440x900pt に固定し、`sips` で ASC の寸法に合わせる（`sips -Z` は長辺しか見ないので、両辺の縮小率の min を取ってからパディングする） |
 
 macOS の UI テストは 2 つ準備が要る:
 
 - UI テストのターゲットの `SUPPORTED_PLATFORMS` に `macosx` を入れる。無いと `Cannot test target on My Mac`。
-  Intento ではプロジェクトの初期から欠けていて、Mac のスクショだけ古いまま止まっていた
-- 初回は実行時に認証のダイアログが出る（`認証はキャンセルされました` で落ちる）。手元で承認してもらうしかない
+  Intento ではいつの間にか欠けていて、Mac のスクショだけ古いまま止まっていた
+- 実行時に認証のダイアログが出る（`認証はキャンセルされました` で落ちる）。手元で承認してもらうしかない
 
 ## 確かめ方
 
