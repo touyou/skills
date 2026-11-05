@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # apple-app-setup
@@ -31,6 +31,9 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | ビルド設定のセキュリティ | Apple の `audit-xcode-security-settings` |
 | 性能の計測 | Apple の `xctrace` ＋ `autonomous-perf-loop`（perf-pack） |
 | デザインの原則 | [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) |
+| 自前の Metal 描画・書き出し用の CLI | [references/metal-rendering.md](references/metal-rendering.md) |
+| アプリ内課金 | [references/storekit.md](references/storekit.md) |
+| 音（AVAudioEngine） | [references/audio.md](references/audio.md) |
 
 Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」として扱い、自分の記憶と食い違ったら
 そちらを採る。ただし宣言（SDK）と実行時の挙動は別物なので、**このスキルの references にある
@@ -138,6 +141,7 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 - What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
 - 起動画面のキー（iOS 27 では無いと提出で弾かれる）、`ITSAppUsesNonExemptEncryption`、
   プライバシーマニフェスト（必須理由 API を使う拡張のバンドルにも）、アプリ名の表示名をこの時点で埋める
+- 課金があるなら StoreKit の設定ファイルと、権利の確かめ方（`currentEntitlements` だけに頼らない）を最初から入れる（[references/storekit.md](references/storekit.md)）
 - 最初の提出の前に、全プラットフォームの Release ビルドと実署名の archive を通して中身を見る
 - `asc validate` が緑でも提出で弾かれる項目がある（App プライバシーの公開、visionOS のモーション申告、beta の Xcode）。
   公開前なら Intent の形はまだ変えられるので、承認を捨ててでも確定させてから最初の版を出す

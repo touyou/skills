@@ -1,0 +1,60 @@
+# Metal で絵を描くアプリ
+
+画面の大半を自前の Metal で描くアプリ（月屏風: 二曲屏風の夜景を 2 パスで描く）で、立ち上げの時点で決めておくと
+あとで困らなかったこと。性能を詰めるループそのものは `autonomous-perf-loop` の
+`bench-harness.md` 8 節と `bottleneck-playbook.md` 6 節が正本で、ここには置かない。
+
+## レンダラはパッケージに置き、入力を 1 つの値にする
+
+- レンダラはローカル SPM に置き、iOS と macOS の両方でビルドできるようにする。アプリと、Mac で動く CLI
+  （ストア画像・アイコン・README の絵を書き出す）とテストが同じコードを通る
+- 入力は 1 つの値（`SceneState` のような `Sendable` な struct）にし、**同じ値なら同じ画素**になるようにする
+  （乱数は seed から、時刻も値に含める）。テストで同じ PNG になることを確かめておくと、ストア画像を git に入れずに
+  いつでも書き出し直せ、性能を詰めるときの整合性チェック（画素の完全一致）にもそのまま使える
+- 画面とストア画像で計算が分かれないよう、レイアウトの計算（折り目の余白の詰め方など）もパッケージに置き、
+  アプリと CLI の両方から呼ぶ
+
+## 毎フレーム描くものを減らす
+
+- 重い描画は「めったに変わらない層」と「毎フレームの層」に分け（Duo のヒンジの例は [iphone-duo.md](iphone-duo.md)）、
+  変わらない層はテクスチャに焼いて使い回す。焼き直す条件（鍵）は入力の値から決め、角度などの連続値は量子化（1° 刻みなど）してから鍵にする
+- 焼いた画の alpha などに「どこが空か・水面か」の領域を入れておくと、毎フレームの層は描き先だけで済む
+- フレームレートは動いている間だけ上げる（月屏風: 動いている間 60、止まったら 30）。低電力モード
+  （`ProcessInfo.isLowPowerModeEnabled`）と熱（`thermalState` の `.serious` / `.critical`）で fps と描画倍率を落とす
+- 計測の口を最初から入れる: `OSSignposter` の Points of Interest（フレームと焼き）、command buffer の
+  `gpuEndTime - gpuStartTime`、隠した開発用パネル（長押しなど）の fps / GPU ms / 焼き直し回数。実機で Console を開かずに見られる
+
+## シェーダーの置き方とビルド
+
+- シェーダーをパッケージのリソースに責務ごとのファイルで置き、番号順につないだ 1 ソースを
+  `makeLibrary(source:)` で実行時にコンパイルする形は、`swift run` の CLI と `swift test` でそのまま動く。
+  ただしアプリの初回起動にコンパイルの時間が乗る（数秒かかることがある）
+- アプリではビルドフェーズで同じ順につないだソースから `.metallib` を作ってバンドルに入れ、それを読む。
+  CLI とテストは metallib が無いのでソースに落ちる。読み込みに失敗したときもソースに落として絵が出ないよりはよい形にする
+  - `xcrun -sdk <sdk> metal -target air64-apple-ios<最低 OS> -c` → `xcrun metallib`。実行時コンパイルの既定は fast math なので、
+    ビルド側もオプションを足さず既定のままにする。macOS 向けに同じ手順で作った metallib を CLI に読ませ、
+    ソースからコンパイルした絵と画素が一致することを確かめた `[measured]`（2026-11、83 状態）。
+    つなぐ順はファイル名の順にし、ロケールに依存させない（スクリプトは `LC_ALL=C`、Swift 側は `sorted`）
+  - ビルドフェーズの `inputFiles` にシェーダーを 1 本ずつ書く。書き漏れると差分ビルドで古い metallib が残るので、
+    **シェーダーのディレクトリも入力に入れ**、スクリプトでファイル数と `SCRIPT_INPUT_FILE_COUNT` を比べて違えば止める
+- `dispatchThreads`（端数のスレッドグループ）はシミュレータが対応しておらず、Xcode から起動した
+  （Metal の検証が有効な）シミュレータで止まった `[measured]`（2026-10、Xcode 27）。切り上げた数の `dispatchThreadgroups` で投げ、
+  カーネルの側で範囲外を捨てる（絵は変わらない）
+- シェーダーの書き換えは数学的に同じでも 1 階調ずれることがある（分岐の置き場所・FMA）。詳しくは
+  `autonomous-perf-loop` の `bench-harness.md` 8 節
+
+## 書き出し用の CLI
+
+macOS の CLI（`swift run -c release <name>-render --size 1320x2868 --scale 3 ... -o out.png`）を最初に作っておくと、
+次のものが実機もシミュレータも無しで作れる。
+
+- ストア画像の元絵（端末ごとのピクセルと @倍率、Duo は折り目の位置と幅を引数で渡す）。月屏風では
+  `scripts/render-store-assets.sh` 1 本で全部書き出し、PNG は git に入れない
+- アプリアイコン（ライト / ダーク / tinted の 3 種を同じレンダラで描く）
+- 角度や時刻の連番（動画や LP の素材）
+- 性能の計測（`--bench`）と整合性チェック（`--golden-record` / `--golden-check`）
+
+計測の扱い（Mac の GPU は実機ではない、ぶれの下限）は `autonomous-perf-loop` の `bench-harness.md` が正本。
+
+ストア画像の絵を Web などで描き直すと、アプリの絵とずれる。合成（端末の枠・見出し）は
+`store-screenshot-composer` に任せ、元絵だけをこの CLI で作る。

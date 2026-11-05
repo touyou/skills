@@ -29,6 +29,8 @@ Xcode Cloud で踏んだもの `[measured]`（Intento、2026-09〜10）:
 | 表示名 | `INFOPLIST_KEY_CFBundleDisplayName` と `InfoPlist.xcstrings` | ホーム画面の名前が英名のまま |
 | カテゴリ | `INFOPLIST_KEY_LSApplicationCategoryType` | Mac 版で必須 |
 | 使用目的の文言 | `INFOPLIST_KEY_NS…UsageDescription` と `InfoPlist.xcstrings` | 権限を求めた瞬間にクラッシュ |
+| アプリアイコン | `AppIcon.appiconset`（ライト / ダーク / tinted） | Xcode Cloud の Archive と書き出しは成功するのに、App Store Connect への取り込みで失敗する（気づきにくい）`[measured]`（2026-10） |
+| 写真への保存 | `INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription` | 画像を共有シートに渡しても「画像を保存」が出ない `[measured]`（2026-11） |
 
 プライバシーマニフェストの注（理由コードと置き場所の規則は `[Apple]`、置いた結果は `[measured]`、Intento 1.0）:
 
@@ -49,6 +51,11 @@ archive の中身を見る: マニフェストが全バンドルにあるか、�
 - ストア画像は `store-screenshot-composer`。Duo・iOS 27 のヘッダー／検索画像も同じ設定から
 - アプリ内課金があるなら StoreKit の設定ファイルを scheme に付け、掲載の「アプリ内課金なし」表記を直す
 - 審査で情報提供を求められたら、画面収録と目的・手順・外部サービス・地域差・権利を英文で返す
+  （月屏風 1.0.0、2026-10-24。項目は画面収録 / 目的と対象 / 手順 / 外部サービス / 地域差 / 規制業種と第三者の素材の 6 つ。
+  アカウント・UGC・課金・通信が無いことも、無いと書く。同じ英文を審査メモにも入れておく）
+- アプリの画面のスクリーンショットは、起動引数で状態を固定して撮る（`-place 2 -season 3 -debugDegrees 150` など）。
+  起動引数は `UserDefaults` の引数ドメインに入るので、保存した設定と同じ読み方で上書きできる
+- 絵をコードで描くアプリは、元絵とアイコンを Mac の CLI で書き出す（→ [metal-rendering.md](metal-rendering.md)）
 - 素のスクショの撮影は [screenshot-capture.md](screenshot-capture.md)、`asc` での版の作成・差し替え・提出で踏んだものは
   [app-store-submission.md](app-store-submission.md)
 
