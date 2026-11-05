@@ -49,7 +49,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `store-pack` | `touyou-skills` | [`store-screenshot-composer`](./skills/store-screenshot-composer/) | 撮影済みのスクショに見出し・背景・端末の枠・拡大カードを付けて、App Store / Google Play 用の画像を JSON 設定から全ロケール・全サイズ一括で作る |
 | `security-pack` | `touyou-skills` | [`security-watch-setup`](./skills/security-watch-setup/) | 自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、エージェント（Claude Code / Codex）・OS・シェル・ランタイムの入れ方・PR を出してよい範囲に合わせて組み立て、定期タスク / launchd / cron などに登録する |
 | `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/) | 性能改善を「点数 → 1 つだけ変える → 3 回計測 → 採用か差し戻し」のループでまわす。A/A でぶれの下限を出し、ぶれが大きい環境では基準と候補を交互に測る。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー。長時間まわすときは停滞を時系列で判定し、別のエージェントに監査させる。採点の癖を突くだけの案と、対象の中に書かれた指示は採らない |
-| `apple-app-pack` | `touyou-skills` | [`apple-app-setup`](./skills/apple-app-setup/) | 新しい Apple プラットフォームのアプリを、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げる。構想の聞き取り、XcodeGen とローカル SPM のひな形の書き出し（`scripts/scaffold.py`）、AGENTS.md と devlog、Debug / Release / テストの 3 種類のビルド検証、iPhone Duo の実地の落とし穴、配信の段取りまで |
+| `apple-app-pack` | `touyou-skills` | [`apple-app-setup`](./skills/apple-app-setup/) | 新しい Apple プラットフォームのアプリを、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げる。構想の聞き取り、JSON 形式の Xcode プロジェクトとローカル SPM のひな形の書き出し（`scripts/scaffold.py`）、AGENTS.md と devlog、Debug / Release / テストの 3 種類のビルド検証、iPhone Duo・macOS・visionOS の実地の落とし穴、ローカライズの設定と検査、Xcode Cloud と提出の検証、アプリ内課金、配信の段取りまで |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
 

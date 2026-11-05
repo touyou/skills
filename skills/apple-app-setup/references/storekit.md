@@ -1,12 +1,24 @@
 # アプリ内課金（StoreKit 2）
 
-買い切り（非消耗型）を 1 つ持つアプリ（月屏風の「音の箱」）で、App Store 版になってから踏んだこと。
+買い切り（非消耗型）を 1 つ持つアプリ（月屏風の「音の箱」、Toreta の「Toreta Plus」）で、App Store 版になってから踏んだこと。
 値付けや何を課金にするかはアプリごとの判断なので、ここには置かない（アプリの docs に書く）。
 
 ## 立ち上げで置くもの
 
 - StoreKit の設定ファイルと掲載の表記は [release.md](release.md) の「掲載物」。加えて、審査メモ（課金が無いと書いていないか）も直す
 - 課金の状態を見る型は 1 つにまとめ、`@MainActor @Observable` にして画面から読む
+
+## オファーコードの取りこぼしを直した順
+
+同じ症状（オファーコードで引き換えた買い切りが開かない）に、2 段で手を入れた。
+
+1. **Toreta 1.2.4・月屏風 1.3.1**: 起動時に `Transaction.unfinished` を finish、アプリに戻るたびに確かめ直す、
+   引き換えのあとに確かめ直す（Toreta は `onInAppPurchaseCompletion` でも）、取引の確認の行を画面に出す。Toreta はこれで直った（本人が確認）
+2. **月屏風 1.3.2**: 1 の形でも App Store 版で開かなかった（下の `[measured]`）。`Transaction.latest(for:)` の併用、
+   世代番号、復元の結果の表示を足した
+
+Toreta はいまも `currentEntitlements` だけで判定していて、困っていない。どの条件で `currentEntitlements` から漏れるかは
+分かっていないので、新しく作るなら最初から 2 の形にしておく。
 
 ## 権利の確かめ方
 
@@ -25,6 +37,7 @@ for await result in Transaction.updates { ... finish → 確かめ直す }
   どちらも `revocationDate == nil` を見る（この併用で直ったかは、App Store 版での確認待ち）
 - 確かめ直しは、起動時・購入後・復元後・アプリに戻るたび（`scenePhase` が `.active`）に呼ぶ。並行して走るので、
   世代番号を持って**先に始まった確認が後から終わって新しい結果を上書きしない**ようにする
+- 商品（`Product.products(for:)`）が取れなかったときに読み込み直せる口を置く。値段が出ないまま買えなくなる
 - 復元（`AppStore.sync()`）は結果（戻った / 通信できなかった）を画面で伝える。何も起きないように見えると、もう一度買おうとする
 - 購入の画面のどこか（目立たない所）に、見えている取引と判定の経路（`currentEntitlements` / `latest` / 最終判定）を 1 行ずつ出す。
   上の取りこぼしは、この行を足した版で見つかった
@@ -32,6 +45,8 @@ for await result in Transaction.updates { ... finish → 確かめ直す }
 ## オファーコード
 
 - オファーコードを一般に配らないなら、引き換えの入口（`offerCodeRedemption`）を UI に出さない
+- 出すなら、使うファイルで `import StoreKit` する（SwiftUI だけでは修飾子が見つからずビルドが落ちた）。
+  iOS 27 の SDK では `offerCodeRedemption(options:isPresented:onCompletion:)` の形に合わせる `[measured]`（2026-10、Xcode 27）
 - 上の `currentEntitlements` の取りこぼしは App Store 版で起きた。引き換えを直したら、App Store 版で実際に引き換えて開くことまで確かめる
 
 ## スクリーンショットと確認

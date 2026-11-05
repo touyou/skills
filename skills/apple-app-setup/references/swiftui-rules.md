@@ -117,3 +117,26 @@ grep -rnE '\?\? "[^"]*[ぁ-んァ-ヶ一-龠]|Announcement\("' --include='*.swif
 
 最初の画面から `apple-accessibility` のチェックリストを当てる。とくに Dynamic Type の AX サイズで
 1 行に並べたボタンが崩れないこと（閉じた Duo の細い画面と同じ壊れ方をする）。
+
+## 8. 実地で踏んだもの
+
+GRAPHICA / Graphica Playground（2026-07〜10）で、ビルドもテストも緑のまま見た目や操作だけが壊れたもの。
+
+- **struct に切り出すときは、その状態も一緒に下ろす**。親が `@State` を握ったままだと、struct にした意味（親の `body` の
+  再評価で子を差分しない）が無くなる。別のセクションから書き換えられる状態だけを親に残す
+- `.clipped()` は描画を切るだけで、**レイアウトとタップの範囲は切らない**。`aspectRatio(.fill)` の画像を ZStack に置いたカードは、
+  iPad でタップの範囲が 992×992pt になり、隣のカードを押すと別のレッスンが開いた。画像は `overlay` に置き、
+  `contentShape` で範囲を枠に固定する `[measured]`
+- `LabeledContent` の値の側に素の `Label` を置くと、親の `LabelStyle` を拾って行の高さが 2 倍になる。`.labelStyle(.titleAndIcon)` で上書きする `[measured]`
+- ナビゲーションバーの中では `Label` に `.labelStyle(.titleAndIcon)` を付けてもアイコンだけになる。文字も出すならアイコンと `Text` を自分で並べる `[measured]`
+- **シートの閉じる・確定はラベル無しの `Button(role: .close)` / `Button(role: .confirm)`**（iOS 26+）。文言・グリフ・位置をシステムが持つので、
+  画面ごとに「閉じる / キャンセル」「左 / 右」が割れない。何を確定するか（保存・送信）は `accessibilityLabel` で補う。
+  処理中は `ProgressView` を**重ねて**ボタンの寸法を保つ（差し替えるとバーの幅が動いて押す位置がずれる）
+- **ツールバーの項目は placement が同じだと画面をまたいで同じものとして扱われる**。見た目の違う項目（✨ と ⚙︎）が両方
+  `.primaryAction` だと遷移でモーフする。違う項目には別の id を、同じ項目には同じ id を付ける
+- `ToolbarSpacer` を固定側の placement（`topBarPinnedTrailing`）に置くと、隣の項目が出なくなった（iOS 27.0 のシミュレータ）`[measured]`
+- zoom 遷移（`matchedTransitionSource` + `navigationTransition(.zoom)`）は「同じ namespace で同じ id を名乗る起点」から拡大する。
+  値ベースの `NavigationLink(value:)` + `navigationDestination` は行き先にタップした場所を渡せないので、同じ作品が
+  画面に 2 回出る構成では、押した場所と違うところから拡大する。ディープリンクで `NavigationPath` を使うなら、この遷移は別の設計が要る `[measured]`
+- `TextField` のフォーカスは push をまたいで残る。送信時に `@FocusState` を外さないと、戻った瞬間にキーボードが復帰してタブバーを覆う `[measured]`
+- 自分の型に `Layout` という名前を付けない（`enum Layout` が SwiftUI の `Layout` プロトコルを隠し、`SwiftUI.Layout` と書く羽目になる）

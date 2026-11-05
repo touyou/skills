@@ -22,6 +22,8 @@ xcodebuild build-for-testing -scheme <Name> -destination 'generic/platform=iOS S
   Xcode の ⌘B と MCP の `BuildProject` は既定で Debug
 - `build-for-testing -configuration Release` は必ず落ちる（`@testable import` は Release で使えない）。設定を変えて通さない
 - enum の case 追加、protocol の要件変更、exhaustive switch、`Sendable` / actor の制約、ビルド設定の変更は特にビルドで確かめる
+- Release だけで出る診断をテストのコードでも見たいときは、`@testable` を使わない UI テストのターゲットだけを Release でビルドする
+  （`xcodebuild build -target <App>UITests -configuration Release -sdk iphonesimulator`。アプリ本体も依存として Release で入る）`[measured]`
 - **シミュレータのビルドが緑でも実機の SDK で落ちることがある**。`#if canImport(X)` の結果が SDK で変わり、
   visionOS のシミュレータでは除外されていたコードが実機の SDK でだけコンパイルされて落ちた `[measured]`。
   Xcode Cloud と archive は実機の SDK なので、`generic/platform=<OS>` で確かめる（直し方は `app-intents-execution-and-processes`）
@@ -45,6 +47,25 @@ xcodebuild build-for-testing -scheme <Name> -destination 'generic/platform=iOS S
 - UI テストのアプリは言語を固定する（`-AppleLanguages (en)`）。accessibility label で引く箇所が外れる
 - テストターゲットを足したら scheme の Test action に足す。足さないと、コンパイルできなくなっても赤くならない
 - 詳しくは `app-intents-testing`、XCTest からの移行は Apple の `modernize-tests`
+- Swift 6 では XCUI の API は main actor にある。UI テストのクラスに `@MainActor` を付ける。`setUp` はオーバーライドしても
+  nonisolated のままなので、`XCUIDevice` を触るなら `setUp() async throws` + `MainActor.run` にする `[measured]`
+- `isHittable` を 1 回だけ読まない（画面遷移のアニメーション中に false を拾う）。`XCTNSPredicateExpectation` で待つ
+- UI テストは文言ではなく accessibilityIdentifier で探す。文言は言語や状態（「すべてコピー」→「コピー」）で変わる
+- 起動時の同意画面などは `launchArguments += ["-<UserDefaults のキー>", "<値>"]`（NSArgumentDomain）で飛ばせる。アプリにテスト専用の分岐を足さずに済む
+- iPad の iPadOS 26 のタブは上部に出て、XCUITest の `tabBars` に入らない `[measured]`
+- シミュレータの HID が壊れてタップできないときも、XCUITest は HID を通さないので動く `[measured]`
+
+### コードのせいに見える環境の問題
+
+- **`xcode-select` の Xcode が古い SDK を指している**と、新しい SDK の型が「見つからない」で落ちる。`@available` は実行時の注釈で、
+  SDK に型が無ければコンパイルできない。sudo 無しなら `DEVELOPER_DIR=<Xcode>.app/Contents/Developer xcodebuild ...` `[measured]`
+- **同じ名前のシミュレータが複数のランタイムにある**（iOS 26.5 と 27.0 の `iPhone 17 Pro`）。`name=` だとどちらに解決されるか
+  決まらないので、`-destination 'id=<UDID>'` で固定する `[measured]`
+- **失敗したビルドのあとに同じ `.build` で `swift test` を回すと、直していないのに緑になる**ことがあった（Swift 6.4）。
+  直ったかどうかは `--scratch-path` を新しいディレクトリに向けたクリーンビルドで見る `[measured]`
+- worktree ごとに DerivedData ができてディスクを使い切り、シミュレータへのインストールまで失敗した。並行の worktree は
+  増やしすぎず、終わったら DerivedData を消す `[measured]`
+- 新しい Swift で出た concurrency の診断（region isolation）は `-typecheck` では出ず、SIL 生成まで進めないと再現しない `[measured]`
 
 ### XCUITest で踏んだこと（チェケラ、Xcode 27.x）
 
@@ -108,6 +129,10 @@ python3 <IntentTodo>/skills/app-intents-localization/scripts/check_intent_copy_l
 - 実機・シミュレータの操作は Apple の `device-interaction`
 - シミュレータが固まっていても、Mac を対象に含むプロジェクトなら、`#Preview` を Xcode の MCP の `RenderPreview` で My Mac 宛に描いて見た目を確かめられる `[measured]`
 - 再現しにくいバグは推測より先にログ（`os_log`）で証拠を取る。「これで直るはず」が 1 回外れたら、2 回目の前にログを仕込む
+- **見た目のバグも数値で見る**。UI テストから `app.cells` などの frame をダンプすると、「空行がある」と思っていたものが
+  「1 行が 2 倍の高さ」だと 1 回で分かった。逆に「要素はあるのに hittable でない」ときは、数値より先にスクリーンショットを撮る
+  （キーボードが覆っていたのに、キーボードの frame は画面外を返していた）`[measured]`
+- macOS と visionOS の確かめ方は [macos-visionos.md](macos-visionos.md)
 
 ## PR に書くこと
 
