@@ -13,18 +13,39 @@
 - `ci_scripts/` は要るときだけ（`.xcodeproj` をコミットしているので生成の手順は要らない）
 - 実地の落とし穴（提出でしか出ないエラー、beta の Xcode、秘密の値の注入の確かめ方、push の取りこぼし）は [xcode-cloud.md](xcode-cloud.md)。課金は [in-app-purchase.md](in-app-purchase.md)
 
+Xcode Cloud で踏んだもの `[measured]`（Intento、2026-09〜10）:
+
+- Xcode Cloud の書き出しが全プラットフォームで `Communication with Apple failed`（ポータルへの `listTeams` が 502）で落ちた。
+  同じ日に他のアプリでも出ていて、数時間後に同じコミットを再実行したら通った。コードを疑う前に時間をおく。
+  手元で代わりに上げようとすると、`xcodebuild archive` 自体は通るが、CLI からの書き出し（export / upload）は Xcode のアカウントが使えず（`missing Xcode-Token`）署名で止まる
+- `production` への push で自動起動しないことがあった。`asc xcode-cloud run --workflow <名前> --branch production` で手で起動できる
+- ワークフローを beta の Xcode に向けたままにすると、ビルドは通っても提出で弾かれる（[app-store-submission.md](app-store-submission.md) の 1）
+
 ## 提出前に埋めるもの
 
 | 項目 | 置き場所 | 無いと |
 |---|---|---|
 | 起動画面 | `INFOPLIST_KEY_UILaunchScreen_Generation: YES` | iOS 27 ではアップロードが `ITMS-90870` で弾かれる `[Apple]` |
 | 暗号の申告 | `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO` | 提出のたびに質問される |
-| プライバシーマニフェスト | `App/Resources/PrivacyInfo.xcprivacy` | 必須理由 API（UserDefaults・ファイルの日時など）を使うと審査で止まる |
+| プライバシーマニフェスト | `App/Resources/PrivacyInfo.xcprivacy` と、必須理由 API を使う**拡張・Watch アプリのバンドルごと** | アップロード後に ITMS-91053 の警告が来る。下の注 |
 | 表示名 | `INFOPLIST_KEY_CFBundleDisplayName` と `InfoPlist.xcstrings` | ホーム画面の名前が英名のまま |
 | カテゴリ | `INFOPLIST_KEY_LSApplicationCategoryType` | Mac 版で必須 |
 | 使用目的の文言 | `INFOPLIST_KEY_NS…UsageDescription` と `InfoPlist.xcstrings` | 権限を求めた瞬間にクラッシュ |
 | アプリアイコン | `AppIcon.appiconset`（ライト / ダーク / tinted） | Xcode Cloud の Archive と書き出しは成功するのに、App Store Connect への取り込みで失敗する（気づきにくい）`[measured]`（2026-10） |
 | 写真への保存 | `INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription` | 画像を共有シートに渡しても「画像を保存」が出ない `[measured]`（2026-11） |
+
+プライバシーマニフェストの注（理由コードと置き場所の規則は `[Apple]`、置いた結果は `[measured]`、Intento 1.0）:
+
+- `UserDefaults` は理由コードを使い方ごとに選ぶ。`standard` は `CA92.1`（アプリ自身だけが読む）、
+  `UserDefaults(suiteName: "group.…")` は `1C8F.1`（同じ App Group のアプリと拡張だけが読む）。両方使うなら両方書く
+- 置き場は「必須理由 API を使う実行ファイルを含むバンドル」ごと（Apple の文書）。アプリ本体・ウィジェット・Live Activity・
+  Watch アプリの 4 つに置いた。同期フォルダに置けばプロジェクトファイルの変更は 0 行。
+  **プロジェクトファイルに差分が出たら、同期フォルダの外に置いていないかを疑う**（Intento ではそれでターゲットに入っていなかった）
+
+最初の提出の前に、全プラットフォームの Release ビルドと実署名の `xcodebuild archive`（`-allowProvisioningUpdates`）を通し、
+archive の中身を見る: マニフェストが全バンドルにあるか、版番号、`ITSAppUsesNonExemptEncryption`、拡張が埋め込まれて
+同じチームで署名されているか、`<lang>.lproj/nlu.appintents`（Siri のフレーズの学習データ）が言語ごとに出ているか。
+ここまで見て「Xcode Cloud が通る状態」と言える。
 
 ## Debug では気づけず、配布物だけで壊れるもの
 
@@ -59,6 +80,8 @@
 - 絵をコードで描くアプリは、元絵とアイコンを Mac の CLI で書き出す（→ [metal-rendering.md](metal-rendering.md)）
 - `asc release stage --copy-metadata-from <前の版>` で版を作ると What's New も前の版のものが写る。必ず書き直す。
   Marketing URL は版ごとの項目で、配信中の版は変えられないので、提出前に新しい版のローカライズで確かめる `[measured]`
+- 素のスクショの撮影は [screenshot-capture.md](screenshot-capture.md)、`asc` での版の作成・差し替え・提出で踏んだものは
+  [app-store-submission.md](app-store-submission.md)
 
 ## What's New
 
