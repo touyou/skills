@@ -8,8 +8,10 @@ __ONE_LINER__
 ## 環境
 
 - __PLATFORMS_TEXT__ __MIN_OS__+ / Xcode 27+ / Swift 6
-- プロジェクトは XcodeGen。**`project.yml` が正本**で、`.xcodeproj` は生成物だがコミットする（Xcode Cloud が読む）。
-  ファイルやターゲットを足したら `xcodegen generate`。`project.pbxproj` を直接編集しない
+- プロジェクトファイルは JSON 形式の `__NAME__.xcodeproj/project.xcproj`（Xcode 27.2+）。フォルダは同期フォルダなので、
+  既存のフォルダにファイルを足すだけならプロジェクトファイルは変わらない
+- **ターゲット・ビルド設定・言語の追加は Xcode で行う**。`project.xcproj` を外部から書き換えない
+  （Xcode を開いたままだと落ちる。`git checkout` での復元も同じ）。版番号（`MARKETING_VERSION`）だけはテキストで上げてよい
 
 ```
 App/                    アプリ。@main・依存の登録・AppShortcutsProvider だけ
@@ -36,7 +38,6 @@ docs/                   PLAN.md（要件）/ adr/（設計判断）/ devlog/（�
 ## コミット前に回すもの
 
 ```bash
-xcodegen generate
 __BUILD_COMMANDS__
 (cd Packages/__NAME__Kit && swift test)
 ```

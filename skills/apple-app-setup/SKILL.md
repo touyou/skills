@@ -1,10 +1,10 @@
 ---
 name: apple-app-setup
-description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple 公式の Xcode スキル・HIG に沿った形で立ち上げる。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。構想の聞き取り → 対象 OS と構成の決定 → XcodeGen とローカル SPM のひな形の書き出し → エージェント向けの規約（AGENTS.md・devlog）→ 検証と配信の段取りまでを行う。既存アプリへの後付けの App Intents 設計だけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
+description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple 公式の Xcode スキル・HIG に沿った形で立ち上げる。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。構想の聞き取り → 対象 OS と構成の決定 → JSON 形式の Xcode プロジェクト（project.xcproj）とローカル SPM のひな形の書き出し → エージェント向けの規約（AGENTS.md・devlog）→ 検証と配信の段取りまでを行う。既存アプリへの後付けの App Intents 設計だけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
 license: MIT
 metadata:
   author: touyou
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # apple-app-setup
@@ -55,8 +55,9 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
 
 ### 2. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）
 
-- プロジェクトは **XcodeGen の `project.yml` を正本**にし、生成した `.xcodeproj` もコミットする
-  （Xcode Cloud はリポジトリの `.xcodeproj` を読む。`project.pbxproj` を手やエージェントで直接いじらない）
+- プロジェクトファイルは Xcode 27.2 の **JSON 形式の `project.xcproj`**（IntentTodo と同じ）。同期フォルダなので
+  ファイルを足してもプロジェクトファイルは変わらず、差分が読める。XcodeGen は最初の書き出しにだけ使い、
+  `project.yml` は変換後に消す（正本を 2 つにしない）。ターゲットや設定の変更は Xcode で行い、外部から書き換えない
 - ロジックは **ローカル SPM パッケージ**に置き、アプリと拡張のターゲットは `@main` などのひな形だけにする。
   層は `Domain ← Persistence ← AppIntentsKit ← AppUI / WidgetUI` の一方向
 - `AppShortcutsProvider` は**アプリのターゲット**に、`@Dependency` の登録は**アプリと各拡張のターゲット**に置く。
@@ -71,10 +72,11 @@ python3 scripts/scaffold.py --name CsirtCalendar --display-name "期限暦" \
   --platforms ios,macos --widget --source-language ja --out ~/Developer/Private/CsirtCalendar
 ```
 
-書き出すもの: `project.yml`、ローカル SPM（4〜5 層＋テスト）、アプリ・ウィジェットのひな形、
+書き出すもの: `.xcodeproj`（`project.xcproj`）、ローカル SPM（4〜5 層＋テスト）、アプリ・ウィジェットのひな形、
 最初の Intent / Entity / Query、ターゲットごとの String Catalog、`PrivacyInfo.xcprivacy`、
 `AGENTS.md`（`CLAUDE.md` はその symlink）、`docs/devlog/`、`.gitignore`、`.swiftlint.yml`。
-書き出したら `xcodegen generate` を実行し、**3 種類のビルド**（下の 6）が緑になるまでを最初のコミットにする。
+スクリプトは書き出しの最後に `xcodegen generate` と `xcodebuild -convert-project "Xcode Project"` を自動で回す
+（どちらも Mac で。無い環境では手順を表示し、変換するまで `project.yml` を残す）。**3 種類のビルド**（下の 6）が緑になるまでを最初のコミットにする。
 
 スクリプトは Python 標準ライブラリだけで動く。オプションの全量は `--help`。
 サンプルの文言（Intent のタイトル・Siri のフレーズ・画面の文字）は `--source-language` の言語で書き出す。
@@ -143,6 +145,7 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 
 ## やらないこと
 
-- 既存プロジェクトの `project.pbxproj` を書き換える移行（このスキルは新規の立ち上げ用）
+- 既存プロジェクトの移行（このスキルは新規の立ち上げ用。既存の `project.pbxproj` は Xcode 27.2 の
+  `xcodebuild -convert-project "Xcode Project"` で変換でき、IntentTodo の devlog に等価性の確かめ方がある）
 - Apple のスキルの中身の複製。振り分け先の名前と、補足だけを書く
 - 1 アプリでしか通用しない判断（絵の方針、課金の値付けなど）を規約に入れること。それはアプリ側の docs に置く

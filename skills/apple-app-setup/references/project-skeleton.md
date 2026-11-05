@@ -6,10 +6,10 @@
 
 ```
 <Name>/
-├── project.yml                 XcodeGen の定義（正本）。ファイルを足したら xcodegen generate
-├── <Name>.xcodeproj            生成物だがコミットする（Xcode Cloud が読む）
+├── <Name>.xcodeproj/project.xcproj  JSON 形式のプロジェクトファイル（Xcode 27.2+）。コミットする
 ├── AGENTS.md                   目次と「知らずに触ると壊すルール」だけ
 ├── CLAUDE.md -> AGENTS.md      symlink（Claude Code と Codex が同じものを読む）
+├── Config/                     entitlements とウィジェットの Info.plist（同期フォルダの外に置き、リソースに混ざらないようにする）
 ├── App/                        アプリのターゲット。@main・依存の登録・AppShortcutsProvider だけ
 │   ├── Sources/
 │   └── Resources/              Assets / Localizable.xcstrings / InfoPlist.xcstrings / PrivacyInfo.xcprivacy
@@ -59,7 +59,9 @@ Domain ← Persistence ← AppIntentsKit ← AppUI
 
 詳しくは `app-intents-execution-and-processes` と `app-intents-localization`。
 
-## project.yml の既定
+## ビルド設定の既定
+
+scaffold.py が下書きの `project.yml` に書き、変換後の `project.xcproj` に引き継がれる。
 
 ```yaml
 options:
@@ -97,3 +99,11 @@ settings:
 
 `build/` `DerivedData/` `xcuserdata/` `*.xcuserstate` `.build/` `.swiftpm/` `.DS_Store`、ストア画像の書き出し先、
 `.asc/`（App Store Connect の CLI の作業ファイル）。`*.xcodeproj` は**無視しない**。
+
+## JSON 形式の project.xcproj
+
+- Xcode 27.2 の `xcodebuild -convert-project "Xcode Project"` が書き出す形式。`.xcodeproj` のディレクトリ名は
+  変わらないので `-project <Name>.xcodeproj` を渡すスクリプトはそのまま動く。Xcode 27.0 / 27.1 でも読める `[measured]`（IntentTodo）
+- 中身はオブジェクト ID の参照グラフではなく、同期フォルダごとの `target-membership` / `membership-exceptions` と
+  ターゲットごとのビルド設定。拡張を一部の OS から外すと、埋め込み product に `"platforms": [ "ios" ]` が付く
+- 手順書のない形式なので、構成は Xcode に変えさせて差分を読む。外部から書き換えない（版番号だけは例外）

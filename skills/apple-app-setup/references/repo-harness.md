@@ -67,6 +67,6 @@ gh repo edit <owner>/<repo> --delete-branch-on-merge
 
 ## Xcode のプロジェクトファイル
 
-- `project.pbxproj` を直接編集しない。`project.yml` を直して `xcodegen generate`
-- Xcode を開いたまま外部から生成し直すと Xcode が落ちることがある。閉じてから生成する
-- 言語の追加やカタログのターゲット追加も `project.yml` 経由で
+- `project.xcproj` を外部から書き換えない。ターゲット・ビルド設定・言語・カタログのターゲット追加は Xcode で行う
+- Xcode を開いたまま外部からプロジェクトファイルを変えると（`git checkout` での復元も含む）Xcode が落ちることがある
+- 例外は版番号（`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`）。数行の置き換えなのでテキストで上げてよい
