@@ -1,10 +1,10 @@
 ---
 name: apple-app-setup
-description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple 公式の Xcode スキル・HIG に沿った形で立ち上げる。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。構想の聞き取り → 対象 OS と構成の決定 → JSON 形式の Xcode プロジェクト（project.xcproj）とローカル SPM のひな形の書き出し → エージェント向けの規約（AGENTS.md・devlog）→ 検証と配信の段取りまでを行う。既存アプリへの後付けの App Intents 設計だけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
+description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple 公式の Xcode スキル・HIG に沿った形で立ち上げる。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。構想の聞き取り → できることを App Intents の一覧として設計 → 対象 OS と構成の決定 → JSON 形式の Xcode プロジェクト（project.xcproj）とローカル SPM のひな形の書き出し → エージェント向けの規約（AGENTS.md・devlog）→ 検証と配信の段取りまでを行う。既存アプリへの後付けの App Intents 設計だけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
 license: MIT
 metadata:
   author: touyou
-  version: "0.6.0"
+  version: "0.6.1"
 ---
 
 # apple-app-setup
@@ -59,7 +59,19 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
 5. **Duo・iPad・Mac で画面の形が変わるときの方針**（1 カラム／左右分割／Duo 専用の体験）
 6. **配信**（App Store / TestFlight 内部のみ / 社内配布）と課金の有無
 
-### 2. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）
+### 2. できることを App Intents で設計する（[references/app-intents-first.md](references/app-intents-first.md)）
+
+**構成やひな形より先に**、「このアプリでできること」を Intent と Entity の一覧にし、`docs/PLAN.md` の
+中心に置く（画面の一覧ではなく、この一覧が仕様）。`app-intents-design-session` で
+ユースケースから Intent を導き、`app-intents-centric-design` の 11 ルールで置き場所を決める。
+UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新しいモデル連携（`@AppIntent(.tool)`、
+27.3 以降）は、最低 OS より新しい API なので後から段階的に足す前提で、名前と説明文だけ最初から整えておく。
+
+実装もこの順で進める: Domain と Service、Intent / Entity / Query をテスト付きで最初の機能 PR にし、
+画面とウィジェットはそのあとで Intent と Service の上に載せる。「画面を作ってから Intent を足す」順にすると、
+ロジックが View に入り込み、Intent がその写しになる。進捗の一覧やチェックリストでも App Intents を最後の行に置かない。
+
+### 3. 構成を決める（[references/project-skeleton.md](references/project-skeleton.md)）
 
 - プロジェクトファイルは Xcode 27.2 の **JSON 形式の `project.xcproj`**（IntentTodo と同じ）。同期フォルダなので
   ファイルを足してもプロジェクトファイルは変わらず、差分が読める。XcodeGen は最初の書き出しにだけ使い、
@@ -72,12 +84,12 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
 - `developmentRegion` / `knownRegions` をカタログのソース言語と揃える（ずれると日本語の端末で英語で開く。[references/localization.md](references/localization.md)）
 - macOS / visionOS も出すなら、パッケージの `platforms` に全部書き、OS ごとの分岐は互換層を作らずその場の `#if` で始める（[references/macos-visionos.md](references/macos-visionos.md)）
 
-### 3. ひな形を書き出す
+### 4. ひな形を書き出す
 
 ```bash
-python3 scripts/scaffold.py --name CsirtCalendar --display-name "期限暦" \
-  --bundle-id dev.touyou.csirtcalendar --team XXXXXXXXXX \
-  --platforms ios,macos --widget --source-language ja --out ~/Developer/Private/CsirtCalendar
+python3 scripts/scaffold.py --name Patchday --display-name Patchday \
+  --bundle-id dev.touyou.patchday --team XXXXXXXXXX \
+  --platforms ios,macos --widget --source-language ja --out ~/Developer/Private/Patchday
 ```
 
 書き出すもの: `.xcodeproj`（`project.xcproj`）、ローカル SPM（4〜5 層＋テスト）、アプリ・ウィジェットのひな形、
@@ -98,13 +110,6 @@ Xcode 27.2 で、書き出した直後の状態が `swift test`・iOS / macOS �
 
 パッケージに置いた Intent の文言は Xcode の抽出にかからない。キーはアプリとウィジェットのカタログに手で足し、
 IntentTodo の skills にある `check_intent_copy_localization.py` で漏れを確かめる。
-
-### 4. App Intents を先に設計する（[references/app-intents-first.md](references/app-intents-first.md)）
-
-画面より先に「このアプリでできること」を Intent の一覧にする。`app-intents-design-session` で
-ユースケースから Intent を導き、`app-intents-centric-design` の 11 ルールで置き場所を決める。
-UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新しいモデル連携（`@AppIntent(.tool)`、
-27.3 以降）は、最低 OS より新しい API なので後から段階的に足す前提で、名前と説明文だけ最初から整えておく。
 
 ### 5. 画面を作る（[references/swiftui-rules.md](references/swiftui-rules.md) / [references/iphone-duo.md](references/iphone-duo.md)）
 
