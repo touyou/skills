@@ -40,6 +40,45 @@ xcodebuild build-for-testing -scheme <Name> -destination 'generic/platform=iOS S
 - テストターゲットを足したら scheme の Test action に足す。足さないと、コンパイルできなくなっても赤くならない
 - 詳しくは `app-intents-testing`、XCTest からの移行は Apple の `modernize-tests`
 
+### XCUITest で踏んだこと（チェケラ、Xcode 27.x）
+
+- `xcodebuild test` に `-collect-test-diagnostics never` を付ける。付けないと、テストが通ったあと `simctl diagnose` で約 10 分止まった（チェケラの PR #10、2026-10）
+- 選んだ 2 点に同時に指を置く API は無い。`tap(withNumberOfTaps: 1, numberOfTouches: 2)` は要素の中心の左右に、
+  要素の幅の約 0.9 倍の間隔で指を置く。2 つのボタンの同時押しは、境目に置いた見えない要素（テストのときだけ）を叩く `[measured]`
+- UIKit は `UITouch` を使い回す。タッチを記録して down と up を ID だけで結ぶと、前の押下と混ざる `[measured]`
+- `@Dependency` を持つ Intent の `perform()` をアプリやテストから直接呼ぶと、ランタイムの外でアサートして落ちる `[measured]`。
+  中身の Service を呼んで確かめ、Intent の経路は AppIntentsTesting で通す
+- テスト用の状態は起動引数で切り替える（`-uitest-screenshot-fixture` など）。そのときは SwiftData をメモリだけにし、
+  初回のシードやデータ移行を飛ばし、権限のアラートが出る画面は固定の中身で代える。判定は `#if DEBUG` の中で、Release では常に `false`
+
+## Release に残さないもの
+
+Debug だけのもの（サンプルのリソース、テストのフィクスチャ、計測のプローブ）が Release に入っていないことを、
+**Release をビルドしてバイナリとバンドルを見て**確かめる。コードを読んだだけでは、呼び出しの 1 行が `#if DEBUG` の外に出ても気づけない。
+計測のプローブの扱いそのものは `autonomous-perf-loop`（bench-harness.md / security-gates.md）が正本。
+
+- **リソース**: シードを `#if DEBUG` で囲むだけでは、ファイルは Release にも同梱される。Release の構成だけに
+  `EXCLUDED_SOURCE_FILE_NAMES` を設定して外す（チェケラは 17 本の音源を外し、Release はシードする 3 本だけになった `[measured]`、2026-10）
+- **コード**: 探す文字列は「ファイル全体が `#if DEBUG` の型」と「その中でだけ読む起動引数」にする。
+  `isActive` を Release で `false` にするだけの型（チェケラの `ScreenshotFixture`）は、型名も `static let` の起動引数もバイナリに残るので対象にならない
+
+```bash
+set -euo pipefail
+xcodebuild build -quiet -scheme <Name> -configuration Release \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath build/release
+APP=build/release/Build/Products/Release-iphonesimulator/<Name>.app
+found=0
+for bin in "$APP/<Name>" "$APP"/*.dylib; do        # *.dylib は Debug だけにある。無ければ飛ばす
+  [ -f "$bin" ] || continue
+  if strings -a "$bin" | grep -qE 'TapLatencyProbe|perf-tap-bench'; then  # パターンはアプリごと
+    echo "debug-only code in $bin" >&2; found=1
+  fi
+done
+exit $found
+```
+
+チェケラは `scripts/perf/release_check.sh` で計測の周ごとに回している。
+
 ## ビルドでは分からないもの
 
 ```bash

@@ -75,9 +75,14 @@ Apple の助言（ワークショップで確認）: 比率より「折り目に
 - Xcode 27 には Simulator.app が無い。Duo シミュレータの開閉は DeviceHub から**手で**切り替える。
   `simctl` でも DeviceInteraction でもできない `[measured]`。自動の確認は開いた状態と回転だけ
 - `simctl io screenshot` は真っ黒になる。XCUITest の `XCUIScreen.main.screenshot()` なら撮れる
-- 開いていても外側の画面を返すことがある。内側がまっ黒（PNG が 100KB ほど）かどうかで判定し、撮り直す
 - 画像に付く EXIF の回転情報は消す
 - 並列テストは閉じた複製で走るので、撮影のテストは並列を切る
+- 開いた Duo でも `XCUIScreen.main` は外側の画面のまま。画素数がいちばん多い画面（内側）を選んで撮る。
+  その画像は縦長の向きで返るので 90° 回して 2853×2007 にそろえる（`XCUIScreen` の画像は 1px 足りず 2006×2852）`[measured]`（2026-10、iOS 27.1）
+- 既定の画面の寸法では開閉を見分けられない（開いていても外側の画面を横にした 2034×1398 が返る）。内側の画面がまっ黒（PNG が 100KB ほど）かどうかで判定し、
+  合わなければ止める `[measured]`
+- xcodebuild は Duo の横のバーの時計を 9:41 に固定しない。UDID で宛先を指定して `simctl status_bar <udid> override` を当てる（効くかは未確認）`[inferred]`
+- 開いた Duo はすべて横長なので、横向きのスクショは撮らない
 - 半開きの見た目は DeviceHub で手で半開きにして撮る
 
 ## ストアの見せ方

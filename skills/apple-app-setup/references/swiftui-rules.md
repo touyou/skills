@@ -30,6 +30,9 @@ grep -rnE -A1 '@ViewBuilder' --include='*.swift' Packages App | grep -E '(func|v
 `NavigationSplitView` を使うときは `columnVisibility` を `.automatic` のままにしない。開いた Duo の幅では
 `detailOnly` が選ばれ、リスト列に付けたツールバー項目がまとめて消えることがある `[measured]`。
 
+ウィンドウの形を `onGeometryChange` で測るときは、`scaledToFill` の背景画像を中身と同じ階層に置かない。
+画像の大きさで測った寸法が膨らみ、構成の判定が外れる。背景は `.background { … }` のモディファイアに入れる `[measured]`（チェケラ、2026-07、iPadOS 26）。
+
 ## 3. ツールバー
 
 - 項目には必ずタイトルを付ける（画像だけのボタンも `Label` にする）。閉じた Duo では縦のバーに移り、

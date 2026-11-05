@@ -24,11 +24,31 @@
 | アプリアイコン | `AppIcon.appiconset`（ライト / ダーク / tinted） | Xcode Cloud の Archive と書き出しは成功するのに、App Store Connect への取り込みで失敗する（気づきにくい）`[measured]`（2026-10） |
 | 写真への保存 | `INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription` | 画像を共有シートに渡しても「画像を保存」が出ない `[measured]`（2026-11） |
 
+## Debug では気づけず、配布物だけで壊れるもの
+
+- **動的フレームワークは Embed & Sign にする**。リンクだけ（Do Not Embed）だと、Debug のローカル実行は DerivedData から
+  読めて動くが、Archive / TestFlight 版は `dyld: Library not loaded: @rpath/<Name>.framework/<Name>` で起動直後に落ちる。
+  チェケラ 1.1.0 (1) は RealmSwift でこれになり、全端末で起動できなかった `[measured]`（2026-07、TestFlight）。SPM の動的ライブラリを足したら、
+  ターゲットの General → Frameworks, Libraries, and Embedded Content を確かめる
+- Debug だけのリソースとテスト用の仕掛けが Release に残っていないか（→ [verification.md](verification.md) の「Release に残さないもの」）
+
+## 審査で落ちた例
+
+チェケラ 1.1.0 の審査（2026-07）で実際に受けた指摘。
+
+| 指摘 | 原因 | 直し方 |
+|---|---|---|
+| Guideline 4: iPad Air 11"（iPadOS 26）で右の列が切れている | 横向き固定・`UIRequiresFullScreen` の 2 列の固定レイアウト。iPadOS 26 ではどのアプリもウィンドウの大きさを変えられ、縦長のウィンドウで列がはみ出した | `UIRequiresFullScreen` を外して 4 方向を宣言し、ウィンドウの形で 1 列 / 2 列を切り替える |
+| マイクの使用目的の説明が不十分 | `NSMicrophoneUsageDescription` が「録音に使用します。」だけ | 何を録って何に使うかと、具体例まで書く（「声を録音して、ボタンに割り当てられます。例: …」） |
+
+使用目的の文言は、権限ごとに「何を・何のために・例」の 3 つを最初から書いておく。
+
 ## 掲載物
 
 - 掲載文は `metadata/` か `docs/app-store/` に置き、App Store Connect の CLI（`asc`）で反映する
 - ストア画像は `store-screenshot-composer`。Duo・iOS 27 のヘッダー／検索画像も同じ設定から
 - アプリ内課金があるなら StoreKit の設定ファイルを scheme に付け、掲載の「アプリ内課金なし」表記を直す
+- 公開中のバージョンのストア画像は差し替えられないので、画像だけ変えたいときも新しいバージョンを出す `[Apple]`（チェケラ 1.1.5 はアプリの変更なしで画像のためだけに上げた）
 - 審査で情報提供を求められたら、画面収録と目的・手順・外部サービス・地域差・権利を英文で返す
   （月屏風 1.0.0、2026-10-24。項目は画面収録 / 目的と対象 / 手順 / 外部サービス / 地域差 / 規制業種と第三者の素材の 6 つ。
   アカウント・UGC・課金・通信が無いことも、無いと書く。同じ英文を審査メモにも入れておく）
