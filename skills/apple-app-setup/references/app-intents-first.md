@@ -23,6 +23,22 @@
 - App Schema に適合させる型は watchOS 向けに別の型名にする（同じ名前だとメタデータが上書きされる）`[measured]`
 - 確認はビルドの成否ではなく、生成されたメタデータで行う。それもクリーンビルドで
 
+## 実地の補足（チェケラ、2026-10）
+
+- `AppDependencyManager.shared.add(dependency:)` の引数は escaping で nonisolated の autoclosure。`App.init()` で
+  `self.container` を渡すと self を捕まえてビルドエラーになる。ローカル変数に入れてから渡す `[measured]`（2026-10、Xcode 27.x）
+- 依存の登録は `App.init()` で同期的に済ませる（置き場所は [project-skeleton.md](project-skeleton.md)）。背面の Intent はシーンを出さずにプロセスを起こすので、
+  `onAppear` や `.task` での登録では間に合わない `[inferred]`
+- Entity の `DisplayRepresentation` にユーザーが付けた名前を出すときは `"\(name)"` の補間で書く。
+  `LocalizedStringResource(stringLiteral: name)` にすると、ユーザーの文字列がローカライズのキーとして扱われる
+- 表示名が英字で、話すときは別の名前で呼ばれるアプリ（Checkitout →「チェケラ」）は、Info.plist の `INAlternativeAppNames`
+  に別名と読み（`INAlternativeAppNamePronunciationHint`）を入れる。別名で呼ばれたときに Siri がアプリを特定できるようにするため `[Apple]`
+- パラメータ付きのフレーズは、起動時と Entity の集合が変わったとき（音を足す・消す）に
+  `updateAppShortcutParameters()` を呼ぶ。呼ばないと、Entity を一度取得するまでそのフレーズが出ない `[Apple]`
+- `AppShortcuts.xcstrings` は App Shortcut 1 つにつき 1 キーで、値は言語ごとの `stringSet`（フレーズの配列）。
+  言語ごとにフレーズの数が違ってよい（チェケラは en 3 本、ja 5 本）。フレーズを足すときは配列に足し、キーを増やさない
+- Entity の `suggestedEntities()` の順番は、Siri が話された名前を照合する候補の順でもある。よく使うもの（パッドに割り当て済みの音）を先にする `[inferred]`
+
 ## Siri のモデル連携（27.3 以降）
 
 27.3 の Siri AI Developer Preview で、スキーマに当てはまらない Intent も `@AppIntent(.tool)` で

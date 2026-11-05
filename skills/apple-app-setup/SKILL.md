@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # apple-app-setup
@@ -26,6 +26,7 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | App Intents の API の罠と新 API | Apple の `app-intents-specialist` / `app-intents-whats-new-27` / `siri-app-integration` / `siri-evaluations`（Xcode 同梱） |
 | SwiftUI の書き方 | Apple の `swiftui-specialist` / `swiftui-whats-new-27`（Xcode 同梱）＋ [references/swiftui-rules.md](references/swiftui-rules.md) |
 | 画面サイズの変化・Duo | Apple の `app-resizability`（UIKit の置き換え中心）＋ [references/iphone-duo.md](references/iphone-duo.md)（SwiftUI と実地の落とし穴） |
+| 音の再生・録音 | [references/audio.md](references/audio.md)（セッションのカテゴリ、Intent からの再生、押した瞬間の遅れ、録音、AVAudioEngine の形式） |
 | アクセシビリティ | `apple-accessibility`（このリポジトリの a11y-pack） |
 | ストア画像 | 素のスクショの撮影は [references/screenshot-capture.md](references/screenshot-capture.md)、仕上げは `store-screenshot-composer`（store-pack） |
 | ビルド設定のセキュリティ | Apple の `audit-xcode-security-settings` |
@@ -33,7 +34,6 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | デザインの原則 | [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) |
 | 自前の Metal 描画・書き出し用の CLI | [references/metal-rendering.md](references/metal-rendering.md) |
 | アプリ内課金 | [references/storekit.md](references/storekit.md) |
-| 音（AVAudioEngine） | [references/audio.md](references/audio.md) |
 
 Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」として扱い、自分の記憶と食い違ったら
 そちらを採る。ただし宣言（SDK）と実行時の挙動は別物なので、**このスキルの references にある
@@ -113,6 +113,7 @@ UI のボタンも `Button(intent:)` で同じ Intent を呼ぶ。Siri の新し
   あふれる順を `visibilityPriority` で決める（閉じた Duo では縦のバーへ移り、アイコンだけだと意味が伝わらない）
 - 外周の余白は `contentMargins` に寄せる（Duo は safe area が左右で違う）
 - Duo の折り目は「見る側」と「触る側」を分ける好機。ヒンジ角度を体験にするのは Duo 専用アプリのときだけ
+- 音を鳴らす・録るアプリは、セッションのカテゴリを場面ごとに決めて切り替えを 1 か所に集める（[references/audio.md](references/audio.md)）
 
 ### 6. 検証の仕組みを入れる（[references/verification.md](references/verification.md)）
 
@@ -139,6 +140,7 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 
 - `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight
 - What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
+- 動的フレームワークは Embed & Sign（Do Not Embed は Debug で動き、配布版だけ起動直後に落ちる）
 - 起動画面のキー（iOS 27 では無いと提出で弾かれる）、`ITSAppUsesNonExemptEncryption`、
   プライバシーマニフェスト（必須理由 API を使う拡張のバンドルにも）、アプリ名の表示名をこの時点で埋める
 - 課金があるなら StoreKit の設定ファイルと、権利の確かめ方（`currentEntitlements` だけに頼らない）を最初から入れる（[references/storekit.md](references/storekit.md)）
