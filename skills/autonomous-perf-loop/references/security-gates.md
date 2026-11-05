@@ -114,6 +114,7 @@ Things to check specifically: <呼び出し元をすべて見る / 確認の順�
 新しいスクリプトがバンドルに入らないか、など>
 <画面側のキャッシュ・取り直しの条件を変えたとき: a list stuck loading (an answer dropped while nothing asks again),
 a periodic refresh or retry swallowed, stale data shown after a local change / permission change / deletion,
+a fetch started before invalidation whose result is still shared or applied, an error shown for a superseded fetch,
 module-level caches surviving sign-out or a workspace switch>
 
 Report each finding with file:line, a concrete failure scenario, and a confidence label
