@@ -3,7 +3,7 @@ import Domain
 import Foundation
 
 public struct ItemEntity: AppEntity {
-    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Item"
+    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "⟦Item⟧"
 
     public static var defaultQuery: ItemQuery {
         ItemQuery()
@@ -11,10 +11,10 @@ public struct ItemEntity: AppEntity {
 
     public let id: UUID
 
-    @Property(title: "Title")
+    @Property(title: "⟦Title⟧")
     public var title: String
 
-    @Property(title: "Due Date")
+    @Property(title: "⟦Due Date⟧")
     public var dueDate: Date?
 
     public var displayRepresentation: DisplayRepresentation {

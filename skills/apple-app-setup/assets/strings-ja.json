@@ -1,0 +1,22 @@
+{
+  "Add an item in \\(.applicationName)": "\\(.applicationName)に項目を追加",
+  "New item in \\(.applicationName)": "\\(.applicationName)で新しい項目",
+  "Add Item": "項目を追加",
+  "How many items are in \\(.applicationName)": "\\(.applicationName)の項目はいくつ",
+  "Item Count": "項目の数",
+  "Items": "項目",
+  "Shows the items due soonest.": "期限の近い項目を表示します。",
+  "No Items": "項目はありません",
+  "Add": "追加",
+  "Title": "タイトル",
+  "New Item": "新しい項目",
+  "Cancel": "キャンセル",
+  "Adds a new item.": "項目を新しく追加します。",
+  "Add \\(\\.$title)": "\\(\\.$title)を追加",
+  "Due Date": "期限",
+  "Added \\(title).": "\\(title)を追加しました。",
+  "Get Item Count": "項目の数を調べる",
+  "Tells how many items there are.": "項目がいくつあるかを答えます。",
+  "\\(count) items.": "項目は \\(count) 件です。",
+  "Item": "項目"
+}

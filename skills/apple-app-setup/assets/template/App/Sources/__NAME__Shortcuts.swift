@@ -7,18 +7,18 @@ struct __NAME__Shortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: AddItemIntent(),
             phrases: [
-                "Add an item in \(.applicationName)",
-                "New item in \(.applicationName)"
+                "⟦Add an item in \(.applicationName)⟧",
+                "⟦New item in \(.applicationName)⟧"
             ],
-            shortTitle: "Add Item",
+            shortTitle: "⟦Add Item⟧",
             systemImageName: "plus"
         )
         AppShortcut(
             intent: GetItemCountIntent(),
             phrases: [
-                "How many items are in \(.applicationName)"
+                "⟦How many items are in \(.applicationName)⟧"
             ],
-            shortTitle: "Item Count",
+            shortTitle: "⟦Item Count⟧",
             systemImageName: "number"
         )
     }

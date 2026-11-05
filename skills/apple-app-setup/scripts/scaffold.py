@@ -8,6 +8,7 @@ project.yml と Package.swift はここで組み立てる。標準ライブラ�
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -16,6 +17,8 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = SKILL_DIR / "assets" / "template"
+# ひな形の文言は ⟦英語⟧ で書き、--source-language ja のときはこの表で日本語にする（フレーズもソース言語で書く必要がある）
+JA_STRINGS = SKILL_DIR / "assets" / "strings-ja.json"
 
 PLATFORMS = {
     # key: (XcodeGen の destination, SwiftPM の platform, 表示名)
@@ -278,6 +281,18 @@ def substitute(text: str, table: dict[str, str]) -> str:
     return text
 
 
+def localize(text: str, language: str) -> str:
+    strings = json.loads(JA_STRINGS.read_text(encoding="utf-8")) if language == "ja" else {}
+
+    def pick(match: re.Match[str]) -> str:
+        source = match.group(1)
+        if language == "ja" and source not in strings:
+            raise KeyError(f"strings-ja.json に訳が無い: {source}")
+        return strings.get(source, source)
+
+    return re.sub(r"⟦(.*?)⟧", pick, text)
+
+
 def copy_template(args: argparse.Namespace, out: Path, table: dict[str, str]) -> list[Path]:
     written: list[Path] = []
     for src in sorted(TEMPLATE_DIR.rglob("*")):
@@ -289,7 +304,8 @@ def copy_template(args: argparse.Namespace, out: Path, table: dict[str, str]) ->
         rel = RENAMES.get(rel, rel)
         dest = out / substitute(rel, table)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(substitute(src.read_text(encoding="utf-8"), table), encoding="utf-8")
+        text = localize(substitute(src.read_text(encoding="utf-8"), table), args.source_language)
+        dest.write_text(text, encoding="utf-8")
         written.append(dest)
     return written
 

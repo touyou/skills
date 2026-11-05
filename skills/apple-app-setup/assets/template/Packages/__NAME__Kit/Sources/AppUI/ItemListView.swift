@@ -14,12 +14,13 @@ public struct ItemListView: View {
             List(service.items) { item in
                 ItemRow(item: item)
             }
+            .accessibilityIdentifier("itemList")
             .overlay {
                 if service.items.isEmpty {
                     EmptyItemsView()
                 }
             }
-            .navigationTitle(Text(.copy("Items")))
+            .navigationTitle(Text(.copy("⟦Items⟧")))
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     // 閉じた Duo では縦のバーやメニューに移るので、画像だけにせずタイトルを持たせる
@@ -27,7 +28,7 @@ public struct ItemListView: View {
                         isAdding = true
                     } label: {
                         Label {
-                            Text(.copy("Add"))
+                            Text(.copy("⟦Add⟧"))
                         } icon: {
                             Image(systemName: "plus")
                         }
@@ -60,7 +61,7 @@ struct EmptyItemsView: View {
     var body: some View {
         ContentUnavailableView {
             Label {
-                Text(.copy("No Items"))
+                Text(.copy("⟦No Items⟧"))
             } icon: {
                 Image(systemName: "tray")
             }
@@ -77,22 +78,22 @@ struct AddItemSheet: View {
         NavigationStack {
             Form {
                 TextField(text: $title) {
-                    Text(.copy("Title"))
+                    Text(.copy("⟦Title⟧"))
                 }
             }
-            .navigationTitle(Text(.copy("New Item")))
+            .navigationTitle(Text(.copy("⟦New Item⟧")))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
                         dismiss()
                     } label: {
-                        Text(.copy("Cancel"))
+                        Text(.copy("⟦Cancel⟧"))
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     // アプリ内のボタンも Intent を通す。Siri やショートカットと同じ経路になる
                     Button(intent: AddItemIntent(title: title)) {
-                        Text(.copy("Add"))
+                        Text(.copy("⟦Add⟧"))
                     }
                     .disabled(title.isEmpty)
                 }

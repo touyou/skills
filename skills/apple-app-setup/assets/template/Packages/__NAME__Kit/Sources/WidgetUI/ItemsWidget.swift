@@ -36,8 +36,8 @@ public struct ItemsWidget: Widget {
             ItemsWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName(Text(.copy("Items")))
-        .description(Text(.copy("Shows the items due soonest.")))
+        .configurationDisplayName(Text(.copy("⟦Items⟧")))
+        .description(Text(.copy("⟦Shows the items due soonest.⟧")))
     }
 }
 
@@ -46,10 +46,10 @@ struct ItemsWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(.copy("Items"))
+            Text(.copy("⟦Items⟧"))
                 .font(.headline)
             if entry.items.isEmpty {
-                Text(.copy("No Items"))
+                Text(.copy("⟦No Items⟧"))
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(entry.items.prefix(3)) { item in

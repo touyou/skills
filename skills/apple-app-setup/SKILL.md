@@ -77,6 +77,12 @@ python3 scripts/scaffold.py --name CsirtCalendar --display-name "期限暦" \
 書き出したら `xcodegen generate` を実行し、**3 種類のビルド**（下の 6）が緑になるまでを最初のコミットにする。
 
 スクリプトは Python 標準ライブラリだけで動く。オプションの全量は `--help`。
+サンプルの文言（Intent のタイトル・Siri のフレーズ・画面の文字）は `--source-language` の言語で書き出す。
+Siri のフレーズはソース言語で書かないとその言語の Siri に出ないので、ja なら日本語のフレーズが入る。
+もう一方の言語の訳は、ビルドでカタログにキーが出たあとで埋める（フレーズは `AppShortcuts.xcstrings`）。
+
+Xcode 27.2 で、書き出した直後の状態が `swift test`・iOS / macOS の Debug・iOS の Release・`build-for-testing` の
+すべてで警告なしに通り、出荷されるメタデータに App Shortcut が 2 件載ることを確かめている `[measured]`。
 
 ### 4. App Intents を先に設計する（[references/app-intents-first.md](references/app-intents-first.md)）
 
