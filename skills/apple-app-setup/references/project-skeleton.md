@@ -69,7 +69,7 @@ Keychain について補足（GRAPHICA、2026-06 に実機で数時間溶かし�
 - 書いた直後の読み出しは内部のキャッシュで成功して見えることがある。保存の検証は 1 回の読み直しで終わらせない
 
 bundle id・App Group・OAuth の client id のような識別子は、大文字小文字まで全箇所で突き合わせる。サーバ側の設定が
-`dev.touyou.graphica`、Xcode が `dev.touyou.Graphica` で、Sign in with Apple の audience が本番でだけ合わなかった `[measured]`。
+`com.example.myapp`、Xcode が `com.example.MyApp` で、Sign in with Apple の audience が本番でだけ合わなかった `[measured]`。
 
 ## ビルド設定の既定
 
