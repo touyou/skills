@@ -1,7 +1,7 @@
 included:
   - App
-  - Widget
-  - Packages/__NAME__Kit/Sources
+⟪widget⟫  - Widget
+⟪/widget⟫  - Packages/__NAME__Kit/Sources
   - Packages/__NAME__Kit/Tests
   - AppUITests
 excluded:

@@ -59,7 +59,7 @@ Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」とし�
   （Xcode Cloud はリポジトリの `.xcodeproj` を読む。`project.pbxproj` を手やエージェントで直接いじらない）
 - ロジックは **ローカル SPM パッケージ**に置き、アプリと拡張のターゲットは `@main` などのひな形だけにする。
   層は `Domain ← Persistence ← AppIntentsKit ← AppUI / WidgetUI` の一方向
-- `AppShortcutsProvider` と `@Dependency` の登録は**アプリ（と各拡張）のターゲット**に置く。
+- `AppShortcutsProvider` は**アプリのターゲット**に、`@Dependency` の登録は**アプリと各拡張のターゲット**に置く。
   パッケージに置くと App Shortcut がビルドエラー無しで消える
 - Swift 6 言語モード、String Catalog、生成 Info.plist、アセットのシンボル生成を最初から有効にする
 
@@ -82,7 +82,12 @@ Siri のフレーズはソース言語で書かないとその言語の Siri に
 もう一方の言語の訳は、ビルドでカタログにキーが出たあとで埋める（フレーズは `AppShortcuts.xcstrings`）。
 
 Xcode 27.2 で、書き出した直後の状態が `swift test`・iOS / macOS の Debug・iOS の Release・`build-for-testing` の
-すべてで警告なしに通り、出荷されるメタデータに App Shortcut が 2 件載ることを確かめている `[measured]`。
+すべてで警告なしに通り、出荷されるメタデータに App Shortcut が 2 件載ることを確かめている `[measured]`
+（iOS + macOS、ウィジェットありの組み合わせ）。visionOS、iOS だけ、`--no-widget` の組み合わせはまだ
+ビルドで確かめていないので、使ったら 3 種類のビルドを回して結果を報告する。
+
+パッケージに置いた Intent の文言は Xcode の抽出にかからない。キーはアプリとウィジェットのカタログに手で足し、
+IntentTodo の skills にある `check_intent_copy_localization.py` で漏れを確かめる。
 
 ### 4. App Intents を先に設計する（[references/app-intents-first.md](references/app-intents-first.md)）
 

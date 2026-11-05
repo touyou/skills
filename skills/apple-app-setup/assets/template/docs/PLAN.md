@@ -10,7 +10,7 @@ __ONE_LINER__
 |---|---|---|
 | 対象 OS | __PLATFORMS_TEXT__ __MIN_OS__+ | |
 | データの置き場所 | 端末内（App Group の JSON） | |
-| 届けるシステムの面 | ショートカット・Siri・ウィジェット | |
+| 届けるシステムの面 | ショートカット・Siri⟪widget⟫・ウィジェット⟪/widget⟫ | |
 | 画面の形が変わるとき | 1 カラム基本、regular かつ横長だけ左右分割 | |
 
 ## Intent の一覧

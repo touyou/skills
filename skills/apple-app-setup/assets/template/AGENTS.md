@@ -13,8 +13,8 @@ __ONE_LINER__
 
 ```
 App/                    アプリ。@main・依存の登録・AppShortcutsProvider だけ
-Widget/                 ウィジェット拡張。WidgetBundle と依存の登録だけ
-Packages/__NAME__Kit/   Domain ← Persistence ← AppIntentsKit ← AppUI / WidgetUI
+⟪widget⟫Widget/                 ウィジェット拡張。WidgetBundle と依存の登録だけ
+⟪/widget⟫Packages/__NAME__Kit/   Domain ← Persistence ← AppIntentsKit ← AppUI⟪widget⟫ / WidgetUI⟪/widget⟫
 AppUITests/             XCUITest と AppIntentsTesting
 docs/                   PLAN.md（要件）/ adr/（設計判断）/ devlog/（経緯）
 ```
@@ -24,22 +24,20 @@ docs/                   PLAN.md（要件）/ adr/（設計判断）/ devlog/（�
 1. **アクションは App Intent として定義し、UI からも `Button(intent:)` で呼ぶ**。業務ロジックは `ItemService`、
    データ変更の後処理は `dataDidChange()` の 1 か所
 2. **`AppShortcutsProvider` はアプリのターゲットに置く**（パッケージに置くと App Shortcut が 0 件になる）
-3. **`@Dependency` はプロセスごとに登録する**（アプリの `init()` と `WidgetBundle.init()`）。漏れても何も起きないだけで気づけない
+3. **`@Dependency` はプロセスごとに登録する**（アプリの `init()`⟪widget⟫ と `WidgetBundle.init()`⟪/widget⟫、拡張を足したらその拡張でも）。漏れても何も起きないだけで気づけない
 4. **書き込む Intent と App Shortcut に登録した Intent は `allowedExecutionTargets = [.main]`**
 5. **公開した Intent のパラメータ名と型は変えない**（保存済みのショートカットが外れる）
 6. **`AppIntentsPackage` を宣言しない**（静的リンクの間は不要で、配布版だけ App Intents が読まれなくなる）
 7. **サブビューは computed property ではなく独立した `View` struct で切る**
 8. **画面の構成は `horizontalSizeClass` と縦横で 1 か所で決める**。左右に分けるのは「regular かつ横長」だけ。ピクセル幅の閾値で構成を変えない
 9. **UI の文言を `String` のプロパティや引数で運ばない**。パッケージでは `Text(.copy("…"))`。文言を足したらそのターゲットのカタログの全言語を埋める
-10. **ツールバー項目にはタイトルと role を付ける**（閉じた iPhone Duo では縦のバーやメニューに移る）。外周の余白は `contentMargins`
+10. **ツールバー項目にはタイトルと役割（role か `.confirmationAction` などの placement）を付け、項目が複数なら `visibilityPriority` であふれる順を決める**（閉じた iPhone Duo では縦のバーやメニューに移る）。外周の余白は `contentMargins`
 
 ## コミット前に回すもの
 
 ```bash
 xcodegen generate
-xcodebuild build -scheme __NAME__ -destination 'generic/platform=iOS'
-xcodebuild build -scheme __NAME__ -configuration Release -destination 'generic/platform=iOS'
-xcodebuild build-for-testing -scheme __NAME__ -destination 'generic/platform=iOS Simulator'
+__BUILD_COMMANDS__
 (cd Packages/__NAME__Kit && swift test)
 ```
 

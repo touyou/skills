@@ -4,7 +4,7 @@ import Observation
 import Persistence
 import WidgetKit
 
-/// 業務ロジックの唯一の入口。Intent・画面・ウィジェットはここを通す
+/// 業務ロジックの唯一の入口。Intent と画面はここを通す（ウィジェットは読むだけなので保存先を直接読む）
 @MainActor
 @Observable
 public final class ItemService {

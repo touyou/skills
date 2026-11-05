@@ -28,8 +28,11 @@
 │   ├── PLAN.md                 要件と展開マトリクス
 │   ├── adr/                    長い設計判断
 │   └── devlog/                 経緯・実験の記録（追記のみ）
-└── scripts/
 ```
+
+`Package.swift` の `platforms` はメジャー版までしか書けない（`.iOS("27.0")` は不可）。
+ポイントリリースの API（Duo のヒンジは 27.1）は `#available` / `@available` で囲む。
+macOS は iOS だけのアプリでも `platforms` に入れる（Mac で `swift test` を回すため）。
 
 ## 層と依存の向き
 

@@ -14,7 +14,9 @@
 レビューでの検出:
 
 ```bash
-grep -rnE 'var [a-zA-Z]+: some View|@ViewBuilder\s+(private\s+)?(func|var)' --include='*.swift' Packages App | grep -v 'var body'
+grep -rnE 'var [a-zA-Z]+: some View' --include='*.swift' Packages App | grep -v 'var body'
+# @ViewBuilder は次の行に func / var が来る書き方も拾う
+grep -rnE -A1 '@ViewBuilder' --include='*.swift' Packages App | grep -E '(func|var) ' | grep -v 'var body'
 ```
 
 ## 2. 画面の構成は size class と縦横で決める
@@ -32,9 +34,9 @@ grep -rnE 'var [a-zA-Z]+: some View|@ViewBuilder\s+(private\s+)?(func|var)' --in
 
 - 項目には必ずタイトルを付ける（画像だけのボタンも `Label` にする）。閉じた Duo では縦のバーに移り、
   入りきらないものはメニューへ回る。アイコンだけだとメニューの中で意味が伝わらない `[Apple]`
-- role を付ける: 閉じる = `.close`、キャンセル = `.cancel`、保存・追加 = `.confirm`、全消去 = `.destructive`。
+- 意味のあるボタンには role を付ける（role が無い種類の項目は `placement` で置き場所を示す）: 閉じる = `.close`、キャンセル = `.cancel`、保存・追加 = `.confirm`、全消去 = `.destructive`。
   置き場所はシステムが決める（普通の iPhone では × が右上から左上へ移る）
-- `visibilityPriority` で、残す項目と先にメニューへ回す項目を決める。自作のメニューは `ToolbarOverflowMenu` に入れる
+- 項目が 2 つ以上並ぶなら `visibilityPriority` で、残す項目と先にメニューへ回す項目を決める。自作のメニューは `ToolbarOverflowMenu` に入れる
 - 正本: `swiftui-whats-new-27` の toolbar
 
 ## 4. 余白

@@ -27,6 +27,8 @@ PLATFORMS = {
     "visionos": ("visionOS", "visionOS", "visionOS"),
 }
 
+RESERVED_NAMES = {"App", "Widget", "Domain", "Persistence", "AppIntentsKit", "AppUI", "WidgetUI"}
+
 # ファイル名を変えて置くもの（ドットファイルは assets に置くと見落とされやすい）
 RENAMES = {"gitignore": ".gitignore", "swiftlint.yml": ".swiftlint.yml"}
 
@@ -56,6 +58,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         p.error("--bundle-id は逆ドメイン形式にする")
     if not re.fullmatch(r"\d+\.\d+", args.min_os):
         p.error("--min-os は 27.0 のように書く")
+    if tuple(int(x) for x in args.min_os.split(".")) < (27, 0):
+        p.error("--min-os は 27.0 以上にする（ひな形が IntentExecutionTargets など 27 の API を使う）")
+    if args.name in RESERVED_NAMES:
+        p.error(f"--name に {args.name} は使えない（パッケージのモジュール名と衝突する）")
     platforms = [s.strip().lower() for s in args.platforms.split(",") if s.strip()]
     unknown = [s for s in platforms if s not in PLATFORMS]
     if unknown or not platforms:
@@ -97,18 +103,22 @@ def project_yml(args: argparse.Namespace) -> str:
         f"        PRODUCT_BUNDLE_IDENTIFIER: {args.bundle_id}",
         "        GENERATE_INFOPLIST_FILE: YES",
         f"        INFOPLIST_KEY_CFBundleDisplayName: {yaml_str(args.display_name)}",
-        f"        INFOPLIST_KEY_LSApplicationCategoryType: {args.category}",
+        f"        INFOPLIST_KEY_LSApplicationCategoryType: {yaml_str(args.category)}",
         "        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO",
         "        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon",
         "        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor",
     ]
-    if "ios" in args.platforms:
+    if "ios" in args.platforms or "visionos" in args.platforms:
         app_settings += [
-            "        TARGETED_DEVICE_FAMILY: \"1,2\"",
-            "        # 無いと iOS 27 ではアップロードが ITMS-90870 で弾かれる",
-            "        INFOPLIST_KEY_UILaunchScreen_Generation: YES",
             "        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES",
             "        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES",
+        ]
+    if "ios" in args.platforms:
+        family = "1,2,7" if "visionos" in args.platforms else "1,2"
+        app_settings += [
+            f"        TARGETED_DEVICE_FAMILY: \"{family}\"",
+            "        # 無いと iOS 27 ではアップロードが ITMS-90870 で弾かれる",
+            "        INFOPLIST_KEY_UILaunchScreen_Generation: YES",
             "        # iPad は 4 方向すべて（リサイズ前提。UIRequiresFullScreen は使わない）",
             "        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: \"UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight\"",
             "        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: \"UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight\"",
@@ -223,8 +233,11 @@ def project_yml(args: argparse.Namespace) -> str:
 
 def package_swift(args: argparse.Namespace) -> str:
     n = args.name
+    # SwiftPM の platform はメジャーまで。27.3 などポイントリリースの API は @available で囲む
     major = args.min_os.split(".")[0]
-    platforms = ", ".join(f".{PLATFORMS[p][1]}(.v{major})" for p in args.platforms)
+    # swift test は Mac の上で macOS 向けに回るので、macOS を対象にしなくても macOS の下限は要る
+    names = list(dict.fromkeys([*(PLATFORMS[p][1] for p in args.platforms), "macOS"]))
+    platforms = ", ".join(f".{name}(.v{major})" for name in names)
     products = ["Domain", "Persistence", "AppIntentsKit", "AppUI"] + (["WidgetUI"] if args.widget else [])
     product_lines = ",\n".join(f'        .library(name: "{p}", targets: ["{p}"])' for p in products)
     targets = [
@@ -261,8 +274,22 @@ let package = Package(
 """
 
 
+def build_commands(args: argparse.Namespace) -> str:
+    n = args.name
+    dests = [PLATFORMS[p][0] for p in args.platforms]
+    lines = [f"xcodebuild build -scheme {n} -destination 'generic/platform={d}'" for d in dests]
+    first = dests[0]
+    lines.append(f"xcodebuild build -scheme {n} -configuration Release -destination 'generic/platform={first}'")
+    sim = {"iOS": "iOS Simulator", "visionOS": "visionOS Simulator", "macOS": "macOS"}[first]
+    lines.append(f"xcodebuild build-for-testing -scheme {n} -destination 'generic/platform={sim}'")
+    return "\n".join(lines)
+
+
 def replacements(args: argparse.Namespace) -> dict[str, str]:
     names = [PLATFORMS[p][2] for p in args.platforms]
+    default_one_liner = (
+        f"{args.display_name} のアプリ。" if args.source_language == "ja" else f"The {args.display_name} app."
+    )
     return {
         "__NAME__": args.name,
         "__DISPLAY_NAME__": args.display_name,
@@ -271,7 +298,8 @@ def replacements(args: argparse.Namespace) -> dict[str, str]:
         "__SOURCE_LANG__": args.source_language,
         "__MIN_OS__": args.min_os,
         "__PLATFORMS_TEXT__": " / ".join(names),
-        "__ONE_LINER__": args.one_liner or f"{args.display_name} のアプリ。",
+        "__ONE_LINER__": args.one_liner or default_one_liner,
+        "__BUILD_COMMANDS__": build_commands(args),
     }
 
 
@@ -279,6 +307,23 @@ def substitute(text: str, table: dict[str, str]) -> str:
     for key, value in table.items():
         text = text.replace(key, value)
     return text
+
+
+def widget_blocks(text: str, keep: bool) -> str:
+    """⟪widget⟫…⟪/widget⟫ をウィジェットありなら印だけ外し、なしなら中身ごと消す"""
+    if keep:
+        return text.replace("⟪widget⟫", "").replace("⟪/widget⟫", "")
+    return re.sub(r"⟪widget⟫.*?⟪/widget⟫", "", text, flags=re.S)
+
+
+def missing_translations(language: str) -> list[str]:
+    if language != "ja":
+        return []
+    strings = json.loads(JA_STRINGS.read_text(encoding="utf-8"))
+    used = set()
+    for src in TEMPLATE_DIR.rglob("*.swift"):
+        used.update(re.findall(r"⟦(.*?)⟧", src.read_text(encoding="utf-8")))
+    return sorted(used - strings.keys())
 
 
 def localize(text: str, language: str) -> str:
@@ -304,7 +349,8 @@ def copy_template(args: argparse.Namespace, out: Path, table: dict[str, str]) ->
         rel = RENAMES.get(rel, rel)
         dest = out / substitute(rel, table)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        text = localize(substitute(src.read_text(encoding="utf-8"), table), args.source_language)
+        text = substitute(src.read_text(encoding="utf-8"), table)
+        text = localize(widget_blocks(text, args.widget), args.source_language)
         dest.write_text(text, encoding="utf-8")
         written.append(dest)
     return written
@@ -315,6 +361,10 @@ def main(argv: list[str]) -> int:
     out = Path(os.path.expanduser(args.out)).resolve()
     if out.exists() and any(out.iterdir()):
         print(f"{out} は空ではない。上書きしないので、空のディレクトリを指定する", file=sys.stderr)
+        return 1
+    missing = missing_translations(args.source_language)
+    if missing:
+        print("strings-ja.json に訳が無い文言がある: " + ", ".join(missing), file=sys.stderr)
         return 1
     out.mkdir(parents=True, exist_ok=True)
 
@@ -332,6 +382,8 @@ def main(argv: list[str]) -> int:
     print("  2. AGENTS.md の「コミット前に回すもの」を全部通す（Debug / Release / build-for-testing / swift test）")
     print("  3. git init → 最初のコミット → GitHub に作ったら `gh repo edit --delete-branch-on-merge`")
     print("  4. Item / AddItemIntent などのサンプルを、app-intents-design-session で決めた Intent に置き換える")
+    if "visionos" in args.platforms:
+        print("  ※ visionOS の組み合わせはまだビルドで確かめていない。アイコン（solidimagestack）とシーンの設定を見直す")
     if not args.team:
         print("  ※ --team が空。AppIntentsTesting など署名が要るテストは動かないので project.yml に入れる")
     return 0
