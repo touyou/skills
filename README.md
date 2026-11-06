@@ -42,7 +42,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `dev-flow-pack` | `touyou-skills` | [`review-followup`](./skills/review-followup/) | 過去に自分がレビューコメントを付けた PR を横断スキャンし、対応をコミット diff で裏取りしてから approve する |
 | `dev-flow-pack` | `touyou-skills` | [`parallel-review-harness`](./skills/parallel-review-harness/) | 任意のレビュー観点を N 個の独立レビューアに割り当てて並列レビュー。実行環境を自己診断して二系統クロス / 単系統並列 / 逐次マルチパスに自動フォールバック |
 | `dev-flow-pack` | `touyou-skills` | [`ticket-implementation`](./skills/ticket-implementation/) | Notion / Linear / GitHub Issue / Plain text のチケットから実装 → テスト → PR 作成まで一気通貫 |
-| `dev-flow-pack` | `touyou-skills` | [`fresh-session-e2e`](./skills/fresh-session-e2e/) | 配布物の初回導入 UX を、/tmp の空ディレクトリ + 別プロセスのゼロコンテキストセッション + 固定再現プロンプトで E2E 検証する |
+| `dev-flow-pack` | `touyou-skills` | [`fresh-session-e2e`](./skills/fresh-session-e2e/) | 配布物の初回導入 UX を、/tmp の空ディレクトリ + 別プロセスのゼロコンテキストセッション + 固定再現プロンプトで E2E 検証する。スキルやルール文書が対象なら、1 段下のモデルに文書だけで完遂できるかを試させる使い勝手テストも行う |
 | `a11y-pack` | `touyou-skills` | [`apple-accessibility`](./skills/apple-accessibility/) | SwiftUI / UIKit のアクセシビリティ実装・レビュー。HIG の Vision / Mobility / Cognitive / Hearing / Speech チェックリストと実装パターン集 |
 | `meta-pack` | `touyou-skills` | [`harness-intake`](./skills/harness-intake/) | 実プロジェクトで磨いた AI エージェントハーネスの汎用パターンを、touyou/skills への GitHub Issue として起票する |
 | `meta-pack` | `touyou-skills` | [`retrospective`](./skills/retrospective/) | セッション失敗と PR 指摘の「繰り返し」を掘り起こし、AGENTS.md / スキル / memory への恒久ルール候補として提示する |
