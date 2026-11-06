@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.6.5"
+  version: "0.7.0"
 ---
 
 # apple-app-setup
@@ -117,7 +117,9 @@ IntentTodo の skills にある `check_intent_copy_localization.py` で漏れを
 
 守ることの要点:
 
-- サブビューは computed property ではなく独立した `View` struct で切る
+- サブビューは computed property ではなく独立した `View` struct で切る。数の多い子（格子のマス）にはクロージャを渡さず、値と Environment の action で
+- 自分の型に `Section` / `Group` / `Label` / `Settings` など SwiftUI の型と同じ名前を付けない（データの型も）
+- `.translationTask` などシステムのモディファイアのクロージャには処理を書かず、package の関数へ渡す
 - 構成（左右分割か 1 カラムか）は `horizontalSizeClass` ＋縦横で 1 か所で決め、子には結果だけを渡す。
   ピクセル幅の閾値で構成を変えない
 - UI の文言は `String` 型のプロパティや引数で運ばない（`LocalizedStringKey` / `LocalizedStringResource`）
@@ -126,6 +128,8 @@ IntentTodo の skills にある `check_intent_copy_localization.py` で漏れを
 - 外周の余白は `contentMargins` に寄せる（Duo は safe area が左右で違う）
 - Duo の折り目は「見る側」と「触る側」を分ける好機。ヒンジ角度を体験にするのは Duo 専用アプリのときだけ
 - 音を鳴らす・録るアプリは、セッションのカテゴリを場面ごとに決めて切り替えを 1 か所に集める（[references/audio.md](references/audio.md)）
+
+画面がひととおりできたら `scripts/swiftui_review.sh Packages App Widget` で見直しの候補を並べる（候補を出すだけで、合否は目で決める）。
 
 ### 6. 検証の仕組みを入れる（[references/verification.md](references/verification.md)）
 

@@ -11,6 +11,13 @@
 
 対象外: `ViewModifier.body(content:)` と、`modifier(...)` を返すだけの View extension。
 
+struct にしても、**親が毎回作り直す値を渡していれば子は毎回描き直される**。比べられないのはクロージャ
+（`let select: (Day) -> Void`）と、body の中で作る `Binding(get:set:)` `[inferred]`。格子のマスのように数が多い子には、
+値（選んでいる id など）だけを渡し、押したときの処理は Environment に置いた action にする。action の型は
+クロージャを比べずに「選んでいるもの・開けるかどうか」だけで `Equatable` にすると、選ぶたびに全部のマスが
+描き直されるのを避けられる（Patchday の `OpenDetailAction`）。効いているかは `Self._printChanges()` か
+Instruments の SwiftUI テンプレートで見る（Patchday ではまだ測っていない）。
+
 レビューでの検出:
 
 ```bash
@@ -113,7 +120,33 @@ grep -rnE '\?\? "[^"]*[ぁ-んァ-ヶ一-龠]|Announcement\("' --include='*.swif
 最初の画面から `apple-accessibility` のチェックリストを当てる。とくに Dynamic Type の AX サイズで
 1 行に並べたボタンが崩れないこと（閉じた Duo の細い画面と同じ壊れ方をする）。
 
-## 8. 実地で踏んだもの
+`.font(.system(size: 9))` のような固定の大きさは Dynamic Type で大きくならない。テキストスタイル（`.caption2`）か、
+`@ScaledMetric(relativeTo:)` で持った大きさを使う。行の高さだけ `@ScaledMetric` にして文字を固定にすると、
+大きい文字の設定で余白だけ広がる。標準のカレンダーの月表示のように、あえて固定するものは理由をコメントに書く。
+
+## 9. SwiftUI の型と同じ名前を付けない
+
+自分の型に `Section` / `Group` / `Label` / `Layout` / `Settings` / `Tab` / `Form` などの名前を付けない。
+同じモジュールでは自分の型が勝ち、`SwiftUI.Section { … }` と書く羽目になる（Patchday では 17 か所）。
+
+- 画面の区分は `AppSection`、まとまりは `ProductGroup` のように、何の区分かを名前に入れる
+- **別のパッケージの型でも起きる**。Domain の `Settings` は、SwiftUI と両方を import した画面のファイルで `Settings` シーンと
+  ぶつかり、`Domain.Settings` と書くことになった（Patchday）。データの型は最初から `AppSettings` などにしておく
+- 修飾付きの `SwiftUI.Section` が増えてきたら、名前がぶつかっている印
+
+## 10. 画面と処理の分け方
+
+- **システムのモディファイアに渡すクロージャは、package の関数へ渡すだけにする**。`.translationTask` / `.fileImporter` /
+  `.dropDestination` / `.task` などは、渡される値（翻訳のセッション、URL）を使う処理をそのまま中に書きたくなるが、
+  そこはテストも Intent からの再利用もできない。Patchday では翻訳の要求の組み立てと結果の組み直しが 40 行ほど画面にあり、
+  `Sendable` でない型への `nonisolated(unsafe)` まで画面に置いていた。`@MainActor` の関数として package に移し、
+  画面は保存と失敗の記録だけにした
+- 設定の画面で `Binding(get: { settings.x }, set: { service.updateSettings { $0.x = $1 } })` を繰り返さない。
+  `WritableKeyPath` を受けて `Binding` を返すヘルパーを Service の extension に 1 つ置く（集合への出し入れのトグルも 1 つ）
+- `@Observable` の Service で、作り直しの重い値（一覧の並び、日ごとの束）を版の番号で作り置くなら、**目印に入力をすべて入れる**。
+  引数で暦（`Calendar`）を受けるのに版の番号だけで作り置いていたので、地域やタイムゾーンを変えても古い区切りが返った（Patchday）
+
+## 11. 実地で踏んだもの
 
 GRAPHICA / Graphica Playground（2026-07〜10）で、ビルドもテストも緑のまま見た目や操作だけが壊れたもの。
 
@@ -134,4 +167,9 @@ GRAPHICA / Graphica Playground（2026-07〜10）で、ビルドもテストも�
   値ベースの `NavigationLink(value:)` + `navigationDestination` は行き先にタップした場所を渡せないので、同じ作品が
   画面に 2 回出る構成では、押した場所と違うところから拡大する。ディープリンクで `NavigationPath` を使うなら、この遷移は別の設計が要る `[measured]`
 - `TextField` のフォーカスは push をまたいで残る。送信時に `@FocusState` を外さないと、戻った瞬間にキーボードが復帰してタブバーを覆う `[measured]`
-- 自分の型に `Layout` という名前を付けない（`enum Layout` が SwiftUI の `Layout` プロトコルを隠し、`SwiftUI.Layout` と書く羽目になる）
+
+## レビューで回す
+
+既存のアプリをこの規約で見直すときは、最初に `scripts/swiftui_review.sh <ディレクトリ>` で候補を並べる。
+grep なので候補を出すだけで、合否は決めない（`LocalizedStringResource` を返すプロパティも「String の候補」に出る）。
+構成の判定・ツールバー・余白・作り置きの目印は grep で拾えないので目で見る。
