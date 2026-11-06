@@ -19,7 +19,7 @@ Toreta / MiaIdolActivity の一覧は 1 回の描画で 4〜5 回、全カード
 
 struct にしても、**親が毎回作り直す値を渡していれば子は毎回描き直される**。比べられないのはクロージャ
 （`let select: (Day) -> Void`）と、body の中で作る `Binding(get:set:)` `[inferred]`。格子のマスのように数が多い子には、
-値（選んでいる id など）だけを渡し、押したときの処理は Environment に置いた action にする。action の型は
+そのマスで変わる値（選ばれているかどうかなど）だけを渡し（選んでいる id を全部のマスに渡すと、選ぶたびに全部が描き直される）、押したときの処理は Environment に置いた action にする。action の型は
 クロージャを比べずに「選んでいるもの・開けるかどうか」だけで `Equatable` にすると、選ぶたびに全部のマスが
 描き直されるのを避けられる（Patchday の `OpenDetailAction`）。効いているかは `Self._printChanges()` か
 Instruments の SwiftUI テンプレートで見る（Patchday ではまだ測っていない）。
@@ -154,7 +154,7 @@ grep -rnE '\?\? "[^"]*[ぁ-んァ-ヶ一-龠]|Announcement\("' --include='*.swif
   そこはテストも Intent からの再利用もできない。Patchday では翻訳の要求の組み立てと結果の組み直しが 40 行ほど画面にあり、
   `Sendable` でない型への `nonisolated(unsafe)` まで画面に置いていた。`@MainActor` の関数として package に移し、
   画面は保存と失敗の記録だけにした
-- 設定の画面で `Binding(get: { settings.x }, set: { service.updateSettings { $0.x = $1 } })` を繰り返さない。
+- 設定の画面で `Binding(get: { settings.x }, set: { value in service.updateSettings { $0.x = value } })` を繰り返さない。
   `WritableKeyPath` を受けて `Binding` を返すヘルパーを Service の extension に 1 つ置く（集合への出し入れのトグルも 1 つ）
 - `@Observable` の Service で、作り直しの重い値（一覧の並び、日ごとの束）を版の番号で作り置くなら、**目印に入力をすべて入れる**。
   引数で暦（`Calendar`）を受けるのに版の番号だけで作り置いていたので、地域やタイムゾーンを変えても古い区切りが返った（Patchday）

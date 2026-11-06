@@ -129,7 +129,7 @@ IntentTodo の skills にある `check_intent_copy_localization.py` で漏れを
 - Duo の折り目は「見る側」と「触る側」を分ける好機。ヒンジ角度を体験にするのは Duo 専用アプリのときだけ
 - 音を鳴らす・録るアプリは、セッションのカテゴリを場面ごとに決めて切り替えを 1 か所に集める（[references/audio.md](references/audio.md)）
 
-画面がひととおりできたら `scripts/swiftui_review.sh Packages App Widget` で見直しの候補を並べる（候補を出すだけで、合否は目で決める）。
+画面がひととおりできたら、アプリのリポジトリのルートで `<このスキルのディレクトリ>/scripts/swiftui_review.sh Packages App Widget` を動かし、見直しの候補を並べる（候補を出すだけで、合否は目で決める）。
 
 ### 6. 検証の仕組みを入れる（[references/verification.md](references/verification.md)）
 

@@ -27,10 +27,10 @@ section "computed property のサブビュー" "1. 独立した View struct に�
 $(swift_grep -A1 '@ViewBuilder' | grep -E '(func|var) ' | grep -v 'var body' | grep -v 'let ')"
 
 section "View に渡しているクロージャ" "1. クロージャは比べられないので、受け取る子は毎回描き直される。値か Environment の action にできないか" \
-  "$(swift_grep '^\s+(let|var) [a-zA-Z]+: (\(@MainActor \))?\(\(?[A-Za-z.?, ]*\)?\) -> (Void|\(\))')"
+  "$(swift_grep '^\s+(let|var) [a-zA-Z]+: (\(?(@MainActor|@Sendable|@escaping) )*\(\(?[A-Za-z.?, ]*\)?\)( async)?( throws)? -> (Void|\(\))')"
 
 section "body の中の Binding(get:set:)" "1・10. 毎回作り直される Binding。繰り返すなら Service 側に Binding を返すヘルパーを置く" \
-  "$(swift_grep 'Binding\(get:|Binding\($' )"
+  "$(swift_grep 'Binding\([[:space:]]*(get:|$)')"
 
 section "SwiftUI の型と同じ名前の自前の型" "9. 名前を変える（SwiftUI.Section のように修飾し始めたら印）" \
   "$(swift_grep '(enum|struct|class|protocol|typealias|actor) (Section|Group|Label|Layout|Settings|Tab|Form|List|Text|Image|Button|Menu|Toggle|Picker|Link|Grid|Table|Alert|Gauge|Window|Scene)\b')
@@ -54,9 +54,9 @@ $(swift_grep -A1 'label: \{ *$' | grep -E '^[^:]+-[0-9]+- *Image\(systemName' )"
 
 section "システムのモディファイアに渡した長いクロージャ" "10. 画面の側は Service や package の関数へ渡すだけにする（25 行を超えるものを出す）" \
   "$(for root in "${roots[@]}"; do
-      find "$root" -name '*.swift' -not -path '*/.build/*' -not -path '*/Tests/*' 2>/dev/null | while read -r file; do
+      find "$root" -name '*.swift' -not -path '*/.build/*' -not -path '*/DerivedData/*' -not -path '*/Tests/*' -not -path '*UITests/*' 2>/dev/null | while read -r file; do
         awk -v f="$file" '
-          /\.(translationTask|task|fileImporter|fileExporter|onDrop|dropDestination|onOpenURL|refreshable|onSubmit)\(/ && /\{ *([a-z_]+ in)? *$/ {
+          /\.(translationTask|task|fileImporter|fileExporter|onDrop|dropDestination|onOpenURL|refreshable|onSubmit)( *\(| *\{)/ && /\{ *([a-z_]+ in)? *$/ {
             start = NR; depth = 0; text = $0
           }
           start {
