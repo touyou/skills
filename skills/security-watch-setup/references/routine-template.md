@@ -88,14 +88,20 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   管理ツールで上げる。OS 同梱のもの（macOS の /usr/bin/ruby など）は上げられないので、その旨だけ書く。
   JDK は入っているものを全部見る。`/usr/libexec/java_home -V`（macOS）は `/Library/Java/JavaVirtualMachines` の
   ものしか出さず、SDKMAN・mise・asdf・jenv で入れた JDK は出てこないので、`{{SCRIPTS}}/detect-env.sh` の
-  `## jdks` と同じ置き場所（`~/.sdkman/candidates/java/*`、`~/.local/share/mise/installs/java/*`、
-  `~/.asdf/installs/java/*`、Homebrew の keg-only の `openjdk@NN`、Android Studio・IntelliJ が同梱する
-  `/Applications/*.app/Contents/jbr`）も見て、シェルごとの `java` がどれを指しているかも書いたうえで、各 JDK の `release` ファイルの `JAVA_VERSION` を
-  同じ配布元・同じメジャーの最新パッチと比べる（Oracle の定例パッチは 1・4・7・10 月の第 3 火曜で、
-  Corretto・Temurin・Zulu などは数日以内に追随する）。SDKMAN の `sdk` はシェル関数なので
-  `bash -c 'source ~/.sdkman/bin/sdkman-init.sh && sdk list java'` のように呼ぶ。古ければ同じメジャーの最新を入れ
-  （`sdk install java <版>-<配布元>` → 既定だったものは `sdk default java <版>-<配布元>`）、古い版は下の
-  「脆弱な旧版の残置」に従う。既定で使われるものが EOL の版なら、修正が出ても届かないので要対応として TODO に書く
+  `## jdks` を毎回実行して使う（SDKMAN・mise・asdf・jenv の保存先は `SDKMAN_DIR`・`MISE_DATA_DIR`・`ASDF_DATA_DIR`・
+  `JENV_ROOT` があればそれを見る。jenv に登録した `/opt` などの JDK も実体を辿って出る。Homebrew の keg-only の
+  `openjdk@NN`、Android Studio・IntelliJ が同梱する `/Applications/*.app/Contents/jbr` も出る）。シェルごとの `java` が
+  どれを指しているかも書いたうえで、各 JDK の版を同じ配布元・同じメジャーの最新と比べる。`JAVA_VERSION` が同じでも
+  配布元が再ビルドを出すことがあるので、`build=`（`JAVA_RUNTIME_VERSION`）と `IMPLEMENTOR_VERSION` まで比べ、
+  これが取れない JDK は「最新か未確認」として書く（最新とみなさない）。Oracle の定例パッチは 1・4・7・10 月の第 3 火曜で、
+  Corretto・Temurin・Zulu などは数日以内に追随する。SDKMAN の `sdk` はシェル関数なので、detect-env.sh の `sdkman:` の
+  パスを使って `bash -c 'source <sdkman のパス>/bin/sdkman-init.sh && sdk list java'` のように呼ぶ。古ければ同じメジャーの
+  最新を入れる。`sdk install` は設定（`sdkman_auto_answer=true` など）によって入れた版を既定にしてしまうので、
+  入れる前の既定（`sdkman_java_default`）を控え、上げたのが既定の JDK なら新しい版を `sdk default java <版>-<配布元>`、
+  そうでなければ控えた既定に `sdk default` で戻す。古い版は下の「脆弱な旧版の残置」に従う。
+  既定の JDK だけでなく、リポの `.sdkmanrc` / `.java-version` / mise・asdf の設定で指定された JDK も見る。指定が古い版や
+  EOL の版を指していれば、既定を上げても `sdk env` などでそのリポでは古い版が使われるので、`{{PR_REPOS}}` に当たるリポは
+  指定を上げる PR を作り、それ以外は参照元・推奨の版（EOL ならサポート中の版への移行先）を連絡文と TODO に書く
 - リポのバージョン指定が実際に効いているか: `.node-version` などを持つリポで
   `{{SHELL_CMD}} 'cd <リポ> && node -v'` のように実行し、指定と一致するか確かめる。一致しないときは、
   指定の版が未インストール（入れてよい）か、管理ツールがそのファイルを読まない設定（mise の
@@ -108,7 +114,8 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   `.node-version` / `.ruby-version` / `.python-version` / `.java-version` / `.sdkmanrc` / mise 等の設定からも、
   グローバル設定（`~/.tool-versions`、`~/.config/mise/config.toml`、SDKMAN の `current`、シェル設定の `JAVA_HOME`）
   からも参照されておらず、Homebrew なら `brew uses --installed <formula>` が空のときだけ削除する（`mise uninstall <tool>@<version>`、
-  `brew cleanup <formula>`、`sdk uninstall java <版>-<配布元>`）。参照されているものは消さず、参照元と一緒にレポートに書く
+  `brew cleanup <formula>`、`sdk uninstall java <版>-<配布元>`）。JDK は `~/.m2/toolchains.xml`（Maven toolchains）と `~/.gradle/gradle.properties` の
+  `org.gradle.java.home` / `org.gradle.java.installations.paths` からの参照も見る。参照されているものは消さず、参照元と一緒にレポートに書く
 - **管理ツールの外にあるもの**: 公式インストーラで入れたランタイム（macOS の `/Library/Frameworks/Python.framework`、
   `/usr/local/bin` の Node の .pkg など）と、Homebrew の Cask 以外で入れたアプリも見る。`which -a` で
   シェルごとに先に来ていないか確かめ、古い版なら TODO に書く。最終起動が古く、サポートの終わった Electron・

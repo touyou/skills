@@ -105,27 +105,36 @@ fi
 echo "## jdks"
 # JDK は入れ方ごとに置き場所が違い、macOS の java_home -V は SDKMAN・mise・asdf などで入れたものを出さない。
 # Android Studio・IntelliJ などが同梱する JBR も、Homebrew の keg-only の openjdk@NN も同様に出ない。
-# 置き場所を直接見て、各 JDK の release ファイル（実行はしない）から版と配布元を出す。current / latest などの別名は除く
-jdk_kv() {
-  [ -f "$1/release" ] || return 0
-  v=$(sed -n 's/^JAVA_VERSION="\(.*\)"/\1/p' "$1/release" | head -n 1)
-  i=$(sed -n 's/^IMPLEMENTOR="\(.*\)"/\1/p' "$1/release" | head -n 1)
-  kv "jdk" "$1 ${v:-?} ${i:-}"
+# 置き場所を直接見て、各 JDK の release ファイル（実行はしない）から版・ビルド・配布元を出す。
+# jenv の versions は登録先へのシンボリックリンクなので実体を辿り、同じ実体は 1 回だけ出す。SDKMAN の current は既定として別に出す
+jdk_rel() { sed -n "s/^$2=\"\(.*\)\"/\1/p" "$1/release" 2>/dev/null | head -n 1; }
+jdk_desc() {
+  # JAVA_VERSION が同じでも配布元の再ビルド（Corretto の 25.0.5.0.9 → 25.0.5.0.10 など）がありうるので、
+  # JAVA_RUNTIME_VERSION と IMPLEMENTOR_VERSION も出す
+  printf '%s %s build=%s %s %s' "$1" "$(jdk_rel "$1" JAVA_VERSION)" "$(jdk_rel "$1" JAVA_RUNTIME_VERSION)" \
+    "$(jdk_rel "$1" IMPLEMENTOR)" "$(jdk_rel "$1" IMPLEMENTOR_VERSION)"
 }
-for d in "${SDKMAN_DIR:-$HOME/.sdkman}"/candidates/java/* \
-         "$HOME"/.local/share/mise/installs/java/* "$HOME"/.asdf/installs/java/* \
-         "$HOME"/.jenv/versions/* \
+sdkman_dir="${SDKMAN_DIR:-$HOME/.sdkman}"
+seen_jdks=" "
+for d in "$sdkman_dir"/candidates/java/* \
+         "${MISE_DATA_DIR:-$HOME/.local/share/mise}"/installs/java/* "${ASDF_DATA_DIR:-$HOME/.asdf}"/installs/java/* \
+         "${JENV_ROOT:-$HOME/.jenv}"/versions/* \
          /Library/Java/JavaVirtualMachines/*/Contents/Home "$HOME"/Library/Java/JavaVirtualMachines/*/Contents/Home \
          /opt/homebrew/opt/openjdk*/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk*/libexec/openjdk.jdk/Contents/Home \
          /Applications/*.app/Contents/jbr/Contents/Home "$HOME"/Applications/*.app/Contents/jbr/Contents/Home \
          /usr/lib/jvm/*; do
-  [ -L "$d" ] && continue
+  case "$d" in */candidates/java/current) continue ;; esac
   [ -d "$d" ] || continue
-  jdk_kv "$d"
+  r=$(cd "$d" 2>/dev/null && pwd -P) || continue
+  [ -f "$r/release" ] || continue
+  case "$seen_jdks" in *" $r "*) continue ;; esac
+  seen_jdks="$seen_jdks$r "
+  if [ "$r" = "$d" ]; then kv jdk "$(jdk_desc "$r")"; else kv jdk "$(jdk_desc "$r") (via $d)"; fi
 done
-sdk_cur="${SDKMAN_DIR:-$HOME/.sdkman}/candidates/java/current"
-[ -L "$sdk_cur" ] && kv sdkman_java_default "$(basename "$(readlink "$sdk_cur")")"
-[ -n "${JAVA_HOME:-}" ] && kv java_home_env "$JAVA_HOME"
+[ -L "$sdkman_dir/candidates/java/current" ] && kv sdkman_java_default "$(basename "$(readlink "$sdkman_dir/candidates/java/current")")"
+if [ -n "${JAVA_HOME:-}" ]; then
+  if [ -f "$JAVA_HOME/release" ]; then kv java_home_env "$(jdk_desc "$JAVA_HOME")"; else kv java_home_env "$JAVA_HOME"; fi
+fi
 
 echo "## tools"
 for t in git docker pnpm yarn npm gh dart flutter xcodebuild; do
