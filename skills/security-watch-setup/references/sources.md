@@ -27,7 +27,7 @@ GitHub Advisory API の `published=>=<日時>` の絞り込みは、`curl -s "ht
 | Python | https://www.python.org/downloads/ 、https://pyfound.blogspot.com/ |
 | PHP | https://www.php.net/ （トップのニュース）、https://www.php.net/ChangeLog-8.php |
 | Go | https://go.dev/doc/devel/release |
-| Java（OpenJDK） | https://openjdk.org/groups/vulnerability/advisories/ |
+| Java（OpenJDK と各配布元） | https://openjdk.org/groups/vulnerability/advisories/ 、https://www.oracle.com/security-alerts/ （Critical Patch Update。1・4・7・10 月の第 3 火曜）、Corretto: https://github.com/corretto/corretto-25/releases （メジャーごとにリポがある）、Temurin: https://adoptium.net/temurin/release-notes/ |
 | Swift / Xcode | https://support.apple.com/en-us/100100 （Apple のセキュリティアップデート一覧に Xcode も載る） |
 | Flutter / Dart | https://github.com/dart-lang/sdk/security/advisories 、https://docs.flutter.dev/release/release-notes |
 

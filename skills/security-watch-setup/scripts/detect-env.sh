@@ -53,15 +53,17 @@ for f in "$HOME/.config/fish/config.fish" "$HOME"/.config/fish/conf.d/*.fish \
          "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.zshenv" \
          "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
   [ -f "$f" ] || continue
-  hits=$(grep -oE 'mise activate|rtx activate|nvm\.sh|asdf\.(sh|fish)|volta|fnm env|rbenv init|pyenv init|brew shellenv|\.bun/bin|direnv hook' "$f" 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
+  hits=$(grep -oE 'mise activate|rtx activate|nvm\.sh|asdf\.(sh|fish)|volta|fnm env|rbenv init|pyenv init|sdkman-init|jenv init|brew shellenv|\.bun/bin|direnv hook' "$f" 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
   [ -n "$hits" ] && kv "$f" "$hits"
 done
 
 echo "## version_managers"
-for t in brew mise asdf volta fnm pyenv rbenv uv pipx; do
+for t in brew mise asdf volta fnm pyenv rbenv jenv uv pipx; do
   have "$t" && kv "$t" "$(first_line "$t" --version)"
 done
 [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ] && kv nvm "${NVM_DIR:-$HOME/.nvm}"
+# SDKMAN の sdk はシェル関数なので command -v では見えない
+[ -s "${SDKMAN_DIR:-$HOME/.sdkman}/bin/sdkman-init.sh" ] && kv sdkman "${SDKMAN_DIR:-$HOME/.sdkman}"
 
 echo "## runtimes"
 # シェルごとに PATH が違うことがあるので、見つかった実体をすべて出す
@@ -99,6 +101,29 @@ if have fish; then
     echo "$t $p $v"
   end' 2>/dev/null </dev/null | while read -r t p v; do kv "fish_$t" "$p $v"; done
 fi
+
+echo "## jdks"
+# JDK は入れ方ごとに置き場所が違い、macOS の java_home -V は SDKMAN・mise・asdf などで入れたものを出さない。
+# 置き場所を直接見て、各 JDK の release ファイル（実行はしない）から版と配布元を出す。current / latest などの別名は除く
+jdk_kv() {
+  [ -f "$1/release" ] || return 0
+  v=$(sed -n 's/^JAVA_VERSION="\(.*\)"/\1/p' "$1/release" | head -n 1)
+  i=$(sed -n 's/^IMPLEMENTOR="\(.*\)"/\1/p' "$1/release" | head -n 1)
+  kv "jdk" "$1 ${v:-?} ${i:-}"
+}
+for d in "${SDKMAN_DIR:-$HOME/.sdkman}"/candidates/java/* \
+         "$HOME"/.local/share/mise/installs/java/* "$HOME"/.asdf/installs/java/* \
+         "$HOME"/.jenv/versions/* \
+         /Library/Java/JavaVirtualMachines/*/Contents/Home "$HOME"/Library/Java/JavaVirtualMachines/*/Contents/Home \
+         /opt/homebrew/opt/openjdk*/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk*/libexec/openjdk.jdk/Contents/Home \
+         /usr/lib/jvm/*; do
+  [ -L "$d" ] && continue
+  [ -d "$d" ] || continue
+  jdk_kv "$d"
+done
+sdk_cur="${SDKMAN_DIR:-$HOME/.sdkman}/candidates/java/current"
+[ -L "$sdk_cur" ] && kv sdkman_java_default "$(basename "$(readlink "$sdk_cur")")"
+[ -n "${JAVA_HOME:-}" ] && kv java_home_env "$JAVA_HOME"
 
 echo "## tools"
 for t in git docker pnpm yarn npm gh dart flutter xcodebuild; do

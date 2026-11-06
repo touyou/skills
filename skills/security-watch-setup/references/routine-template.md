@@ -86,8 +86,15 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   （例: `fish -c 'command -s node; node -v'`、`zsh -ilc 'command -v node; node -v'`、`bash -ilc '...'`）、
   修正版になっているか確かめる。シェルで実体が違うときは全部書く。古ければ、そのランタイムを入れている
   管理ツールで上げる。OS 同梱のもの（macOS の /usr/bin/ruby など）は上げられないので、その旨だけ書く。
-  JDK は `/usr/libexec/java_home -V`（macOS）や管理ツールの一覧で入っているものを全部見る。既定で使われるものが
-  EOL の版なら、修正が出ても届かないので要対応として TODO に書く
+  JDK は入っているものを全部見る。`/usr/libexec/java_home -V`（macOS）は `/Library/Java/JavaVirtualMachines` の
+  ものしか出さず、SDKMAN・mise・asdf・jenv で入れた JDK は出てこないので、`{{SCRIPTS}}/detect-env.sh` の
+  `## jdks` と同じ置き場所（`~/.sdkman/candidates/java/*`、`~/.local/share/mise/installs/java/*`、
+  `~/.asdf/installs/java/*`、Homebrew の `openjdk*`）も見て、各 JDK の `release` ファイルの `JAVA_VERSION` を
+  同じ配布元・同じメジャーの最新パッチと比べる（Oracle の定例パッチは 1・4・7・10 月の第 3 火曜で、
+  Corretto・Temurin・Zulu などは数日以内に追随する）。SDKMAN の `sdk` はシェル関数なので
+  `bash -c 'source ~/.sdkman/bin/sdkman-init.sh && sdk list java'` のように呼ぶ。古ければ同じメジャーの最新を入れ
+  （`sdk install java <版>-<配布元>` → 既定だったものは `sdk default java <版>-<配布元>`）、古い版は下の
+  「脆弱な旧版の残置」に従う。既定で使われるものが EOL の版なら、修正が出ても届かないので要対応として TODO に書く
 - リポのバージョン指定が実際に効いているか: `.node-version` などを持つリポで
   `{{SHELL_CMD}} 'cd <リポ> && node -v'` のように実行し、指定と一致するか確かめる。一致しないときは、
   指定の版が未インストール（入れてよい）か、管理ツールがそのファイルを読まない設定（mise の
@@ -96,10 +103,11 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
 - **修正版が公開済みなのに、管理ツール（Homebrew / mise など）にまだ来ていない**ときは、上げられる版と
   CVE をレポートと TODO に書き、次回以降に再確認する（前回から状況が変わっていなければ一行で済ませる）
 - **脆弱な旧版の残置**: 管理ツールに古い版が並んで残っていないか見る（`mise ls`、`brew list --versions` で
-  複数版が並ぶ formula など）。修正版より古い版で、どのリポの `.node-version` / `.ruby-version` /
-  `.python-version` / mise 等の設定からも、グローバル設定（`~/.tool-versions`、`~/.config/mise/config.toml`）
+  複数版が並ぶ formula、SDKMAN の `~/.sdkman/candidates/<候補>/` に並ぶ版など）。修正版より古い版で、どのリポの
+  `.node-version` / `.ruby-version` / `.python-version` / `.java-version` / `.sdkmanrc` / mise 等の設定からも、
+  グローバル設定（`~/.tool-versions`、`~/.config/mise/config.toml`、SDKMAN の `current`、シェル設定の `JAVA_HOME`）
   からも参照されておらず、Homebrew なら `brew uses --installed <formula>` が空のときだけ削除する（`mise uninstall <tool>@<version>`、
-  `brew cleanup <formula>`）。参照されているものは消さず、参照元と一緒にレポートに書く
+  `brew cleanup <formula>`、`sdk uninstall java <版>-<配布元>`）。参照されているものは消さず、参照元と一緒にレポートに書く
 - **管理ツールの外にあるもの**: 公式インストーラで入れたランタイム（macOS の `/Library/Frameworks/Python.framework`、
   `/usr/local/bin` の Node の .pkg など）と、Homebrew の Cask 以外で入れたアプリも見る。`which -a` で
   シェルごとに先に来ていないか確かめ、古い版なら TODO に書く。最終起動が古く、サポートの終わった Electron・
