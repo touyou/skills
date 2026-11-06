@@ -191,6 +191,8 @@ AI に書かせた SwiftUI は、画面の見た目は合っていても、コ�
 | `.onTapGesture` + `.accessibilityAddTraits(.isButton)` | 押せるタイル | タッチでしか押せない。キーボード（Full Keyboard Access・Mac の Designed for iPad）やポインタのホバーではボタンにならない | `Button { … } label: { … }.buttonStyle(.plain)`。押した位置が要るとき（絵の中の月など）だけ gesture |
 | 絵の座標で当たりを判定する `onTapGesture(coordinateSpace:)` | 月を押すと雑学 | VoiceOver からは押す手段が無い | 同じ位置に見えない要素を置き、`accessibilityAction` を付ける（月屏風） |
 | `accessibilityElement(children: .ignore)` で 1 つにまとめたタイル | 中に「−」ボタンが見える | 中のボタンは VoiceOver から消える | 消えた操作を `accessibilityActions { … }` で足す |
+| `Button` に `.accessibilityElement(children: .ignore)` + `.accessibilityAddTraits(.isButton)` | 押せるタイル | 新しい要素を作るので Button の役割と操作が捨てられ、`.isButton` を描き足しているだけ。ダブルタップは要素の中心を叩くことになり、中心に別のボタンがあればそれが押される | ラベルと値は Button に直接付ける。`onTapGesture` から Button に替えたときに残りやすい |
+| Button のラベルの中に別の Button（タイルの中の「−」） | 押せる場所が 2 つ | 内側が優先されるが、キーボードとポインタではタイル全体が 1 つの的になり、VoiceOver では内側に届かない | 内側の操作を `accessibilityActions` にも出す。実機で内側を押したとき外側が動かないことを確かめる |
 | ラベルが `Image(systemName:)` だけのボタン | ＋ の記号 | VoiceOver は「plus」と読む。ツールバーがあふれたときのメニューにも題名が無い | `Label("追加", systemImage: "plus")`。ツールバーでは記号だけで表示される |
 | `.alert(isPresented: .constant(error != nil))` | エラーが出て閉じられる | 閉じても値を書き戻せない。ボタンの処理で消しているから動いているだけ | `Binding(get:set:)` で `nil` に戻す、または `item` 版のモディファイア |
 | `ForEach(Array(xs.enumerated()), id: \.offset)` に `onDelete` / `onMove` | 一覧が並ぶ | 位置が識別子なので、2 行目を消すと最後の行が消えるアニメーションになり、行の状態が隣にずれる | 要素に安定した id を持たせる（同じカードが 2 回並ぶ配列なら、記録ごとの UUID） |
