@@ -85,17 +85,17 @@ echo "## runtimes_by_shell"
 # 定期実行はユーザーの対話シェルとは別の PATH で動くことが多い。各シェルの設定を読んだ状態で
 # どの実体・バージョンが選ばれるかを出す（mise / nvm の shim はここでしか見えないことがある）
 # 遅延読み込み（zsh-nvm の NVM_LAZY_LOAD など）では command -v がパスでなく関数名を返すので function と出す
-probe='for t in node bun deno ruby python3 go php; do p=$(command -v $t 2>/dev/null) || continue; case $p in /*) ;; *) p=function ;; esac; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
+probe='for t in node bun deno ruby python3 go php java; do p=$(command -v $t 2>/dev/null) || continue; case $p in /*) ;; *) p=function ;; esac; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
 # mise activate / nvm は .zshrc・.bashrc に書くことが多く、-l だけでは読まれない（Debian 系の .bashrc は
 # 非対話なら即 return する）ので -i も付ける。対話起動で出る余計な出力は、ランタイム名で始まる行だけ拾って除く
 to=""; have timeout && to="timeout 20"; have gtimeout && to="gtimeout 20"
 for s in zsh bash; do
   have "$s" || continue
-  $to "$s" -ilc "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php) (/|function)' \
+  $to "$s" -ilc "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php|java) (/|function)' \
     | while read -r t p v; do kv "${s}_$t" "$p $v"; done
 done
 if have fish; then
-  fish -c 'for t in node bun deno ruby python3 go php
+  fish -c 'for t in node bun deno ruby python3 go php java
     set p (command -s $t); or continue
     if test $t = go; set v (go version 2>/dev/null); else; set v ($t --version 2>/dev/null | head -n 1); end
     echo "$t $p $v"

@@ -44,7 +44,7 @@ LOCKFILE_RE = re.compile(
 )
 RUNTIME_FILE_RE = re.compile(
     r"(^|/)(\.node-version|\.nvmrc|\.ruby-version|\.python-version|\.tool-versions"
-    r"|mise\.toml|\.mise\.toml|\.bun-version|\.java-version|\.fvmrc)$"
+    r"|mise\.toml|\.mise\.toml|\.bun-version|\.java-version|\.sdkmanrc|\.fvmrc)$"
 )
 DOCKERFILE_RE = re.compile(r"(^|/)(Dockerfile[^/]*|[^/]*\.Dockerfile)$")
 WORKFLOW_RE = re.compile(r"(^|/)\.github/workflows/[^/]+\.ya?ml$")
