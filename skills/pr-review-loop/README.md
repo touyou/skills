@@ -14,21 +14,9 @@ review loop
 /pr-review-loop 1234 --auto-fix       # 他人 PR でも編集を強制したい場合
 ```
 
-## モード切替
+## 何をするか
 
-| モード | 用途 | 既定で選ばれる条件 |
-|---|---|---|
-| **auto-fix** | 指摘を自動修正して push まで | PR author が自分 (= `gh api user` の login) |
-| **comment-only** | インラインコメント付きで Pull Request Review を投稿。コードは編集しない | PR author が他人 / bot |
-
-投稿・push は依頼で許可された範囲だけ行います。レビュー結果だけの依頼ならローカルに返します。判定表の正本は [SKILL.md](SKILL.md)、投稿方法は [references/github-review.md](references/github-review.md) にあります。未確認の観点や重要な懸念が残る場合は APPROVE しません。
-
-## 鉄則
-
-- 他人 / bot の PR に勝手に commit を乗せない (既定 auto-fix は author が自分のときだけ)
-- 同一指摘が 2 回失敗したら Discussion に格上げ → 無限ループを構造的に防ぐ
-- push 失敗時に `--force` は使わない。rebase 競合は `git rebase --abort` でクリーンに戻す
-- resolved は現在コードで解消を確認して再投稿を避ける。未修正・再発は隠さない
+自分の PR では指摘を直して push まで進め、他人や bot の PR ではインラインコメント付きのレビューを投稿するだけにとどめる。どちらにするかは明示指定があればそれに従う。投稿・push は依頼で許可された範囲だけで、同じ問題への修正試行と全体の周回には上限がある。
 
 ## プロジェクト固有設定 (`.claude/pr-review-loop.local.md`)
 
