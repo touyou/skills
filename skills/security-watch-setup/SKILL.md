@@ -4,7 +4,7 @@ description: 自分の PC と手元のリポジトリに対して、新しく公
 license: MIT
 metadata:
   author: touyou
-  version: "0.4.1"
+  version: "0.5.0"
 ---
 
 # security-watch-setup
@@ -37,7 +37,7 @@ bash <このスキルのディレクトリ>/scripts/detect-env.sh [リポジト�
 ```
 
 読み取りだけのスクリプト。OS・シェル・使っているエージェントと定期実行の仕組み・
-バージョン管理ツール・**シェルごとに選ばれるランタイムの実体**・gh の認証と所属 org・
+バージョン管理ツール・**シェルごとに選ばれるランタイムの実体**・入っている JDK すべて（SDKMAN・mise なども）・gh の認証と所属 org・
 リポジトリの置き場所・ロックファイルの種類と件数を出す。置き場所を渡さなければ
 `~/Developer`・`~/src`・`~/ghq` などの定番を探す。
 

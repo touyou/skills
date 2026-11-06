@@ -53,15 +53,17 @@ for f in "$HOME/.config/fish/config.fish" "$HOME"/.config/fish/conf.d/*.fish \
          "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.zshenv" \
          "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
   [ -f "$f" ] || continue
-  hits=$(grep -oE 'mise activate|rtx activate|nvm\.sh|asdf\.(sh|fish)|volta|fnm env|rbenv init|pyenv init|brew shellenv|\.bun/bin|direnv hook' "$f" 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
+  hits=$(grep -oE 'mise activate|rtx activate|nvm\.sh|asdf\.(sh|fish)|volta|fnm env|rbenv init|pyenv init|sdkman-init|jenv init|brew shellenv|\.bun/bin|direnv hook' "$f" 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
   [ -n "$hits" ] && kv "$f" "$hits"
 done
 
 echo "## version_managers"
-for t in brew mise asdf volta fnm pyenv rbenv uv pipx; do
+for t in brew mise asdf volta fnm pyenv rbenv jenv uv pipx; do
   have "$t" && kv "$t" "$(first_line "$t" --version)"
 done
 [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ] && kv nvm "${NVM_DIR:-$HOME/.nvm}"
+# SDKMAN の sdk はシェル関数なので command -v では見えない
+[ -s "${SDKMAN_DIR:-$HOME/.sdkman}/bin/sdkman-init.sh" ] && kv sdkman "${SDKMAN_DIR:-$HOME/.sdkman}"
 
 echo "## runtimes"
 # シェルごとに PATH が違うことがあるので、見つかった実体をすべて出す
@@ -83,21 +85,55 @@ echo "## runtimes_by_shell"
 # 定期実行はユーザーの対話シェルとは別の PATH で動くことが多い。各シェルの設定を読んだ状態で
 # どの実体・バージョンが選ばれるかを出す（mise / nvm の shim はここでしか見えないことがある）
 # 遅延読み込み（zsh-nvm の NVM_LAZY_LOAD など）では command -v がパスでなく関数名を返すので function と出す
-probe='for t in node bun deno ruby python3 go php; do p=$(command -v $t 2>/dev/null) || continue; case $p in /*) ;; *) p=function ;; esac; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
+probe='for t in node bun deno ruby python3 go php java; do p=$(command -v $t 2>/dev/null) || continue; case $p in /*) ;; *) p=function ;; esac; v=$($t --version 2>/dev/null | head -n 1); [ $t = go ] && v=$(go version 2>/dev/null); echo "$t $p $v"; done'
 # mise activate / nvm は .zshrc・.bashrc に書くことが多く、-l だけでは読まれない（Debian 系の .bashrc は
 # 非対話なら即 return する）ので -i も付ける。対話起動で出る余計な出力は、ランタイム名で始まる行だけ拾って除く
 to=""; have timeout && to="timeout 20"; have gtimeout && to="gtimeout 20"
 for s in zsh bash; do
   have "$s" || continue
-  $to "$s" -ilc "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php) (/|function)' \
+  $to "$s" -ilc "$probe" 2>/dev/null </dev/null | grep -E '^(node|bun|deno|ruby|python3|go|php|java) (/|function)' \
     | while read -r t p v; do kv "${s}_$t" "$p $v"; done
 done
 if have fish; then
-  fish -c 'for t in node bun deno ruby python3 go php
+  fish -c 'for t in node bun deno ruby python3 go php java
     set p (command -s $t); or continue
     if test $t = go; set v (go version 2>/dev/null); else; set v ($t --version 2>/dev/null | head -n 1); end
     echo "$t $p $v"
   end' 2>/dev/null </dev/null | while read -r t p v; do kv "fish_$t" "$p $v"; done
+fi
+
+echo "## jdks"
+# JDK は入れ方ごとに置き場所が違い、macOS の java_home -V は SDKMAN・mise・asdf などで入れたものを出さない。
+# Android Studio・IntelliJ などが同梱する JBR も、Homebrew の keg-only の openjdk@NN も同様に出ない。
+# 置き場所を直接見て、各 JDK の release ファイル（実行はしない）から版・ビルド・配布元を出す。
+# jenv の versions は登録先へのシンボリックリンクなので実体を辿り、同じ実体は 1 回だけ出す。SDKMAN の current は既定として別に出す
+jdk_rel() { sed -n "s/^$2=\"\(.*\)\"/\1/p" "$1/release" 2>/dev/null | head -n 1; }
+jdk_desc() {
+  # JAVA_VERSION が同じでも配布元の再ビルド（Corretto の 25.0.5.0.9 → 25.0.5.0.10 など）がありうるので、
+  # JAVA_RUNTIME_VERSION と IMPLEMENTOR_VERSION も出す
+  printf '%s %s build=%s %s %s' "$1" "$(jdk_rel "$1" JAVA_VERSION)" "$(jdk_rel "$1" JAVA_RUNTIME_VERSION)" \
+    "$(jdk_rel "$1" IMPLEMENTOR)" "$(jdk_rel "$1" IMPLEMENTOR_VERSION)"
+}
+sdkman_dir="${SDKMAN_DIR:-$HOME/.sdkman}"
+seen_jdks=" "
+for d in "$sdkman_dir"/candidates/java/* \
+         "${MISE_DATA_DIR:-$HOME/.local/share/mise}"/installs/java/* "${ASDF_DATA_DIR:-$HOME/.asdf}"/installs/java/* \
+         "${JENV_ROOT:-$HOME/.jenv}"/versions/* \
+         /Library/Java/JavaVirtualMachines/*/Contents/Home "$HOME"/Library/Java/JavaVirtualMachines/*/Contents/Home \
+         /opt/homebrew/opt/openjdk*/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk*/libexec/openjdk.jdk/Contents/Home \
+         /Applications/*.app/Contents/jbr/Contents/Home "$HOME"/Applications/*.app/Contents/jbr/Contents/Home \
+         /usr/lib/jvm/*; do
+  case "$d" in */candidates/java/current) continue ;; esac
+  [ -d "$d" ] || continue
+  r=$(cd "$d" 2>/dev/null && pwd -P) || continue
+  [ -f "$r/release" ] || continue
+  case "$seen_jdks" in *" $r "*) continue ;; esac
+  seen_jdks="$seen_jdks$r "
+  if [ "$r" = "$d" ]; then kv jdk "$(jdk_desc "$r")"; else kv jdk "$(jdk_desc "$r") (via $d)"; fi
+done
+[ -L "$sdkman_dir/candidates/java/current" ] && kv sdkman_java_default "$(basename "$(readlink "$sdkman_dir/candidates/java/current")")"
+if [ -n "${JAVA_HOME:-}" ]; then
+  if [ -f "$JAVA_HOME/release" ]; then kv java_home_env "$(jdk_desc "$JAVA_HOME")"; else kv java_home_env "$JAVA_HOME"; fi
 fi
 
 echo "## tools"
