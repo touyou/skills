@@ -14,6 +14,10 @@ GitHub Advisory API の `published=>=<日時>` の絞り込みは、`curl -s "ht
   - `https://api.github.com/advisories?per_page=100&type=malware&published=>=<前回時刻 UTC ISO8601>`
   - `&ecosystem=npm` などで絞れる。100 件を超えたら `&page=2` 以降も見る。`gh api` 経由なら認証付きでレート制限に余裕がある
 - CISA KEV（実際に悪用されている脆弱性）: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+- Cloudflare Radar の Zero Wire（インターネットに出ているソフトの重大な CVE の解説。「Needs attention」のカードを見る）: https://radar.cloudflare.com/security/zero-wire
+  - 機械で読めるフィードや API は無い（2026-11-06 時点）。ページを読み、カードの最終確認日が前回以降のものだけ拾う
+  - 全 CVE の一覧ではなく、対応を急ぐべきものを選んでいる。Cloudflare の WAF で観測した攻撃の試行の推移が付くので、「実際に狙われているか」の材料になる（侵害の件数ではない）
+  - 新しいカードは Cloudflare のブログでも告知される。https://blog.cloudflare.com/rss/ の `<category>` が `Vulnerabilities` か `CVE` の記事を見る
 - ニュース（WebSearch で直近 48 時間）: The Hacker News、BleepingComputer、StepSecurity、Socket、Aikido、Snyk の各ブログ
 
 ## ランタイム
