@@ -89,7 +89,8 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   JDK は入っているものを全部見る。`/usr/libexec/java_home -V`（macOS）は `/Library/Java/JavaVirtualMachines` の
   ものしか出さず、SDKMAN・mise・asdf・jenv で入れた JDK は出てこないので、`{{SCRIPTS}}/detect-env.sh` の
   `## jdks` と同じ置き場所（`~/.sdkman/candidates/java/*`、`~/.local/share/mise/installs/java/*`、
-  `~/.asdf/installs/java/*`、Homebrew の `openjdk*`）も見て、各 JDK の `release` ファイルの `JAVA_VERSION` を
+  `~/.asdf/installs/java/*`、Homebrew の keg-only の `openjdk@NN`、Android Studio・IntelliJ が同梱する
+  `/Applications/*.app/Contents/jbr`）も見て、シェルごとの `java` がどれを指しているかも書いたうえで、各 JDK の `release` ファイルの `JAVA_VERSION` を
   同じ配布元・同じメジャーの最新パッチと比べる（Oracle の定例パッチは 1・4・7・10 月の第 3 火曜で、
   Corretto・Temurin・Zulu などは数日以内に追随する）。SDKMAN の `sdk` はシェル関数なので
   `bash -c 'source ~/.sdkman/bin/sdkman-init.sh && sdk list java'` のように呼ぶ。古ければ同じメジャーの最新を入れ
@@ -153,7 +154,10 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
     `/Library/Keychains/System.keychain`・`~/Library/Keychains/login.keychain-db` のそれぞれに対して実行し、
     `security dump-trust-settings -d` と `security dump-trust-settings`（ユーザーの設定）で不信任の設定があるか見る
   - JDK: 2 章で見つけた JDK ごとに `"<JDK のホーム>/bin/keytool" -list -v -cacerts -storepass changeit` を実行し、
-    `SHA256:` の行で照合する（`-storepass` を付けないとパスワードを聞かれて止まる。PATH の keytool は既定の JDK しか見ない）
+    `SHA256:` の行で照合する（`-storepass` を付けないとパスワードを聞かれて止まる。PATH の keytool は既定の JDK しか見ない。
+    別名や CA 名の grep では取りこぼす: eMudhra は別名が `emsign...` だった）。JDK が増えた・更新された回は、新しい告知がなくても
+    過去の不信任 CA と照合し直す。JDK 側で不信任にしているかは `<JDK のホーム>/conf/security/java.security` の
+    `jdk.security.caDistrustPolicies` と `lib/security/blocked.certs` で見る
   - macOS の `/etc/ssl/cert.pem`: キーチェーンとは別の PEM の束で、`/usr/bin/curl`・`/usr/bin/git`・`/usr/bin/python3` や、
     mise などで入れた Python の一部が使う。キーチェーンで不信任にしても、ここに残っていれば信頼される。
     一時ディレクトリで `BEGIN CERTIFICATE` ごとに 1 枚ずつのファイルへ分け（awk など）、各ファイルに

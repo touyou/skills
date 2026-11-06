@@ -104,6 +104,7 @@ fi
 
 echo "## jdks"
 # JDK は入れ方ごとに置き場所が違い、macOS の java_home -V は SDKMAN・mise・asdf などで入れたものを出さない。
+# Android Studio・IntelliJ などが同梱する JBR も、Homebrew の keg-only の openjdk@NN も同様に出ない。
 # 置き場所を直接見て、各 JDK の release ファイル（実行はしない）から版と配布元を出す。current / latest などの別名は除く
 jdk_kv() {
   [ -f "$1/release" ] || return 0
@@ -116,6 +117,7 @@ for d in "${SDKMAN_DIR:-$HOME/.sdkman}"/candidates/java/* \
          "$HOME"/.jenv/versions/* \
          /Library/Java/JavaVirtualMachines/*/Contents/Home "$HOME"/Library/Java/JavaVirtualMachines/*/Contents/Home \
          /opt/homebrew/opt/openjdk*/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk*/libexec/openjdk.jdk/Contents/Home \
+         /Applications/*.app/Contents/jbr/Contents/Home "$HOME"/Applications/*.app/Contents/jbr/Contents/Home \
          /usr/lib/jvm/*; do
   [ -L "$d" ] && continue
   [ -d "$d" ] || continue
