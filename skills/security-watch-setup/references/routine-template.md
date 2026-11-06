@@ -99,6 +99,8 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   最新を入れる。`sdk install` は設定（`sdkman_auto_answer=true` など）によって入れた版を既定にしてしまうので、
   入れる前の既定（`sdkman_java_default`）を控え、上げたのが既定の JDK なら新しい版を `sdk default java <版>-<配布元>`、
   そうでなければ控えた既定に `sdk default` で戻す。古い版は下の「脆弱な旧版の残置」に従う。
+  アプリが同梱する JBR はアプリの更新でしか上がらないので、古ければ「<アプリ> の更新待ち（JBR <版>、OpenJDK の最新 <版>）」として
+  TODO の保留に書く。Gradle が既定でその JBR を使うので、待つ間はアプリの Gradle JDK を最新の JDK に向ける手もあると添える。
   既定の JDK だけでなく、リポの `.sdkmanrc` / `.java-version` / mise・asdf の設定で指定された JDK も見る。指定が古い版や
   EOL の版を指していれば、既定を上げても `sdk env` などでそのリポでは古い版が使われるので、`{{PR_REPOS}}` に当たるリポは
   指定を上げる PR を作り、それ以外は参照元・推奨の版（EOL ならサポート中の版への移行先）を連絡文と TODO に書く
@@ -176,7 +178,9 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   - 告知（OpenJDK・Mozilla などの一覧）に載っている CA で、**ルートの削除・全面の不信任**で、発効日を過ぎている。
     「ある日付以降に発行された証明書だけ不信任」の形は、まだ信頼されている証明書まで切れるので外さず、レポートに書く。
     載っていない近縁の CA も残して、レポートに書く
-  - ユーザー領域に入れた JDK の cacerts（sudo が要らず、keytool で操作できるもの）。バックアップを `{{REPORT_DIR}}/` に取ってから
+  - ユーザー領域に入れた JDK の cacerts（sudo が要らず、keytool で操作できるもの）。ただし `.app` の中の JDK
+    （Android Studio・IntelliJ の `Contents/jbr` など）は、`~/Applications` にあって書き込めても外さない。アプリの署名が壊れ、
+    アプリの更新でも戻るので、報告と TODO だけにする。バックアップを `{{REPORT_DIR}}/` に取ってから
     `"<JDK のホーム>/bin/keytool" -delete -alias <別名> -cacerts -storepass changeit` で外す。外した後、よく使う接続先
     （Maven Central など）に TLS でつながるか確かめ、つながらなければバックアップから戻して TODO に書く
   
