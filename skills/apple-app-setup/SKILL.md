@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 # apple-app-setup
@@ -26,6 +26,7 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | App Intents の API の罠と新 API | Apple の `app-intents-specialist` / `app-intents-whats-new-27` / `siri-app-integration` / `siri-evaluations`（Xcode 同梱） |
 | SwiftUI の書き方 | Apple の `swiftui-specialist` / `swiftui-whats-new-27`（Xcode 同梱）＋ [references/swiftui-rules.md](references/swiftui-rules.md) |
 | 画面サイズの変化・Duo | Apple の `app-resizability`（UIKit の置き換え中心）＋ [references/iphone-duo.md](references/iphone-duo.md)（SwiftUI と実地の落とし穴） |
+| 公開フィードの取り込み | [references/public-feeds.md](references/public-feeds.md)（全件配布と新着の窓の扱い分け、id、暦日、条件付き取得） |
 | 音の再生・録音 | [references/audio.md](references/audio.md)（セッションのカテゴリ、Intent からの再生、押した瞬間の遅れ、録音、AVAudioEngine の形式） |
 | macOS / visionOS へ広げる | [references/macos-visionos.md](references/macos-visionos.md)（シーン・メニュー・サンドボックス・アイコン） |
 | ローカライズの設定と検査 | IntentTodo の `app-intents-localization` ＋ [references/localization.md](references/localization.md) |

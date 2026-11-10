@@ -32,7 +32,7 @@ Vision Pro / Mac × ja / en）を作ったときに踏んだもの `[measured]`�
 
 | 対象 | 撮り方 | 踏んだもの |
 |---|---|---|
-| iPhone / iPad | XCUITest の `XCUIScreen.main.screenshot()` | 6.9" と 13" の寸法がそのまま出る。通知許可のダイアログはフィクスチャ実行時は要求ごと飛ばす |
+| iPhone / iPad | XCUITest の `XCUIScreen.main.screenshot()` | 6.9" と 13" の寸法がそのまま出る。通知許可のダイアログはフィクスチャ実行時は要求ごと飛ばす。iPad の上のタブは `tabBars` として出てこないので、タブの名前のボタンで押す。iPad のシミュレータでは Form の中の複数行の入力欄にタップでフォーカスが入らなかった（その画面は入力なしで撮るか、フィクスチャで値を入れておく）。iPad を横向きで撮ると `app.screenshot()` の向きと切り抜きが崩れるので、`XCUIScreen.main.screenshot()` で撮って仕上げで回す（`store-screenshot-composer` の `rotate_input`）。Patchday、2026-11 |
 | iPhone Duo | XCUITest（`simctl io screenshot` は真っ黒） | → [iphone-duo.md](iphone-duo.md) |
 | Apple Watch | XCUITest | 行の中のボタンを index で取ると、ナビゲーションではなく完了のチェックを押していた。identifier で選ぶ |
 | Vision Pro | **`xcrun simctl io <device> screenshot`** | XCUITest は 1x1 か 1280x720 の切り抜きしか返さない。simctl なら部屋ごと 3840x2160（ASC の寸法）。タップできないので画面は起動引数で選ぶ。`simctl openurl` は「開きますか?」の確認が写るので使わない。前の実行のウィンドウが空間に残るので、撮影専用のシミュレータを用意し、撮る前に erase する（アプリもデータも消える） |
@@ -43,6 +43,12 @@ macOS の UI テストは 2 つ準備が要る:
 - UI テストのターゲットの `SUPPORTED_PLATFORMS` に `macosx` を入れる。無いと `Cannot test target on My Mac`。
   Intento ではいつの間にか欠けていて、Mac のスクショだけ古いまま止まっていた
 - 実行時に認証のダイアログが出る（`認証はキャンセルされました` で落ちる）。手元で承認してもらうしかない
+
+エージェントが Mac を遠隔で動かしているときは、UI テストに automation mode の許可、ウィンドウの撮影に画面収録の許可が要り、
+どちらも本人の操作なしには通らない `[measured]`（Patchday、2026-11）。そのときの形:
+
+- 画面を起動引数（DEBUG 限定）で決めて起動し、`screencapture -l <ウィンドウ ID>` で撮るスクリプトを用意して、本人に 1 回流してもらう（画面収録の許可は要る）
+- 見た目を確かめるだけなら、Xcode の MCP の `RenderPreview` は画面収録の許可なしで描ける。決まったデータを返すプレビュー用の Service を用意しておくと速い
 
 ## 確かめ方
 
