@@ -32,7 +32,7 @@ touyou のアプリで紹介ページ（touyou.dev）があるものは Web の�
 
 ## 素のスクショに枠と見出しを付ける
 
-1. **素のスクショの置き場を確かめる**。撮影スクリプトがあるリポジトリ（例: `<アプリのリポ>/scripts/capture_screenshots.sh` の出力 `Screenshots/<platform>/<locale>/`）はそれを使う。無ければ先に撮影を用意する（このスキルの範囲外）
+1. **素のスクショの置き場を確かめる**。撮影スクリプトがあるリポジトリ（例: `<アプリのリポ>/scripts/capture_screenshots.sh` の出力 `Screenshots/<platform>/<locale>/`）はそれを使う。無ければ先に撮影を用意する（このスキルの範囲外。Apple のアプリの撮り方と落とし穴は apple-app-setup の `references/screenshot-capture.md`）。横向きで撮った素のスクショは `rotate_input` で回して使う
 2. **設定ファイルを書く**。アプリのリポジトリの `<アプリのリポ>/scripts/store_frames.json` などに置き、パスはその設定ファイルからの相対で書く。雛形は [examples/store_frames.json](examples/store_frames.json)、全項目は [references/config.md](references/config.md)
 3. **見出しを決める**。1 枚 1 メッセージ。画面の説明（「一覧画面」）ではなく、使う人が得るもの（「話しかけるだけで片づく」）を書く。ストアの説明文・プロモーションテキストから拾うと文言がぶれない。ja は 14 字前後、en は 5 語前後に収まると 2 行に入る
 4. **レイアウトだけ先に確認する**: `python3 <このスキルのフォルダ>/scripts/compose.py <config> --placeholder --sheet`。素のスクショが無くても枠と文字の収まりが見られる。スクリプトはアプリのリポジトリにコピーせず、このスキルの中のものを呼ぶ
