@@ -37,8 +37,8 @@ allow_dependency_only_merges: true   # Dependabot 等の lockfile-only PR を自
 
 各キーの意味:
 
-- **`bot_authors`** — `gh pr view --json author --jq '.author.login'` の値と完全一致で判定。未設定時のデフォルトは[SKILL.md の bot 表](../SKILL.md) のすべての login。
-- **`branch_prefixes`** — このリストのいずれかで始まるブランチ名の PR のみ対象。未設定時は `chore/codex-refactor-`, `copilot/`, `coderabbit/`, `dependabot/`, `renovate/`。
+- **`bot_authors`** — `gh pr view --json author --jq '.author.login'` の値と完全一致で判定。未設定時は [SKILL.md の「対象にする bot」](../SKILL.md) のとおり、open PR の author から bot を列挙して決める。
+- **`branch_prefixes`** — このリストのいずれかで始まるブランチ名の PR のみ対象。未設定時は、bot の author が実際に使っているブランチ prefix を open PR から拾う。
 - **`exclude_branch_prefixes`** — `release/` / `backport/` 等、bot 由来でも対象外にしたい prefix。
 - **`test_command` / `format_command`** — 未設定なら `package.json` の `scripts.test` / `Makefile` の `test` ターゲット / `pubspec.yaml` 周辺 (`flutter test` or `fvm flutter test`) を自動推測。
 - **`merge_method: auto`** — `gh api repos/{owner}/{repo}` の `allow_squash_merge` / `allow_merge_commit` / `allow_rebase_merge` を読んで、squash → merge → rebase の優先順で有効なものを使う。
