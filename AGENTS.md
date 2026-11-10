@@ -14,7 +14,7 @@ skills/                       ← 単一のソース。スキル本体はすべ�
     ├── SKILL.md              ← entry point（必須）
     ├── references/           ← 必要なときだけ読む正本（設定の完全版・テンプレート・チェックリスト）
     ├── scripts/              ← スキルが呼ぶスクリプト
-    └── assets/ examples/     ← 書き出すひな形・設定例
+    └── assets/ examples/ evals/ ← 書き出すひな形・設定例・eval
 
 .claude-plugin/
 └── marketplace.json          ← Claude Code 用 (目的別の plugin に分離)
@@ -92,7 +92,7 @@ SKILL.md・references・AGENTS.md のように、モデルが読んで従う文�
 - **ただし、無いと行き詰まる具体は消さない**。巨大なファイルの絞り込み方のような判断のヒントがこれに当たる。消す前に「これが無かったらモデルはどう動くか」を想像し、詰まるなら残す
 - **方針を書き、手段は環境に任せる**。CLI しか無い環境と MCP しか無い環境の両方で成り立つよう、コマンドは手順として強制せず例として示す。進め方が状況で分かれる作業に特定の場面の例を 1 つだけ置かない（モデルが判断をやめて例に倣う）
 - **いずれ嘘になることを書かない**。外部ツールの出力の実例や、外部の実装に由来する列挙値（対応する拡張子・API の enum など）は貼らず、判定の原理と大分類を書く。SDK のように実測した事実を書くなら、確かめた日付と確かめ方を添える。実行時に確定できない値を記録項目や判断の条件にしない
-- **README はルートの 1 枚だけ**。人が導入を決めるための文書で、スキルごとに 1〜2 文（何をするスキルか・いつ使うか）を置く。スキルのディレクトリには README を置かない（SKILL.md の description と二重管理になる）。モデルが従う手順・判定表・鉄則は SKILL.md（と references）だけに書く
+- **README はルートの 1 枚だけ**。人が導入を決めるための文書で、スキルごとに 1〜2 文（何をするスキルか・いつ使うか）と、スキルの選び方・設定の置き場所を置く。スキルのディレクトリには README を置かない（SKILL.md の description と二重管理になる）。モデルが従う手順・判定表・鉄則は SKILL.md（と references）だけに書く
 - **経緯と却下した案は commit message と PR に書く**。文書には現在の形だけを残す
 - **直すときは継ぎ足さない**。足す内容が最初からあったらどう書いたかを考え、該当する節に溶かす。構成を大きく変えてよい。実プロジェクトの知見を取り込むときも末尾に追記しない
 - **判断基準を並べる節は、足した順ではなく作業の順に並べる**
@@ -199,6 +199,7 @@ Codex 側は `.codex-plugin/plugin.json` が「1 リポジトリ = 1 plugin」�
 - `.claude-plugin/marketplace.json` の `metadata.version` は **marketplace 全体の semver**
 - `.codex-plugin/plugin.json` の `version` は **Codex plugin 全体の semver** (Claude marketplace と歩調を合わせる)
 - 新規 skill 追加・plugin 構成変更は marketplace 側 minor bump、skill 内部の機能追加は skill 側 minor bump
+- 説明文だけの変更は marketplace 側 patch bump
 - 手順も判断基準も変えない整理（節の並べ替え、重複の削除、文言の手直し）では skill の version を上げない
 
 ## コミット / プルリクの方針
@@ -210,7 +211,7 @@ Codex 側は `.codex-plugin/plugin.json` が「1 リポジトリ = 1 plugin」�
 ## このリポジトリで読むべきドキュメント
 
 - スキル個別の仕様: `skills/<name>/SKILL.md` (常に entry point)
-- スキル開発者引き継ぎ: 各 skill の `ROADMAP.md` (存在する場合。今は code-quality-scorer だけ)
+- スキル開発者引き継ぎ: 各 skill の `ROADMAP.md` (存在する場合)
 - 公開向け: `README.md`
 
 ## 共通の運用ルール（全リポジトリ共通）
