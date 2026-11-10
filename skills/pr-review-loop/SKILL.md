@@ -13,7 +13,7 @@ PR の発見・分類・修正・再レビューを分け、修正可能な指�
 
 ## 実行範囲と設定
 
-- 自分の PR は `auto-fix`、他人・bot の PR は `comment-only` が既定。明示フラグ > `.claude/pr-review-loop.local.md` の `default_mode` > author 判定の順で決める。両フラグ指定は入力エラー。
+- 自分の PR は `auto-fix`、他人・bot の PR は `comment-only` が既定。明示フラグ（`--auto-fix` / `--comment-only`） > `.claude/pr-review-loop.local.md` の `default_mode` > author 判定の順で決める。両フラグ指定は入力エラー。
 - モードは作業方法を選ぶもの。投稿・push の許可はユーザーの依頼に従う。レビュー結果だけを求められた場合はローカルに結果を返し、投稿が必要なら完成した本文を提示して確認する。既存の許可は再確認しない。
 - 設定の完全版は [references/configuration.md](references/configuration.md)。未設定のコマンドは規約・CI・package.json / Makefile 等から決める。利用不能な format/test コマンドを作り上げない。
 - 特定のプラグインは必須にしない。利用可能な専門レビューアがなければ同じ観点を自分で読む。小さな差分は直接レビューし、独立した観点に分ける利益がある場合だけ必要なレビューアを起動する。

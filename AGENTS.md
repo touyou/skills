@@ -10,17 +10,14 @@ touyou 個人の **Agent Skills 集** を Claude Code と Codex の両方の mar
 
 ```
 skills/                       ← 単一のソース。スキル本体はすべてここ
-├── proofread-touyou/
-│   └── SKILL.md
-└── code-quality-scorer/
-    ├── SKILL.md              ← 使い方 / 設計 / 動作モード
-    ├── ROADMAP.md            ← 開発者向け引き継ぎ文書
-    ├── references/           ← 言語別プロファイル + ルーブリック
-    ├── scripts/              ← Tier 1 / 2 / 3 / aggregate / trend / bus_factor
-    └── evals/                ← eval ハーネス (将来用)
+└── <skill-name>/
+    ├── SKILL.md              ← entry point（必須）
+    ├── references/           ← 必要なときだけ読む正本（設定の完全版・テンプレート・チェックリスト）
+    ├── scripts/              ← スキルが呼ぶスクリプト
+    └── assets/ examples/ evals/ ← 書き出すひな形・設定例・eval
 
 .claude-plugin/
-└── marketplace.json          ← Claude Code 用 (目的別の 5 plugin に分離)
+└── marketplace.json          ← Claude Code 用 (目的別の plugin に分離)
 
 .codex-plugin/
 └── plugin.json               ← Codex 用 (touyou-skills 1 plugin として全 skill を提供)
@@ -76,6 +73,17 @@ Codex 側もデフォルトで `~/.agents/skills/` を読むので、上記 1 �
 
 SKILL.md 1 枚で完結する小さいスキルにはこの分割を強制しない。「本体が肥大化してきた」「同じ設定ブロックを 2 箇所で直した」が分割のサイン。
 
+### SKILL.md の節の名前
+
+節の構成はスキルごとに決めてよいが、同じ役割の節は同じ名前にする:
+
+- **鉄則**: どの手順でも守ること（冒頭の説明の直後に置く）
+- **設定**: `.claude/<skill>.local.md` などプロジェクトごとの設定の読み方
+- **やらないこと**: このスキルの範囲に入れない作業と、引き継ぎ先のスキル
+- **依存**: 無いと動かない外部の道具・認証
+
+該当する内容が無い節は作らない。スキルの由来は節にせず、commit message と PR に書く（ライセンス上の参考元の表示だけ「参考元」として残す）。
+
 ## AI が読む文書の書き方
 
 SKILL.md・references・AGENTS.md のように、モデルが読んで従う文書に共通の基準。
@@ -84,7 +92,7 @@ SKILL.md・references・AGENTS.md のように、モデルが読んで従う文�
 - **ただし、無いと行き詰まる具体は消さない**。巨大なファイルの絞り込み方のような判断のヒントがこれに当たる。消す前に「これが無かったらモデルはどう動くか」を想像し、詰まるなら残す
 - **方針を書き、手段は環境に任せる**。CLI しか無い環境と MCP しか無い環境の両方で成り立つよう、コマンドは手順として強制せず例として示す。進め方が状況で分かれる作業に特定の場面の例を 1 つだけ置かない（モデルが判断をやめて例に倣う）
 - **いずれ嘘になることを書かない**。外部ツールの出力の実例や、外部の実装に由来する列挙値（対応する拡張子・API の enum など）は貼らず、判定の原理と大分類を書く。SDK のように実測した事実を書くなら、確かめた日付と確かめ方を添える。実行時に確定できない値を記録項目や判断の条件にしない
-- **README は人が導入を決めるための文書**。モデルが従う手順・判定表・鉄則は SKILL.md（と references）だけに書き、README には何をするスキルか・いつ使うか・設定と依存の場所だけを置く
+- **README はルートの 1 枚だけ**。人が導入を決めるための文書で、スキルごとに 1〜2 文（何をするスキルか・いつ使うか）と、スキルの選び方・設定の置き場所を置く。スキルのディレクトリには README を置かない（SKILL.md の description と二重管理になる）。モデルが従う手順・判定表・鉄則は SKILL.md（と references）だけに書く
 - **経緯と却下した案は commit message と PR に書く**。文書には現在の形だけを残す
 - **直すときは継ぎ足さない**。足す内容が最初からあったらどう書いたかを考え、該当する節に溶かす。構成を大きく変えてよい。実プロジェクトの知見を取り込むときも末尾に追記しない
 - **判断基準を並べる節は、足した順ではなく作業の順に並べる**
@@ -187,10 +195,12 @@ Codex 側は `.codex-plugin/plugin.json` が「1 リポジトリ = 1 plugin」�
 
 ## バージョン管理
 
-- 各 skill の `SKILL.md` frontmatter にある `metadata.version` は **skill 単位の semver** (例: code-quality-scorer は `"0.4.1"`)
+- 各 skill の `SKILL.md` frontmatter にある `metadata.version` は **skill 単位の semver** (例: `"0.4.1"`)
 - `.claude-plugin/marketplace.json` の `metadata.version` は **marketplace 全体の semver**
 - `.codex-plugin/plugin.json` の `version` は **Codex plugin 全体の semver** (Claude marketplace と歩調を合わせる)
 - 新規 skill 追加・plugin 構成変更は marketplace 側 minor bump、skill 内部の機能追加は skill 側 minor bump
+- 説明文だけの変更は marketplace 側 patch bump
+- 手順も判断基準も変えない整理（節の並べ替え、重複の削除、文言の手直し）では skill の version を上げない
 
 ## コミット / プルリクの方針
 

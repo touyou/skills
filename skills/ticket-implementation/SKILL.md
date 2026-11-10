@@ -171,12 +171,6 @@ PR 作成までがこの依頼の完了範囲。許可されたチケット更�
 - assignee / reviewer の設定結果または未割当理由を報告している
 - 許可されたステータス更新の結果、未実行・失敗の理由を報告している
 
-## 由来とブラッシュアップ方針
-
-このスキルは Flutter + Notion チケット運用のリポジトリで使っていた `ticket` スキルを汎用化したもの。Notion API 特化だった読み取り処理を「Source 別の plugin 型」にし、reviewer ルール / branch prefix / `make codegen` / `lib/app/pages/` 等のプロジェクト固有要素を `.claude/ticket-implementation.local.md` に外出ししてある。
-
-Notion 中心の運用は残しつつ、Linear / GitHub Issue / Plain text にも同じワークフローを適用できる構造。他プロジェクトで類似のチケット → PR ワークフローを動かしていたら、Source 別の読み取り処理と PR テンプレート連携の差分を集めてブラッシュアップする想定。
-
 ## 依存
 
 - `gh` CLI と GitHub 認証
