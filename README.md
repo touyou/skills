@@ -49,7 +49,7 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | `store-pack` | `touyou-skills` | [`store-screenshot-composer`](./skills/store-screenshot-composer/SKILL.md) | 撮影済みのスクショに見出し・背景・端末の枠・拡大カードを付けて、App Store / Google Play 用の画像を JSON 設定から全ロケール・全サイズ一括で作る |
 | `security-pack` | `touyou-skills` | [`security-watch-setup`](./skills/security-watch-setup/SKILL.md) | 自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、エージェント・OS・シェル・PR を出してよい範囲に合わせて組み立て、定期タスク / launchd / cron などに登録する |
 | `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/SKILL.md) | 性能改善を「点数を決める → 1 つだけ変える → 計測 → 採用か差し戻し」のループで長時間まわす。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー |
-| `apple-app-pack` | `touyou-skills` | [`apple-app-setup`](./skills/apple-app-setup/SKILL.md) | 新しい Apple プラットフォームのアプリを、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げる。構想の聞き取り、ひな形の書き出し、エージェント向けの規約、ビルド検証、配信の段取りまで |
+| `apple-app-pack` | `touyou-skills` | [`apple-app-setup`](./skills/apple-app-setup/SKILL.md) | 新しい Apple プラットフォームのアプリを App Intents 中心設計で立ち上げる。構想の聞き取り、App Intents の設計、ひな形の書き出し、エージェント向けの規約、検証と配信の段取りまで |
 
 各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。呼び出しの言い回しは各 `SKILL.md` の description に、手順と判断基準は本文にある。
 

@@ -1,6 +1,6 @@
 ---
 name: apple-app-setup
-description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple 公式の Xcode スキル・HIG に沿った形で立ち上げる。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。構想の聞き取り → できることを App Intents の一覧として設計 → 対象 OS と構成の決定 → JSON 形式の Xcode プロジェクト（project.xcproj）とローカル SPM のひな形の書き出し → エージェント向けの規約（AGENTS.md・devlog）→ 検証と配信の段取りまでを行う。既存アプリへの後付けの App Intents 設計だけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
+description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計で立ち上げる。構想の聞き取りから、App Intents の設計、Xcode プロジェクトとローカル SPM のひな形、エージェント向けの規約、検証と配信の段取りまでを行う。「新しい iOS アプリを作りたい」「Apple のアプリのひな形を作って」「アプリをセットアップして」「プロジェクトの初期構成を決めたい」「Duo にも対応したアプリを新規で」に使う。既存アプリへの App Intents の後付けだけなら app-intents-centric-design、既存アプリの Duo・リサイズ対応だけなら Apple の app-resizability を使う。
 license: MIT
 metadata:
   author: touyou
@@ -116,17 +116,13 @@ IntentTodo の skills にある `check_intent_copy_localization.py` で漏れを
 
 ### 5. 画面を作る（[references/swiftui-rules.md](references/swiftui-rules.md) / [references/iphone-duo.md](references/iphone-duo.md)）
 
-守ることの要点:
+書き方の規約は swiftui-rules.md が正本で、画面を書く前に読む。ここには、後から直すと場所が散らばるものだけを置く。
 
-- サブビューは computed property ではなく独立した `View` struct で切る。数の多い子（格子のマス）にはクロージャを渡さず、値と Environment の action で
-- 自分の型に `Section` / `Group` / `Label` / `Settings` など SwiftUI の型と同じ名前を付けない（データの型も）
-- `.translationTask` などシステムのモディファイアのクロージャには処理を書かず、package の関数へ渡す
-- 構成（左右分割か 1 カラムか）は `horizontalSizeClass` ＋縦横で 1 か所で決め、子には結果だけを渡す。
-  ピクセル幅の閾値で構成を変えない
-- UI の文言は `String` 型のプロパティや引数で運ばない（`LocalizedStringKey` / `LocalizedStringResource`）
-- ツールバー項目には必ずタイトルと role（`.close` / `.cancel` / `.confirm` / `.destructive`）を付け、
-  あふれる順を `visibilityPriority` で決める（閉じた Duo では縦のバーへ移り、アイコンだけだと意味が伝わらない）
-- 外周の余白は `contentMargins` に寄せる（Duo は safe area が左右で違う）
+- サブビューは computed property ではなく独立した `View` struct で切る
+- 構成（左右分割か 1 カラムか）は `horizontalSizeClass` ＋縦横で 1 か所で決め、子には結果だけを渡す。ピクセル幅の閾値で構成を変えない
+- UI の文言は `String` 型のプロパティや引数で運ばない
+- ツールバー項目にはタイトルと role を付け、あふれる順を `visibilityPriority` で決める。外周の余白は `contentMargins` に寄せる
+  （閉じた Duo ではバーが縦に移り、safe area が左右で違う）
 - Duo の折り目は「見る側」と「触る側」を分ける好機。ヒンジ角度を体験にするのは Duo 専用アプリのときだけ
 - 音を鳴らす・録るアプリは、セッションのカテゴリを場面ごとに決めて切り替えを 1 か所に集める（[references/audio.md](references/audio.md)）
 
@@ -155,19 +151,15 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 
 ### 8. 配信の段取りを決める（[references/release.md](references/release.md) / [references/app-store-submission.md](references/app-store-submission.md)）
 
-- `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight
-- 動くものができたら機能が揃う前に一度 TestFlight まで通す。提出の検証（拡張の版番号のずれ、サンドボックス、visionOS のアイコン、
-  Intent の説明文の商標）はローカルでは出ない。Xcode Cloud の Xcode は beta を選ばない（審査に出せないビルドになる）。
-  Archive の成功は秘密の値が入った証明にならないので、成果物を見る（[references/xcode-cloud.md](references/xcode-cloud.md)）
-- 課金を入れるなら Paid Applications Agreement を最初に有効にする（無いと商品が 1 つも返らない。[references/in-app-purchase.md](references/in-app-purchase.md)）
+- `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight。Xcode Cloud の Xcode は beta を選ばない（審査に出せないビルドになる）
+- **動くものができたら、機能が揃う前に一度 TestFlight まで通す**。提出の検証と配布版だけの失敗（拡張の版番号のずれ、サンドボックス、
+  埋め込まれていない動的フレームワーク、秘密の値の入れ忘れ）はローカルでは出ない。何を見るかは release.md と [references/xcode-cloud.md](references/xcode-cloud.md)
+- 提出前に埋めるもの（起動画面のキー、暗号化の申告、プライバシーマニフェスト、表示名など）は、release.md の表の全項目をこの時点で埋める
+- 課金を入れるなら、Paid Applications Agreement を最初に有効にし（無いと商品が 1 つも返らない）、StoreKit の設定ファイルと権利の確かめ方を
+  最初から入れる（[references/in-app-purchase.md](references/in-app-purchase.md) / [references/storekit.md](references/storekit.md)）
+- `asc validate` が緑でも提出で弾かれる項目がある（app-store-submission.md の 1）。公開前なら Intent の形はまだ変えられるので、
+  承認を捨ててでも確定させてから最初の版を出す
 - What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
-- 動的フレームワークは Embed & Sign（Do Not Embed は Debug で動き、配布版だけ起動直後に落ちる）
-- 起動画面のキー（iOS 27 では無いと提出で弾かれる）、`ITSAppUsesNonExemptEncryption`、
-  プライバシーマニフェスト（必須理由 API を使う拡張のバンドルにも）、アプリ名の表示名をこの時点で埋める
-- 課金があるなら StoreKit の設定ファイルと、権利の確かめ方（`currentEntitlements` だけに頼らない）を最初から入れる（[references/storekit.md](references/storekit.md)）
-- 最初の提出の前に、全プラットフォームの Release ビルドと実署名の archive を通して中身を見る
-- `asc validate` が緑でも提出で弾かれる項目がある（App プライバシーの公開、visionOS のモーション申告、beta の Xcode）。
-  公開前なら Intent の形はまだ変えられるので、承認を捨ててでも確定させてから最初の版を出す
 
 ## 終わったときに報告すること
 
