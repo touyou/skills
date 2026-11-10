@@ -154,7 +154,7 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 - `main` は統合用、`production` への push で Xcode Cloud が Archive → TestFlight。Xcode Cloud の Xcode は beta を選ばない（審査に出せないビルドになる）
 - **動くものができたら、機能が揃う前に一度 TestFlight まで通す**。提出の検証と配布版だけの失敗（拡張の版番号のずれ、サンドボックス、
   埋め込まれていない動的フレームワーク、秘密の値の入れ忘れ）はローカルでは出ない。何を見るかは release.md と [references/xcode-cloud.md](references/xcode-cloud.md)
-- 提出前に埋めるもの（起動画面のキー、暗号化の申告、プライバシーマニフェスト、表示名）は release.md の一覧をこの時点で埋める
+- 提出前に埋めるもの（起動画面のキー、暗号化の申告、プライバシーマニフェスト、表示名など）は、release.md の表の全項目をこの時点で埋める
 - 課金を入れるなら、Paid Applications Agreement を最初に有効にし（無いと商品が 1 つも返らない）、StoreKit の設定ファイルと権利の確かめ方を
   最初から入れる（[references/in-app-purchase.md](references/in-app-purchase.md) / [references/storekit.md](references/storekit.md)）
 - `asc validate` が緑でも提出で弾かれる項目がある（app-store-submission.md の 1）。公開前なら Intent の形はまだ変えられるので、
