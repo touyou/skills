@@ -1,6 +1,6 @@
 # プロジェクト設定
 
-リポジトリのルートに `.claude/ai-bot-pr-review.local.md` を置くと挙動を調整できる。無くてもデフォルトで動く。
+リポジトリのルートに `.claude/ai-bot-pr-review.local.md` を置くと挙動を調整できる。無いときは、対象の author とブランチ prefix を open PR から決める（SKILL.md の「対象にする bot」）。下の `bot_authors` / `branch_prefixes` の中身は書き方の例で、既定値ではない。
 
 ```markdown
 ---
@@ -37,7 +37,7 @@ allow_dependency_only_merges: true   # Dependabot 等の lockfile-only PR を自
 
 各キーの意味:
 
-- **`bot_authors`** — `gh pr view --json author --jq '.author.login'` の値と完全一致で判定。未設定時は [SKILL.md の「対象にする bot」](../SKILL.md) のとおり、open PR の author から bot を列挙して決める。
+- **`bot_authors`** — `gh pr view --json author --jq '.author.login'` の値と照らす（`app/<名前>` と `<名前>[bot]` は同じ bot）。未設定時は [SKILL.md の「対象にする bot」](../SKILL.md) のとおり、open PR の author から bot を列挙して決める。
 - **`branch_prefixes`** — このリストのいずれかで始まるブランチ名の PR のみ対象。未設定時は、bot の author が実際に使っているブランチ prefix を open PR から拾う。
 - **`exclude_branch_prefixes`** — `release/` / `backport/` 等、bot 由来でも対象外にしたい prefix。
 - **`test_command` / `format_command`** — 未設定なら `package.json` の `scripts.test` / `Makefile` の `test` ターゲット / `pubspec.yaml` 周辺 (`flutter test` or `fvm flutter test`) を自動推測。

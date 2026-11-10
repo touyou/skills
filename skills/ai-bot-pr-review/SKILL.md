@@ -17,7 +17,7 @@ GitHub Actions / GitHub Apps 経由で自動生成された PR を一括処理�
 
 どの PR を bot 由来として扱うかは、**author の許可リスト**と**ブランチ prefix の許可リスト**の両方で絞る。リポジトリごとに違うので、`.claude/ai-bot-pr-review.local.md` の `bot_authors` / `branch_prefixes` を正とする。
 
-設定が無いときは、名前の一覧を持ち込まずにそのリポジトリの open PR から決める: author が bot として返るもの（GitHub App は login が `[bot]` で終わり、Actions のトークンで作った PR は `app/github-actions` になる）を author とブランチ prefix の組で列挙し、対象にする組を告知してから進める。人のアカウントで動く自動化（bot と判定できない author）は、ユーザーが指定した場合だけ対象にする。
+設定が無いときは、名前の一覧を持ち込まずにそのリポジトリの open PR から決める: 絞り込まずに open PR を取り、取得手段が bot と返す author を、author とブランチ prefix の組で列挙する。リリースやバックポートのように依存更新・テスト追加・自動修正でないと分かる組は外し、対象にする組と外した組を告知してから進める。片方だけ設定されているときは、無い側だけを同じやり方で決める。login の形は取得手段で変わる（同じ bot が `gh pr list` では `app/<名前>`、REST や MCP では `<名前>[bot]`）ので、設定と照らすときはこの 2 つを同じものとして扱う。人のアカウントで動く自動化（bot と判定できない author）は、ユーザーが指定した場合だけ対象にする。
 
 ## 設定
 
@@ -26,7 +26,7 @@ GitHub Actions / GitHub Apps 経由で自動生成された PR を一括処理�
 ## 対象 PR の特定
 
 ```bash
-# bot_authors の各 author について open PR を取得し、merge する
+# 設定があるときの絞り込みの例
 gh pr list --state open --limit 1000 --json number,title,headRefName,body,author,labels \
   --search "is:open is:pr" \
   | jq --argjson allowed_authors "$BOT_AUTHORS_JSON" \
