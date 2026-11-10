@@ -13,7 +13,7 @@
 
 | 置き換え | 中身 | 例 |
 |---|---|---|
-| `{{SKILL_VERSION}}` | このスキルの `metadata.version`（SKILL.md の frontmatter） | 0.4.0 |
+| `{{SKILL_VERSION}}` | このスキルの `metadata.version`（SKILL.md の frontmatter） | 1.2.3 |
 | `{{USER}}` | 本人の呼び名（通知・TODO の宛先） | alice |
 | `{{SHELL}}` | バージョン管理ツールを有効にしているシェル（SKILL.md Step 1）。コマンド例の構文もこれに合わせる | fish |
 | `{{SHELL_CMD}}` | `{{SHELL}}` を設定ファイルごと読ませて 1 コマンド実行する形。mise / nvm を `.zshrc` / `.bashrc` で有効にしているなら `-i` も要る | `fish -c`、`zsh -ilc`、`bash -ilc` |
@@ -86,25 +86,27 @@ GitHub Advisory API の結果は、手元のエコシステムのものだけ候
   （例: `fish -c 'command -s node; node -v'`、`zsh -ilc 'command -v node; node -v'`、`bash -ilc '...'`）、
   修正版になっているか確かめる。シェルで実体が違うときは全部書く。古ければ、そのランタイムを入れている
   管理ツールで上げる。OS 同梱のもの（macOS の /usr/bin/ruby など）は上げられないので、その旨だけ書く。
-  JDK は入っているものを全部見る。`/usr/libexec/java_home -V`（macOS）は `/Library/Java/JavaVirtualMachines` の
-  ものしか出さず、SDKMAN・mise・asdf・jenv で入れた JDK は出てこないので、`{{SCRIPTS}}/detect-env.sh` の
-  `## jdks` を毎回実行して使う（SDKMAN・mise・asdf・jenv の保存先は `SDKMAN_DIR`・`MISE_DATA_DIR`・`ASDF_DATA_DIR`・
-  `JENV_ROOT` があればそれを見る。jenv に登録した `/opt` などの JDK も実体を辿って出る。Homebrew の keg-only の
-  `openjdk@NN`、Android Studio・IntelliJ が同梱する `/Applications/*.app/Contents/jbr` も出る）。シェルごとの `java` が
-  どれを指しているかも書いたうえで、各 JDK の版を同じ配布元・同じメジャーの最新と比べる。`JAVA_VERSION` が同じでも
-  配布元が再ビルドを出すことがあるので、`build=`（`JAVA_RUNTIME_VERSION`）と `IMPLEMENTOR_VERSION` まで比べ、
-  これが取れない JDK は「最新か未確認」として書く（最新とみなさない）。Oracle の定例パッチは 1・4・7・10 月の第 3 火曜で、
-  Corretto・Temurin・Zulu などは数日以内に追随する。SDKMAN の `sdk` はシェル関数なので、detect-env.sh の `sdkman:` の
-  パスを使って `bash -c 'source <sdkman のパス>/bin/sdkman-init.sh && sdk list java'` のように呼ぶ。古ければ同じメジャーの
-  最新を入れる。`sdk install` は設定（`sdkman_auto_answer=true` など）によって入れた版を既定にしてしまうので、
-  入れる前の既定（`sdkman_java_default`）を控え、上げたのが既定の JDK なら新しい版を `sdk default java <版>-<配布元>`、
-  そうでなければ控えた既定に `sdk default` で戻す。古い版は下の「脆弱な旧版の残置」に従う。
-  アプリが同梱する JBR はアプリの更新でしか上がらないので、古ければ「<アプリ> の更新待ち（JBR <版>、OpenJDK の最新 <版>）」として
-  TODO の保留に書き、再確認の条件は「アプリの更新で JBR が上がったら、版と cacerts を照合し直す」とする。Gradle が既定でその JBR を
-  使うので、待つ間にアプリの Gradle JDK を最新の JDK に向けるかは本人の判断として、通常の TODO に分けて書く。
-  既定の JDK だけでなく、リポの `.sdkmanrc` / `.java-version` / mise・asdf の設定で指定された JDK も見る。指定が古い版や
-  EOL の版を指していれば、既定を上げても `sdk env` などでそのリポでは古い版が使われるので、`{{PR_REPOS}}` に当たるリポは
-  指定を上げる PR を作り、それ以外は参照元・推奨の版（EOL ならサポート中の版への移行先）を連絡文と TODO に書く
+- JDK: 入っているものを全部見る。
+  - 一覧は `{{SCRIPTS}}/detect-env.sh` の `## jdks` を毎回実行して取る。`/usr/libexec/java_home -V`（macOS）は
+    `/Library/Java/JavaVirtualMachines` のものしか出さず、SDKMAN・mise・asdf・jenv で入れた JDK は出てこない。
+    detect-env.sh は、SDKMAN・mise・asdf・jenv の保存先（`SDKMAN_DIR`・`MISE_DATA_DIR`・`ASDF_DATA_DIR`・`JENV_ROOT` が
+    あればそれ）、jenv に登録した `/opt` などの JDK の実体、Homebrew の keg-only の `openjdk@NN`、Android Studio・IntelliJ が
+    同梱する `/Applications/*.app/Contents/jbr` も出す
+  - シェルごとの `java` がどれを指しているかも書いたうえで、各 JDK の版を同じ配布元・同じメジャーの最新と比べる。
+    `JAVA_VERSION` が同じでも配布元が再ビルドを出すことがあるので、`build=`（`JAVA_RUNTIME_VERSION`）と
+    `IMPLEMENTOR_VERSION` まで比べ、これが取れない JDK は「最新か未確認」として書く（最新とみなさない）。
+    Oracle の定例パッチは 1・4・7・10 月の第 3 火曜で、Corretto・Temurin・Zulu などは数日以内に追随する
+  - 古ければ同じメジャーの最新を入れる。SDKMAN の `sdk` はシェル関数なので、detect-env.sh の `sdkman:` のパスを使って
+    `bash -c 'source <sdkman のパス>/bin/sdkman-init.sh && sdk list java'` のように呼ぶ。`sdk install` は設定
+    （`sdkman_auto_answer=true` など）によって入れた版を既定にしてしまうので、入れる前の既定（`sdkman_java_default`）を控え、
+    上げたのが既定の JDK なら新しい版を `sdk default java <版>-<配布元>`、そうでなければ控えた既定に `sdk default` で戻す。
+    古い版は下の「脆弱な旧版の残置」に従う
+  - アプリが同梱する JBR はアプリの更新でしか上がらない。古ければ「<アプリ> の更新待ち（JBR <版>、OpenJDK の最新 <版>）」として
+    TODO の保留に書き、再確認の条件は「アプリの更新で JBR が上がったら、版と cacerts を照合し直す」とする。Gradle が既定で
+    その JBR を使うので、待つ間にアプリの Gradle JDK を最新の JDK に向けるかは本人の判断として、通常の TODO に分けて書く
+  - 既定の JDK だけでなく、リポの `.sdkmanrc` / `.java-version` / mise・asdf の設定で指定された JDK も見る。指定が古い版や
+    EOL の版を指していれば、既定を上げても `sdk env` などでそのリポでは古い版が使われる。`{{PR_REPOS}}` に当たるリポは
+    指定を上げる PR を作り、それ以外は参照元・推奨の版（EOL ならサポート中の版への移行先）を連絡文と TODO に書く
 - リポのバージョン指定が実際に効いているか: `.node-version` などを持つリポで
   `{{SHELL_CMD}} 'cd <リポ> && node -v'` のように実行し、指定と一致するか確かめる。一致しないときは、
   指定の版が未インストール（入れてよい）か、管理ツールがそのファイルを読まない設定（mise の
