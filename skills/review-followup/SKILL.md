@@ -116,4 +116,4 @@ OWNER/REPO は対象 PR のリポジトリ、APPROVAL_BODY_FILE は完成した�
 
 ## 依存
 
-- `gh` CLI と GitHub 認証 (`gh auth login`)
+- GitHub の PR を読み、レビューを投稿できる手段と認証。本文のコマンドは `gh` CLI での例で、`gh` が無い環境では同じ情報を取れる手段に置き換える。取れない項目は保留の理由として報告する

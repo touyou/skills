@@ -4,7 +4,7 @@ description: AI bot が作った PR を一括レビューし、マージ・ク�
 license: MIT
 metadata:
   author: touyou
-  version: "0.2.2"
+  version: "0.3.0"
 ---
 
 # AI bot が生成した PR の一括レビュー
@@ -13,19 +13,11 @@ GitHub Actions / GitHub Apps 経由で自動生成された PR を一括処理�
 
 投稿・approve・マージ・クローズは、今回の依頼と既存の許可に含まれる操作だけ行う。「レビューして」だけなら判定を返し、外部操作が必要な場合は対象 PR と完成した理由文を提示して確認する。マージまで依頼済みなら再確認しない。設定ファイルは操作の許可を追加しない。
 
-主要な想定 bot:
+## 対象にする bot
 
-| Bot | author (GitHub) | 典型用途 | ブランチ prefix の例 |
-|---|---|---|---|
-| Codex (GitHub Actions) | `app/github-actions` | テストカバレッジ向上 | `chore/codex-refactor-` |
-| Copilot Workspace / SWE Agent | `copilot-swe-agent[bot]` / `app/github-actions` | 自動修正・テスト | `copilot/` |
-| CodeRabbit (auto-fix) | `coderabbitai[bot]` | レビュー指摘の自動反映 | `coderabbit/` |
-| Devin | `devin-ai-integration[bot]` | チケット → 実装 | 任意 |
-| Dependabot | `dependabot[bot]` | 依存更新 | `dependabot/` |
-| Renovate | `renovate[bot]` | 依存更新 | `renovate/` |
-| 自作 Actions | `app/github-actions` | 何でも | 任意 |
+どの PR を bot 由来として扱うかは、**author の許可リスト**と**ブランチ prefix の許可リスト**の両方で絞る。リポジトリごとに違うので、`.claude/ai-bot-pr-review.local.md` の `bot_authors` / `branch_prefixes` を正とする。
 
-「どの bot を対象にするか」「どんな PR が `bot` 由来か」はリポジトリごとに異なるので、**bot author の許可リスト**と**ブランチ prefix の許可リスト**で絞り込む設計にしてある。
+設定が無いときは、名前の一覧を持ち込まずにそのリポジトリの open PR から決める: 絞り込まずに open PR を取り、取得手段が bot と返す author を、author とブランチ prefix の組で列挙する。リリースやバックポートのように依存更新・テスト追加・自動修正でないと分かる組は外し、対象にする組と外した組を告知してから進める。片方だけ設定されているときは、無い側だけを同じやり方で決める。login の形は取得手段で変わる（同じ bot が `gh pr list` では `app/<名前>`、REST や MCP では `<名前>[bot]`）ので、設定と照らすときはこの 2 つを同じものとして扱う。人のアカウントで動く自動化（bot と判定できない author）は、ユーザーが指定した場合だけ対象にする。
 
 ## 設定
 
@@ -34,7 +26,7 @@ GitHub Actions / GitHub Apps 経由で自動生成された PR を一括処理�
 ## 対象 PR の特定
 
 ```bash
-# bot_authors の各 author について open PR を取得し、merge する
+# 設定があるときの絞り込みの例
 gh pr list --state open --limit 1000 --json number,title,headRefName,body,author,labels \
   --search "is:open is:pr" \
   | jq --argjson allowed_authors "$BOT_AUTHORS_JSON" \
@@ -196,3 +188,7 @@ gh pr close <number> --comment "クローズ理由: <具体的な理由>"
 | #1238 | github-actions[bot] | リリース PR | — | — | 対象外 |
 
 最後に**ユーザー確認待ち**の PR (互換を壊しうる bump / カテゴリ不明 / 大規模リファクタ) をまとめて一覧する。
+
+## 依存
+
+- GitHub の PR を読み書きできる手段と認証。本文のコマンドは `gh` CLI での例で、`gh` が無い環境（GitHub の MCP だけなど）では同じ情報を取れる手段に置き換える。`mergeStateStatus` や必須チェックのように取れない項目は、成功扱いにせず未確認として保留する
