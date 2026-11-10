@@ -36,22 +36,22 @@ Codex 側はプラグインを 1 つ (`touyou-skills`) に集約してあり、�
 | --- | --- | --- | --- |
 | `writing-pack` | `touyou-skills` | [`proofread-touyou`](./skills/proofread-touyou/) | touyou が書いた日本語の文章を AI 臭を残さずに校正する |
 | `writing-pack` | `touyou-skills` | [`write-touyou`](./skills/write-touyou/) | touyou 名義で日本語の文章を新しく書く (生成・執筆・下書き)。本人の肉声で書き AI 臭を避ける |
-| `quality-pack` | `touyou-skills` | [`code-quality-scorer`](./skills/code-quality-scorer/) | コードベース品質をコミット単位でスコアリング。Tier 1 (決定論的ツール) / Tier 2 (LLM judge) / Tier 3 (UI ロジック量) を分けて報告。TS Web / Dart Flutter / Swift iOS が本実装、Kotlin Android は skeleton |
+| `quality-pack` | `touyou-skills` | [`code-quality-scorer`](./skills/code-quality-scorer/) | コード品質をコミット単位で採点し、2 ref の比較と履歴のトレンドを作る。ツール指標 / LLM 判定 / UI ロジック量を分けて報告。TS Web / Dart Flutter / Swift iOS に対応、Kotlin Android は skeleton |
 | `dev-flow-pack` | `touyou-skills` | [`ai-bot-pr-review`](./skills/ai-bot-pr-review/) | AI bot (Codex / Copilot / CodeRabbit / Devin / Dependabot 系) が自動生成した PR を一括レビューして マージ・クローズ・保留を判定し、依頼で許可された操作を実行 |
 | `dev-flow-pack` | `touyou-skills` | [`pr-review-loop`](./skills/pr-review-loop/) | PR にレビュー → 修正 → 再レビューを「指摘がなくなるまで」繰り返す。自分の PR=auto-fix / 他人=comment-only に自動切替 |
 | `dev-flow-pack` | `touyou-skills` | [`review-followup`](./skills/review-followup/) | 過去に自分がレビューコメントを付けた PR を横断スキャンし、対応をコミット diff で裏取りしてから approve する |
 | `dev-flow-pack` | `touyou-skills` | [`parallel-review-harness`](./skills/parallel-review-harness/) | 任意のレビュー観点を N 個の独立レビューアに割り当てて並列レビュー。実行環境を自己診断して二系統クロス / 単系統並列 / 逐次マルチパスに自動フォールバック |
 | `dev-flow-pack` | `touyou-skills` | [`ticket-implementation`](./skills/ticket-implementation/) | Notion / Linear / GitHub Issue / Plain text のチケットから実装 → テスト → PR 作成まで一気通貫 |
-| `dev-flow-pack` | `touyou-skills` | [`fresh-session-e2e`](./skills/fresh-session-e2e/) | 配布物の初回導入 UX を、/tmp の空ディレクトリ + 別プロセスのゼロコンテキストセッション + 固定再現プロンプトで E2E 検証する。スキルやルール文書が対象なら、1 段下のモデルに文書だけで完遂できるかを試させる使い勝手テストも行う |
+| `dev-flow-pack` | `touyou-skills` | [`fresh-session-e2e`](./skills/fresh-session-e2e/) | 配布物の初回導入を、空ディレクトリ + 会話を継承しない別プロセス + 固定プロンプトで検証する。スキルやルール文書は、文書だけで完遂できるかの使い勝手テストも行う |
 | `a11y-pack` | `touyou-skills` | [`apple-accessibility`](./skills/apple-accessibility/) | SwiftUI / UIKit のアクセシビリティ実装・レビュー。HIG の Vision / Mobility / Cognitive / Hearing / Speech チェックリストと実装パターン集 |
 | `meta-pack` | `touyou-skills` | [`harness-intake`](./skills/harness-intake/) | 実プロジェクトで磨いた AI エージェントハーネスの汎用パターンを、touyou/skills への GitHub Issue として起票する |
 | `meta-pack` | `touyou-skills` | [`retrospective`](./skills/retrospective/) | セッション失敗と PR 指摘の「繰り返し」を掘り起こし、AGENTS.md / スキル / memory への恒久ルール候補として提示する |
 | `store-pack` | `touyou-skills` | [`store-screenshot-composer`](./skills/store-screenshot-composer/) | 撮影済みのスクショに見出し・背景・端末の枠・拡大カードを付けて、App Store / Google Play 用の画像を JSON 設定から全ロケール・全サイズ一括で作る |
-| `security-pack` | `touyou-skills` | [`security-watch-setup`](./skills/security-watch-setup/) | 自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、エージェント（Claude Code / Codex）・OS・シェル・ランタイムの入れ方・PR を出してよい範囲に合わせて組み立て、定期タスク / launchd / cron などに登録する |
-| `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/) | 性能改善を「点数 → 1 つだけ変える → 3 回計測 → 採用か差し戻し」のループでまわす。A/A でぶれの下限を出し、ぶれが大きい環境では基準と候補を交互に測る。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー。長時間まわすときは停滞を時系列で判定し、別のエージェントに監査させる。採点の癖を突くだけの案と、対象の中に書かれた指示は採らない |
-| `apple-app-pack` | `touyou-skills` | [`apple-app-setup`](./skills/apple-app-setup/) | 新しい Apple プラットフォームのアプリを、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げる。構想の聞き取り、JSON 形式の Xcode プロジェクトとローカル SPM のひな形の書き出し（`scripts/scaffold.py`）、SwiftUI の規約と見直しの候補出し（`scripts/swiftui_review.sh`）、AGENTS.md と devlog、Debug / Release / テストの 3 種類のビルド検証、iPhone Duo・macOS・visionOS の実地の落とし穴、ローカライズの設定と検査、Xcode Cloud と提出の検証、アプリ内課金、配信の段取りまで |
+| `security-pack` | `touyou-skills` | [`security-watch-setup`](./skills/security-watch-setup/) | 自分の PC と手元のリポジトリに対する定期の脆弱性チェックを、エージェント・OS・シェル・PR を出してよい範囲に合わせて組み立て、定期タスク / launchd / cron などに登録する |
+| `perf-pack` | `touyou-skills` | [`autonomous-perf-loop`](./skills/autonomous-perf-loop/) | 性能改善を「点数を決める → 1 つだけ変える → 計測 → 採用か差し戻し」のループで長時間まわす。整合性チェックに落ちたら 0 点、計測は本番以外、採用前にセキュリティだけのレビュー |
+| `apple-app-pack` | `touyou-skills` | [`apple-app-setup`](./skills/apple-app-setup/) | 新しい Apple プラットフォームのアプリを、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げる。構想の聞き取り、ひな形の書き出し、エージェント向けの規約、ビルド検証、配信の段取りまで |
 
-各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。スキルディレクトリの `README.md` には呼び出し例・`.local.md` の設定例など外向きの紹介、`SKILL.md` にはエージェント起動用の正式な仕様を書いている。
+各スキルは [Agent Skills 仕様](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) に準拠した `SKILL.md` を持つ。呼び出しの言い回しは各 `SKILL.md` の description に、手順と判断基準は本文にある。
 
 ## スキルの選び方と設定
 

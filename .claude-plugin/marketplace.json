@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "touyou's personal collection of Claude Code skills",
-    "version": "0.13.1"
+    "version": "0.13.2"
   },
   "plugins": [
     {
@@ -90,7 +90,7 @@
     },
     {
       "name": "apple-app-pack",
-      "description": "新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げるスキル。構想の聞き取り、XcodeGen とローカル SPM のひな形の書き出し、エージェント向けの規約（AGENTS.md・devlog）、3 種類のビルド検証、配信の段取りまで。",
+      "description": "新しい Apple プラットフォームのアプリ（iOS / iPadOS / macOS / visionOS、iPhone Duo を含む）を、App Intents 中心設計・Apple の Xcode 同梱スキル・HIG に沿って立ち上げるスキル。構想の聞き取り、JSON 形式の Xcode プロジェクトとローカル SPM のひな形の書き出し、エージェント向けの規約（AGENTS.md・devlog）、3 種類のビルド検証、配信の段取りまで。",
       "source": "./",
       "strict": false,
       "skills": [
