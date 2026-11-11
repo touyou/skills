@@ -4,7 +4,7 @@ description: touyouさん（藤井さん）が書いた日本語の技術記事�
 license: MIT
 metadata:
   author: touyou
-  version: "0.7.1"
+  version: "0.7.2"
 ---
 
 # touyouさんの文章をAI臭を残さずに校正する
