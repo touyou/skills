@@ -4,7 +4,7 @@ description: 新しい Apple プラットフォームのアプリ（iOS / iPadOS
 license: MIT
 metadata:
   author: touyou
-  version: "0.8.0"
+  version: "0.9.0"
 ---
 
 # apple-app-setup
@@ -37,6 +37,7 @@ Release だけ落ちる、閉じた Duo でボタンが消える）。どれも�
 | 性能の計測 | Apple の `xctrace` ＋ `autonomous-perf-loop`（perf-pack） |
 | デザインの原則 | [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) |
 | 自前の Metal 描画・書き出し用の CLI | [references/metal-rendering.md](references/metal-rendering.md) |
+| アップデート後の新機能のお知らせ | [references/whats-new-sheet.md](references/whats-new-sheet.md)（出す条件、見終えた版の記録、文言の置き場所） |
 | アプリ内課金 | [references/storekit.md](references/storekit.md)（StoreKit 2 のコード）＋ [references/in-app-purchase.md](references/in-app-purchase.md)（ASC・RevenueCat の設定） |
 
 Apple の Xcode 同梱スキルは「Apple が書いた最新の正本」として扱い、自分の記憶と食い違ったら
@@ -160,6 +161,7 @@ Duo の開閉は Xcode 27 ではシミュレータでも手で切り替えるし
 - `asc validate` が緑でも提出で弾かれる項目がある（app-store-submission.md の 1）。公開前なら Intent の形はまだ変えられるので、
   承認を捨ててでも確定させてから最初の版を出す
 - What's New は変更の羅列だけにせず、冒頭に使う人へのひとことを添える（ja / en とも同じ温度）
+- 新機能のある版は、アップデートした人にだけ最初の起動で同じ中身のシートを出す（[references/whats-new-sheet.md](references/whats-new-sheet.md)）
 
 ## 終わったときに報告すること
 
